@@ -3,6 +3,14 @@
 \name{experimentAccess}
 \alias{experimentAccess}
 \title{Access SpaMTP data through Bioconductor containers}
+\value{
+This is a documentation topic, not a callable function. The accessors
+described here return the selected data: \code{assay()} returns a matrix-like
+object, \code{altExp()} returns an alternative experiment, \code{rowData()} and
+\code{colData()} return \code{DataFrame} objects, and \code{spatialCoords()} returns a
+coordinate matrix. Replacement accessors update the corresponding data
+in the experiment. See each accessor's help page for its full return contract.
+}
 \description{
 SpaMTP uses public S4 accessors, not internal slots. A SpatialExperiment is
 a SingleCellExperiment and a SummarizedExperiment. The required container

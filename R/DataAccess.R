@@ -55,6 +55,14 @@
 #' native Bioconductor workflow. Seurat assay names become experiment names;
 #' selected Seurat layers become expression assays as documented by the converter.
 #'
+#' @return
+#' This is a documentation topic, not a callable function. The accessors
+#' described here return the selected data: `assay()` returns a matrix-like
+#' object, `altExp()` returns an alternative experiment, `rowData()` and
+#' `colData()` return `DataFrame` objects, and `spatialCoords()` returns a
+#' coordinate matrix. Replacement accessors update the corresponding data
+#' in the experiment. See each accessor's help page for its full return contract.
+#'
 #' @name experimentAccess
 #' @seealso [asSpatialExperiment()], [addTranscriptome()], [normalizeSMData()],
 #'   [scaleSMData()], [runMetabolicPCA()]
