@@ -1,3 +1,8 @@
+# SpaMTP 0.99.10
+
+* Added return-value documentation to the experimentAccess guide, resolving
+  the missing-value-section warning from BiocCheck.
+
 # SpaMTP 0.99.9
 
 * Clarified native data access across function help pages: modalities use
