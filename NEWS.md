@@ -267,7 +267,6 @@
   native assays instead of Seurat-style double-bracket indexing.
 * Added a fresh-process native workflow test that requires neither Seurat
   namespace, plus adapter-boundary and conversion regression tests.
-  See `BIOCONDUCTOR_MIGRATION.md` for scientific limits and remaining validation.
 
 # SpaMTP 0.99.1
 

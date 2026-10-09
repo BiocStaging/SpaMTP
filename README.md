@@ -27,8 +27,7 @@ and pathway analysis, and (3) integrative spatial-omics analysis. Explicit
 
 The analysis package does not require Seurat. Only explicit conversion
 functions use the optional SeuratObject package; loading, preprocessing,
-plotting and integration do not convert inputs automatically. See
-[migration status](BIOCONDUCTOR_MIGRATION.md) for validation and scientific limits.
+plotting and integration do not convert inputs automatically.
 
 ## From modalities to a complete report
 

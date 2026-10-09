@@ -39,7 +39,7 @@ test_that("installed demos and workflows cannot reintroduce legacy interfaces", 
     for (bad in c("x@images", "methods::slot(x, 'image')",
                   "slot(x, 'image') <- y", "Seurat::FindAllMarkers(x)",
                   "requireNamespace('SeuratObject')",
-                  "devtools::load_all('/vast/scratch/example')")) {
+                  "devtools::load_all('/home/user/SpaMTP')")) {
         expect_gt(length(installedExampleViolations(bad)), 0L)
     }
 })
