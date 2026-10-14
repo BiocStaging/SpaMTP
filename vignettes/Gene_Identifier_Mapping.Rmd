@@ -36,10 +36,13 @@ checks therefore still apply after extracting RNA with `altExp()`.
 
 ## Build once, inspect before testing
 
-The following examples run during vignette builds, using the full published
-human-brain dataset. Pinned resources are downloaded if not already available
-locally or in a verified cache. Local files and verified caches can also be used
-with `offline = TRUE`.
+The following examples run during vignette builds, using a bundled 240-location
+subset of the published human-brain dataset. The locations nearest the
+coordinate-wise median were selected without consulting expression or mapping
+results. All 339 measured RNA features and their paired MS features are retained;
+see `help("vignetteData")` for the recipe and source checksums. Pinned annotation
+references are downloaded if not already available locally or in a verified
+cache. Local files and verified caches can also be used with `offline = TRUE`.
 
 ```{r reference, eval=TRUE}
 database <- loadSpaMTPDatabase(
@@ -86,7 +89,7 @@ that the gene has no biological function or pathway membership.
 ## Annotate experiment features without altering expression
 
 ```{r experiment, eval=TRUE}
-spe <- SpaMTPData::spaMTPData("human_brain_integrated", version = "1.1.0")
+spe <- readRDS(system.file("extdata", "human_demo.rds", package = "SpaMTP"))
 SingleCellExperiment::altExpNames(spe)
 # Select the actual transcriptome altExp shown above. If identifiers live in
 # a rowData column, set id_column; otherwise row names are used.
@@ -194,10 +197,11 @@ SummarizedExperiment::rowData(SingleCellExperiment::altExp(example, "gene_scores
   , c("pathwayRampId", "database_size", "measured_size", "coverage_fraction", "used_members")]
 ```
 
-For the real human experiment loaded above, use the full measured RNA panel
-and the same index for every entry point. This resource-dependent chunk is not
-run during package builds; the real-data validation uses all 339 RNA features
-and all 37,886 observations of human_brain_integrated 1.1.0.
+For the real human subset loaded above, use the full measured RNA panel and the
+same index for every entry point. This chunk runs during package builds on all
+339 RNA features and 240 retained observations. The
+[end-to-end guide](End_to_End_Workflow.html) also uses these data for descriptive
+regional rankings. Neither example treats locations as biological replicates.
 
 ```{r human-pathway-closure, eval=TRUE}
 pathway_index <- buildPathwayIndex(database = database, gene_index = index)

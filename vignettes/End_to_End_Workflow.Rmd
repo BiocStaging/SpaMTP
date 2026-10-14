@@ -36,27 +36,52 @@ features; then connect measured identities to pathways and networks.
 | Which members support a pathway? | `buildPathwayIndex()`, `createPathwayAssay()`, `findRegionalPathways()` | Measured coverage, ambiguity exclusions, complete ranks and leading edges |
 | Are pathway members coordinated and where are they? | `runRAMPGeseca()`, `plotRegionalPathways()`, `pathwayNetworkPlots()` | The same identity assay and membership index in every downstream view |
 
-The first examples use **synthetic teaching data**, not biological findings.
-Later sections execute the complete registered human-brain, FMP10/Visium and
-DHB/Visium inputs, without downsampling observations for analysis. Building this
-article downloads versioned resources when no verified cache is available and
-can take tens of minutes. The installed `workflows/prepare_mouse_brain.R` and
-`workflows/run_mouse_brain.R` scripts also support offline command-line use.
+The main example uses a bundled **real DHB/Visium mouse-brain subset** from
+SpaMTPData 1.1.0. It retains 160 paired locations, all 2,075 measured mass features
+and all 32,285 RNA features. On each lesion side, the 80 locations nearest the
+archived ACB coordinate centroid are retained. Selection uses coordinates and
+archived labels, not expression or statistical results. The ACB, CP and nearby
+regions remain available for descriptive comparisons.
+
+The [gene-mapping guide](Gene_Identifier_Mapping.html) and
+[annotation guide](Metabolite_Annotation_Pipeline.html) use the same bundled
+real-data demonstrators for their respective tasks. The installed full-data
+recipes remain available for analyses of the complete sections. Only the
+replicate-design example below uses simulated observations.
 
 # Supply modalities and study design explicitly
 
 ```{r inputs}
-x <- SpaMTPData::spaMTPExampleData(paired = TRUE)
-protein <- rbind(marker1 = c(1:6, 8:13), marker2 = c(6:1, 2:7),
-                 marker3 = rep(c(2, 7, 4), 4))
-colnames(protein) <- colnames(x)
-SingleCellExperiment::altExp(x, "protein") <-
-    SingleCellExperiment::SingleCellExperiment(assays = list(counts = protein))
+x <- readRDS(system.file("extdata", "dhb_demo.rds", package = "SpaMTP"))
 spec <- list(
-    main = list(type = "metabolomics", layer = "counts"),
-    transcriptome = list(type = "transcriptomics", layer = "counts"),
-    protein = list(type = "proteomics", layer = "counts")
+    main = list(type = "metabolomics", layer = "counts", species = "Mus musculus"),
+    SPT = list(type = "transcriptomics", layer = "counts", species = "Mus musculus")
 )
+stopifnot(identical(dim(x), c(2075L, 160L)),
+          nrow(SingleCellExperiment::altExp(x, "SPT")) == 32285L)
+table(x$RegionLoupe, x$lesion)
+S4Vectors::metadata(x)$vignette_subset[c("rule", "features", "source")]
+```
+
+ACB denotes nucleus accumbens, CP caudoputamen, OT olfactory tubercle and aco
+anterior commissure, olfactory limb, following the archived region labels.
+These two sides belong to **one section**, not independent biological replicates.
+The very small aco compartment is retained in the input but does not meet the
+workflow's minimum of three observations for regional marker scoring. Cropping
+also changes boundary neighborhoods, so these results describe this subset.
+The selected sides contain different proportions of ACB and CP. A difference
+associated with lesion status can therefore reflect regional composition; the
+raw and region-adjusted associations below illustrate this distinction.
+
+```{r input-spatial-layout}
+coordinates <- as.data.frame(SpatialExperiment::spatialCoords(x))
+colnames(coordinates)[1:2] <- c("x", "y")
+coordinates$region <- x$RegionLoupe
+coordinates$lesion <- x$lesion
+ggplot2::ggplot(coordinates, ggplot2::aes(x, y, colour = region, shape = lesion)) +
+    ggplot2::geom_point(size = 2) + ggplot2::scale_y_reverse() + ggplot2::coord_equal() +
+    ggplot2::theme_classic() +
+    ggplot2::labs(x = "Original image x", y = "Original image y")
 ```
 
 The workflow preserves the supplied layers. Its declared baseline uses native
@@ -75,16 +100,23 @@ measurements support a separate stated assay model.
 # Compare representations using the same observations and features
 
 ```{r workflow}
-fit <- runSpaMTPWorkflow(x, spec, regions = "region", clusters = 2,
-    npcs = 2, association_features = 3,
-    coordinate_units = "synthetic grid units",
-    structure = list(primary = "spatial", k_grid = c(2, 3),
-                     reference = "region", umap = FALSE,
+fit <- runSpaMTPWorkflow(x, spec, group = "lesion", regions = "RegionLoupe",
+    clusters = 3, npcs = 8, max_features = 1000, association_features = 4,
+    coordinate_units = "original image pixels",
+    structure = list(primary = "spatial", k_grid = c(3, 4),
+                     reference = "RegionLoupe", umap = FALSE,
                      stability_blocks = 3))
 fit$structure$metrics
 ```
 
-`runMetabolicPCA(features=...)` now records all selected features explicitly.
+For this short demonstration, PCA uses at most 1,000 variable features per
+modality, eight components, two candidate values of K and three spatial-block
+omissions. All measured features remain in the object and regional marker
+analysis. Displays use the first two components (`umap = FALSE`); set `umap = TRUE`
+to add UMAP displays. These are explicit teaching settings, not newly recommended
+analysis defaults.
+
+`runMetabolicPCA(features=...)` records all selected features explicitly.
 Ordinary and graph PCA use the same variable features, centred and scaled in the
 same way. Graph PCA uses a sparse Laplacian for every retained observation and
 keeps different samples in separate spatial graphs. It is not fitted on a small
@@ -190,7 +222,8 @@ native `plot3DFeature()` views of the same selected pairs.
 
 # Map identities before pathway statistics
 
-Here the complete human-brain resource supplies a real measured panel and its
+Here the bundled 240-location human-brain subset supplies the complete measured
+339-gene panel and its
 archived `cout_labels` cell labels. These are descriptive groups from a single
 section, not independent replicates or newly validated anatomical boundaries.
 
@@ -201,7 +234,7 @@ gene_reference <- SpaMTPdb::spaMTPdbGeneReference(version = "2026.7.7")
 gene_index <- buildGeneMappingIndex(database$source_df,
                                   gene_reference = gene_reference)
 index <- buildPathwayIndex(database, gene_index = gene_index)
-real_data <- SpaMTPData::spaMTPData("human_brain_integrated", version = "1.1.0")
+real_data <- readRDS(system.file("extdata", "human_demo.rds", package = "SpaMTP"))
 real_data <- normalizeSMData(real_data, "LogNormalize", assay = "SPT", verbose = FALSE)
 identity <- createPathwayAssay(real_data, analyte_type = "genes",
     assay = "SPT", slot = "logcounts", new_assay = "gene_ids",
@@ -243,125 +276,67 @@ genes are not silently uppercased into a human HGNC index; the registered mouse
 recipes currently show compound pathways until an explicit compatible gene identity
 or orthology reference is supplied.
 
-# Run the real mouse-brain reference recipes
+# Apply the workflow to complete reference sections
 
-```{r mouse-recipes, eval=TRUE}
+The installed scripts retain the full DHB/Visium and FMP10/Visium analyses,
+including annotation, spatial integration, pathways and report generation. The
+vignette builds the small demonstration above; running the complete recipes is
+an explicit analysis step with larger resource and runtime requirements.
+
+```{r reference-recipes}
 prepare <- system.file("workflows", "prepare_mouse_brain.R", package = "SpaMTP")
 run <- system.file("workflows", "run_mouse_brain.R", package = "SpaMTP")
 source(prepare)
 source(run)
-input_directory <- tempfile("mouse-brain-inputs-")
+formals(prepareMouseBrain)
+formals(runMouseBrain)
 ```
 
-Preparation reads only the pinned native SpaMTPData 1.1.0 resources.
-With `nativeDir = NULL`, the public reader resolves verified local files, its
-cache or the published download. Supplying a directory selects offline mode by
-default; `offline = TRUE` can also require a previously populated cache.
-It does not load Seurat or deserialize historical Seurat objects. H&E is optional:
-the published native resources contain expression and coordinates but omit
-optical rasters. Independent image files can be attached with `addSpatialImage()`;
-their checksums, explicit scale factors and source provenance are retained.
+Call `prepareMouseBrain(outputDir = a_new_input_directory)` to resolve the
+pinned native SpaMTPData 1.1.0 resources, then
+`runMouseBrain(a_new_input_directory, outputDir = a_new_report_directory,
+case = "dhb")`. An explicit `nativeDir` selects verified local files and defaults
+to offline mode. Existing output directories are not overwritten. Source
+`examples/pathway_network_mouse_brain_demo.R` from the installed package for
+the corresponding full-data network recipe.
 
-For FMP10/Visium pixel-overlap mapping, supply a measured Visium spot radius in
-the original image coordinate system. A nearest-neighbour distance is not a
-spot diameter. Without a radius, preparation still produces usable DHB inputs,
-but the FMP10 runner stops with an explicit geometry requirement. The optional
-JSON configuration accepts `source`, `target_radius` and `images`. Image paths
-are resolved relative to the R process working directory, not the JSON file.
+For FMP10/Visium, preparation additionally requires a measured target spot radius
+in the original image coordinate system through `spatialConfig`. For the exact
+registered V11L12-109_B1 pair, `extdata/mouse_brain_scalefactors.json` retains the
+Space Ranger value `spot_diameter_fullres = 376.942`, from
+[Vicari et al.](https://doi.org/10.17632/w7nw4km7xd.1); use half that value as
+`target_radius`. Do not reuse it for another sample. H&E is optional and omitted
+from the native resources. Independently supplied images require explicit scale
+and orientation checks.
 
-For this exact registered pair, the small bundled scale-factor JSON retains the
-values from the original Space Ranger `outs/spatial/scalefactors_json.json`
-for V11L12-109_B1, from [Vicari et al.](https://doi.org/10.17632/w7nw4km7xd.1).
-Its original file MD5 is `412630d2d6be8c828bcf13116c64c315`.
-All 3,120 Visium barcodes and both coordinates match the original tissue-position
-table exactly. The native convention is `x = pxl_row_in_fullres` and
-`y = pxl_col_in_fullres`; swapping these axes does not change the isotropic
-radius. No H&E raster is attached here. Do not reuse this radius for another
-sample or attach an image without checking axis orientation and scale.
+Pairing is documented for these registered specimens; species alone does not
+establish pairing. Both full-data runners re-annotate with the pinned chemical
+database and an explicit positive-mode DHB or FMP-10 index. Ambiguous compound
+assignments are excluded; mouse genes are not converted to human genes. The
+[annotation guide](Metabolite_Annotation_Pipeline.html) executes annotation,
+compound pathways and network generation on the small real DHB example.
 
-```{r mouse-spatial-config, eval=TRUE}
-scales <- jsonlite::read_json(system.file("extdata",
-    "mouse_brain_scalefactors.json", package = "SpaMTP"))
-config <- list(
-    source = paste("V11L12-109_B1 Space Ranger scalefactors_json.json;",
-                   "https://doi.org/10.17632/w7nw4km7xd.1"),
-    target_radius = scales$spot_diameter_fullres / 2
-)
-config_file <- tempfile(fileext = ".json")
-jsonlite::write_json(config, config_file, auto_unbox = TRUE,
-                    pretty = TRUE, digits = NA)
-pairing <- prepareMouseBrain(outputDir = input_directory,
-                            spatialConfig = config_file)
-stopifnot(pairing$target_radius == 188.471)
-pairing[c("coordinate_units", "pixel_width", "target_radius")]
-```
-
-The following calls execute both full analyses and render their reports. Output
-directories are new temporary paths, so rebuilding never overwrites a previous
-analysis. To retain reports across R sessions, choose new permanent paths.
-
-```{r mouse-full-workflows, eval=TRUE}
-mouse_outputs <- setNames(lapply(c("dhb", "fmp10"), function(case) {
-    output <- tempfile(paste0("mouse-brain-", case, "-"))
-    result <- runMouseBrain(input_directory, outputDir = output, case = case)
-    stopifnot(file.exists(result$report),
-              file.exists(file.path(output, "analysis.rds")))
-    list(directory = output, report = result$report,
-         metrics = result$structure$metrics)
-}), c("dhb", "fmp10"))
-mouse_outputs$dhb$metrics
-mouse_outputs$fmp10$metrics
-```
-
-These panels are taken from the reports just generated, not from saved reference
-figures. They compare spatial structure for both full real datasets. Spatial
-smoothing alone is not evidence of improved biological recovery.
-
-```{r mouse-spatial-figures, out.width="100%", fig.cap=c("DHB / Visium: all retained observations.", "FMP10 / Visium: all retained, overlap-mapped observations.")}
-spatial_figures <- vapply(mouse_outputs, function(output) {
-    directory <- dirname(output$report)
-    figures <- read.csv(file.path(directory, "figure_index.csv"))
-    selected <- figures$png[figures$name == "structure_spatial"]
-    stopifnot(length(selected) == 1L)
-    file.path(directory, selected)
-}, character(1))
-knitr::include_graphics(unname(spatial_figures))
-```
-
-Pairing is documented for these registered source specimens; arbitrary datasets
-are not paired merely because both are mouse brains. DHB already contains paired
-modalities. Both runners re-annotate with the pinned chemical database and an
-explicit positive-mode DHB or FMP-10 index, rather than using the archived
-mass-only annotation cache. Ambiguous compound assignments remain excluded;
-mouse RNA is retained without human-HGNC or implicit orthology conversion.
-
-The installed network-only demo is another native entry point:
-
-```{r mouse-network-demo, eval=TRUE}
-demo <- system.file("examples", "pathway_network_mouse_brain_demo.R",
-                    package = "SpaMTP")
-source(demo)
-network_directory <- tempfile("mouse-brain-networks-")
-networks <- runMouseBrainNetworkDemo(outputDir = network_directory,
-                                    ident = "RegionLoupe")
-stopifnot(file.exists(file.path(network_directory, "network_analysis.rds")))
-networks$status
-length(unlist(networks$networks))
-```
-
-It uses `findAllDEMs(method="markers")` for descriptive regional effects,
-complete compound rankings for competitive pathway enrichment, and
-`pathwayNetworkPlots()` for separate leading-edge and annotation-coverage views.
-It does not assign biological-replicate significance to individual pixels or
-map mouse gene symbols to human genes. Outputs include the native analysis RDS,
-annotation/mapping audits and, when pathways are eligible, offline HTML networks.
-No eligible pathways is reported explicitly rather than relaxing the filters.
+To regenerate the bundled subsets, source `workflows/prepare_vignette_data.R`
+and call `prepareVignetteData()` with a new output directory. See
+`help("vignetteData")` for the deterministic selection rules and source checksums.
 
 # Render and retain a reviewable analysis
 
 ```{r report, eval=TRUE}
-report <- renderSpaMTPReport(fit, tempfile("teaching-report-"))
+report <- renderSpaMTPReport(fit, tempfile("dhb-demo-report-"))
 stopifnot(file.exists(report))
+```
+
+These panels come from the report just computed on all 160 retained locations.
+Compare the archived region labels in the embeddings with the spatial partitions;
+smoothness alone does not establish better recovery of anatomy. Cluster numbers
+are local to each panel and do not identify matching cell types across methods.
+
+```{r report-panels, out.width="100%"}
+figures <- utils::read.csv(file.path(dirname(report), "figure_index.csv"))
+selected <- match(c("structure_embedding", "structure_spatial"), figures$name)
+stopifnot(!anyNA(selected))
+knitr::include_graphics(file.path(dirname(report), figures$png[selected]))
 ```
 
 Reports follow the analytical sequence above. They include a linked region/DE

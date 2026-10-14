@@ -100,18 +100,8 @@ findCorrelatedFeatures <- function(
   results <- lapply(names(references), function(reference) {
     tables <- lapply(names(matrices), function(modality) {
       expression <- matrices[[modality]]
-      correlations <- vapply(seq_len(nrow(expression)), function(index) {
-        values <- as.numeric(expression[index, ])
-        target <- references[[reference]]
-        if (length(values) < 3L || any(!is.finite(c(values, target))) ||
-            stats::sd(values) == 0 || stats::sd(target) == 0) return(c(NA_real_, NA_real_))
-        raw <- stats::cor(values, target, method = "pearson")
-        if (is.null(adjustment)) return(c(raw, raw))
-        r1 <- qr.resid(adjustment, values); r2 <- qr.resid(adjustment, target)
-        adjusted <- if (sum(r1^2) < 1e-12 * sum((values - mean(values))^2) ||
-          sum(r2^2) < 1e-12 * sum((target - mean(target))^2)) NA_real_ else stats::cor(r1, r2)
-        c(adjusted, raw)
-      }, numeric(2))
+      correlations <- .featureCorrelations(expression, references[[reference]],
+                                           adjustment)
       data.frame(features = rownames(expression), correlation = correlations[1, ],
                  correlation_raw = correlations[2, ],
                  modality = modality,
@@ -130,6 +120,48 @@ findCorrelatedFeatures <- function(
   attr(result, "association") <- list(covariates = covariates,
     residual_df = if (is.null(adjustment)) ncol(data) - 1L else ncol(data) - adjustment$rank,
     observations = colnames(data), method = "Pearson correlation; optional linear residualization of both features")
+  result
+}
+
+# Read sparse or delayed assays in bounded blocks instead of extracting each
+# row repeatedly. QR residualization accepts multiple responses, so the model
+# and reference residual need not be recomputed for every target feature.
+.featureCorrelations <- function(expression, target, adjustment = NULL) {
+  result <- matrix(NA_real_, nrow = 2L, ncol = nrow(expression))
+  if (length(target) < 3L || any(!is.finite(target)) ||
+      stats::sd(target) == 0 || !nrow(expression)) return(result)
+  target_ss <- sum((target - mean(target))^2)
+  residual_target <- if (!is.null(adjustment)) qr.resid(adjustment, target)
+  usable_target <- is.null(adjustment) ||
+    sum(residual_target^2) >= 1e-12 * target_ss
+  # At most one million values per block, except when a single feature is
+  # larger. Never densify the complete expression matrix.
+  block_size <- max(1L, min(256L, floor(1e6 / length(target))))
+  for (start in seq.int(1L, nrow(expression), by = block_size)) {
+    rows <- seq.int(start, min(nrow(expression), start + block_size - 1L))
+    values <- t(as.matrix(expression[rows, , drop = FALSE]))
+    finite <- colSums(!is.finite(values)) == 0L
+    values <- values[, finite, drop = FALSE]
+    rows <- rows[finite]
+    if (!length(rows)) next
+    centered <- sweep(values, 2L, colMeans(values))
+    total_ss <- colSums(centered^2)
+    varying <- total_ss > 0
+    values <- values[, varying, drop = FALSE]
+    total_ss <- total_ss[varying]
+    rows <- rows[varying]
+    if (!length(rows)) next
+    raw <- as.numeric(stats::cor(values, target))
+    result[2L, rows] <- raw
+    if (is.null(adjustment)) {
+      result[1L, rows] <- raw
+    } else if (usable_target) {
+      residuals <- qr.resid(adjustment, values)
+      retained <- colSums(residuals^2) >= 1e-12 * total_ss
+      if (any(retained)) result[1L, rows[retained]] <- as.numeric(
+        stats::cor(residuals[, retained, drop = FALSE], residual_target))
+    }
+  }
   result
 }
 

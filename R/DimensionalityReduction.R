@@ -141,7 +141,9 @@ runMetabolicPCA <- function(SpaMTP,
 #' @param n_neighbors Integer value specifying the number of spatial neighbours to use. If `NULL`, will default of 6 for "Visium" data and 4 for "ST" platforms (default = NULL).
 #' @param include_self Boolean logical value indicating whether to include self-connections in the graph (default = FALSE).
 #' @param alg Character string specifying the algorithm to use for nearest neighbour search (passed to `FNN::get.knn()`) (default ="kd_tree").
-#' @param fast Boolean logical value stating whether to use fast approximate eigendecomposition via `RSpectra::eigs_sym()`. For large datasets this is recommended (default =TRUE).
+#' @param fast Use partial eigendecomposition via `RSpectra::eigs_sym()`
+#'   (default `TRUE`). For wide inputs requesting few components, matrix-vector
+#'   products avoid forming the dense feature-by-feature covariance matrix.
 #' @param graph_name Name for pixel edges in `SingleCellExperiment::colPair()`
 #'   and the graph matrix in `S4Vectors::metadata(data)$spatialGraphs`
 #'   (default = `"SpatialKNN"`).
@@ -237,7 +239,16 @@ runSpatialGraphPCA <- function(data, n_components=50, assay = "main", slot = "sc
 
   # 3. Eigendecomposition of C
   if (fast && n_components < ncol(Expr)){
-    eig <- RSpectra::eigs_sym(crossprod(Expr, X), k = n_components)
+    if (ncol(Expr) >= 256L && n_components <= ncol(Expr) / 4) {
+      # C = t(Expr) %*% X, where X = solve(G, Expr). Applying C to a vector
+      # costs O(n * p), avoiding the O(n * p^2) product and O(p^2) storage.
+      # The same symmetric operator and partial eigensolver are used; neither
+      # observations nor features are subsampled and lambda is unchanged.
+      multiply <- function(v, args) as.numeric(crossprod(Expr, X %*% v))
+      eig <- RSpectra::eigs_sym(multiply, k = n_components, n = ncol(Expr))
+    } else {
+      eig <- RSpectra::eigs_sym(crossprod(Expr, X), k = n_components)
+    }
   } else {
     eig <- eigen(t(Expr) %*% X, symmetric = TRUE)
   }

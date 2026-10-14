@@ -584,18 +584,21 @@ instead of silently adding a long preprocessing delay; use
 `infer_structure = "always"`, `structure_workers`, or precompute with
 `annotateSMILESStructure()` when that cost is intentional.
 
-This section runs on all 2,075 measured mass features and 876 paired observations
-in the published DHB mouse-brain resource, with the complete RaMP chemical table.
-It is evaluated by default and downloads pinned resources if they are not
-available locally or in a verified cache. The average MS1 spectrum provides
-section-level context, not pixel-specific validation of candidate identities.
+This section runs on all 2,075 measured mass features and 160 paired observations
+in the bundled DHB mouse-brain demonstrator, with the complete RaMP chemical
+table. The subset retains 80 locations per lesion side around the archived ACB
+coordinate centroids, selected without using expression or annotation results;
+see `help("vignetteData")` and the [workflow guide](End_to_End_Workflow.html).
+It is evaluated by default and downloads pinned annotation references if they
+are not available locally or in a verified cache. The average MS1 spectrum
+provides subset-level context, not pixel-specific validation of identities.
 
 ```{r production-pattern, eval=TRUE}
 database <- loadSpaMTPDatabase(c("chem_props", "source_df", "analytehaspathway",
   "pathway", "ramp_db_metadata", "ramp_wikipathway", "ramp_reactome",
   "ramp_kegg", "ramp_hmdb"), version = "3.0.7")
 chem_props <- database$chem_props
-object <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
+object <- readRDS(system.file("extdata", "dhb_demo.rds", package = "SpaMTP"))
 original_counts <- SummarizedExperiment::assay(object, "counts")
 ms1 <- data.frame(mz = SummarizedExperiment::rowData(object)$mz,
                   intensity = Matrix::rowMeans(original_counts))
@@ -616,7 +619,7 @@ object <- annotateSM(
   return.only.annotated = FALSE
 )
 stopifnot(identical(SummarizedExperiment::assay(object, "counts"), original_counts),
-          identical(dim(object), c(2075L, 876L)), nrow(chem_props) == 289754L)
+          identical(dim(object), c(2075L, 160L)), nrow(chem_props) == 289754L)
 annotationInfo(object)
 ```
 

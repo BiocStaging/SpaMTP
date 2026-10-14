@@ -1,3 +1,17 @@
+# SpaMTP 0.99.11
+
+* Vignettes use bundled, reproducibly selected real spatial subsets: 160
+  DHB/Visium locations and 240 human-brain locations. All measured features,
+  raw counts, paired modalities, coordinates and source labels are retained.
+  Full-section mouse-brain analyses remain available as installed recipes.
+  All vignette analysis chunks execute during builds.
+* Feature correlations read sparse assays in bounded blocks and residualize
+  multiple features together, retaining raw and adjusted Pearson results and
+  undefined-feature handling.
+* Graph PCA uses matrix-vector products for wide inputs requesting few
+  components, avoiding a dense feature-by-feature covariance matrix while
+  retaining the same graph-regularized objective.
+
 # SpaMTP 0.99.10
 
 * Added return-value documentation to the experimentAccess guide, resolving

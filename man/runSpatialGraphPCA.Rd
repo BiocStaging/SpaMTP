@@ -44,7 +44,9 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{alg}{Character string specifying the algorithm to use for nearest neighbour search (passed to \code{FNN::get.knn()}) (default ="kd_tree").}
 
-\item{fast}{Boolean logical value stating whether to use fast approximate eigendecomposition via \code{RSpectra::eigs_sym()}. For large datasets this is recommended (default =TRUE).}
+\item{fast}{Use partial eigendecomposition via \code{RSpectra::eigs_sym()}
+(default \code{TRUE}). For wide inputs requesting few components, matrix-vector
+products avoid forming the dense feature-by-feature covariance matrix.}
 
 \item{graph_name}{Name for pixel edges in \code{SingleCellExperiment::colPair()}
 and the graph matrix in \code{S4Vectors::metadata(data)$spatialGraphs}
