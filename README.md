@@ -149,9 +149,103 @@ SpaMTP is now published in *Nature Methods*: [**SpaMTP: integrative statistical 
 
 ## Installation
 
-Keep the coordinated source versions together: SpaMTP >= 0.99.9,
-SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5. For local sibling checkouts,
-install the data packages before the software package:
+Use R >= 4.6.0 and Bioconductor devel. SpaMTPData is available from the
+official Bioconductor experiment-data repository. SpaMTP and SpaMTPdb are
+currently installed from their BiocStaging `devel` branches.
+
+Save the [standalone installer](inst/workflows/install_spamtp.R) as
+`install_spamtp.R`, start a fresh R session, and run:
+
+```r
+source("install_spamtp.R")
+installSpaMTP()
+```
+
+The installer builds all vignettes by default, rebuilding SpaMTP even if the
+same commit was previously installed without articles. It raises the download timeout
+to at least 600 seconds, installs BiocManager and remotes when missing, checks
+Pandoc, installs the companion packages, and checks that their namespaces load
+before installing SpaMTP. It prefers a sufficient SpaMTPdb version from the
+configured repositories when one becomes available, otherwise using staging.
+It preserves a longer existing timeout and restores session settings on exit.
+Child R processes use the selected library first, including when an existing
+`R_LIBS` setting would otherwise give an older library precedence.
+Use `timeout = 1800` for slower connections, `biocVersion = "3.24"` to select
+the tested Bioconductor version, or `ref = "<commit SHA>"` for a fixed SpaMTP
+commit. The default library is the first directory in `R_LIBS_USER`, which is
+created if needed. A different writable directory can be supplied with `lib =`;
+add it to `.libPaths()` when using the installed packages in another session.
+
+For Windows command-line R, the installer also searches common user and
+system RStudio locations for its bundled Pandoc. A custom installation can be
+specified explicitly:
+
+```r
+installSpaMTP(pandocDir = "C:/Program Files/Pandoc")
+```
+
+This argument names the directory containing `pandoc.exe`. It does not modify
+the system PATH or require an administrator. Pandoc is required for local
+R Markdown articles; `buildVignettes = FALSE` explicitly installs without
+building them. Sourcing the installer alone does not install anything.
+
+The equivalent manual setup, while SpaMTPdb remains in staging, is:
+
+```r
+options(timeout = max(600, getOption("timeout")))
+Sys.setenv(R_DEFAULT_INTERNET_TIMEOUT = as.character(getOption("timeout")))
+install.packages(c("BiocManager", "remotes", "rmarkdown"),
+                 repos = "https://cloud.r-project.org")
+BiocManager::install(version = "devel", ask = FALSE, update = FALSE)
+
+# Run in RStudio, or make a separately installed Pandoc visible to R first.
+stopifnot(rmarkdown::pandoc_available())
+BiocManager::install("BiocStaging/SpaMTPdb@devel", ask = FALSE, update = FALSE)
+BiocManager::install("SpaMTPData", ask = FALSE, update = FALSE)
+loadNamespace("SpaMTPData")
+BiocManager::install("BiocStaging/SpaMTP@devel", dependencies = TRUE,
+                     build_vignettes = TRUE, ask = FALSE, update = FALSE)
+```
+
+### Windows installation troubleshooting
+
+* **`there is no package called 'magick'` during SpaMTPData installation:**
+  inspect the earlier download messages. A reproduced Windows installation
+  hit R's default 60-second timeout for `magick`, `stringi` and `BH` ZIP files;
+  setting `options(timeout = 600)` and retrying installed magick and SpaMTPData
+  successfully. This is a download timeout, not a ZIP size limit. The installer
+  sets the timeout before downloading dependencies; package startup code would
+  run too late. CRAN's magick Windows binary normally needs no separate system
+  ImageMagick installation. See the [magick installation guide](https://docs.ropensci.org/magick/#installation).
+* **`package 'remotes' not installed`:** BiocManager needs remotes to install
+  GitHub packages. The installer supplies it before requesting staging packages.
+* **`SpaMTPdb is not available for this version of R`:** while the package is
+  under review, it may be absent from official repository indexes. Install its
+  BiocStaging version first; this message alone does not establish an R version
+  incompatibility. SpaMTPData has already migrated to the official repository
+  and must not be installed from its removed staging repository.
+* **`Pandoc is required ... but not available`:** command-line R may not see
+  RStudio's Pandoc. Run the installer in RStudio, pass `pandocDir`, or set
+  `RSTUDIO_PANDOC` to the directory containing the executable before building.
+  The installer checks this before the full dependency installation.
+* Some Bioconductor data/workflow repositories have no Windows binary index.
+  An index HTTP 404 alone is not a package installation failure: pure R data
+  packages can install from source. Keep binary support for compiled
+  dependencies; forcing every package to `type = "source"` can introduce
+  unnecessary compiler requirements. Install matching Rtools if a dependency
+  actually needs compilation. Do not suppress warnings when diagnosing a failure.
+
+A Windows 11 / R 4.6.1 / Bioconductor 3.24 reproduction of SpaMTP 0.99.11
+completed installation and built all seven vignettes after the timeout,
+staging-dependency and Pandoc setup above. It used ordinary user permissions
+and required no separate ImageMagick or Rtools installation for that dependency
+set. Other source-package versions may have different build requirements.
+
+### Local source checkouts
+
+Keep the coordinated source versions together: SpaMTP >= 0.99.11,
+SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5. Install the data packages before
+the software package:
 
 ```sh
 R CMD INSTALL ../SpaMTPdb

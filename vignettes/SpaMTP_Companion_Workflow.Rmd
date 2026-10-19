@@ -26,8 +26,13 @@ seuratBefore <- intersect(c("Seurat", "SeuratObject"), loadedNamespaces())
 
 The data packages do not import SpaMTP or Seurat. SpaMTP imports SpaMTPdb and
 suggests SpaMTPData for demonstrations; there is no circular runtime dependency.
-Use SpaMTP >= 0.99.4, SpaMTPdb >= 0.99.3 and SpaMTPData >= 0.99.4 together.
+Use SpaMTP >= 0.99.11, SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5 together.
 The package versions are not the same thing as RaMP or experiment-data versions.
+
+SpaMTPData is installed from the official Bioconductor repository. During
+review, SpaMTPdb may still require its BiocStaging source. The
+[installation guide](https://github.com/BiocStaging/SpaMTP#installation)
+covers download timeouts, staging dependencies and Windows Pandoc discovery.
 
 The first experiment and small chemical table are explicitly synthetic teaching
 inputs. Later sections load the complete pinned RaMP resources and real brain

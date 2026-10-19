@@ -422,7 +422,27 @@ renderSpaMTPReport <- function(result, output_dir, max_points = 5000,
   files <- list.files(staging, recursive = TRUE)
   utils::write.csv(data.frame(file = files, bytes = file.info(file.path(staging, files))$size,
     md5 = unname(tools::md5sum(file.path(staging, files)))), file.path(staging, "manifest.csv"), row.names = FALSE)
-  if (dir.exists(output_dir)) unlink(output_dir, recursive = FALSE)
-  if (!file.rename(staging, output_dir)) stop("Could not publish rendered report directory.", call. = FALSE)
+  .wf_publish_report(staging, output_dir)
   invisible(file.path(output_dir, "report.html"))
+}
+
+.wf_publish_report <- function(staging, output_dir) {
+  # Rendering may take time: check again before removing the destination.
+  if (file.exists(output_dir)) {
+    if (!dir.exists(output_dir) ||
+        length(list.files(output_dir, all.files = TRUE, no.. = TRUE))) {
+      stop("output_dir must still be empty; existing files are preserved.",
+           call. = FALSE)
+    }
+    # recursive=FALSE leaves even empty directories in place. Windows cannot
+    # replace that directory with the completed staging directory by renaming.
+    if (unlink(output_dir, recursive = TRUE, expand = FALSE) != 0L ||
+        dir.exists(output_dir)) {
+      stop("Could not remove the empty report directory.", call. = FALSE)
+    }
+  }
+  if (!file.rename(staging, output_dir)) {
+    stop("Could not publish rendered report directory.", call. = FALSE)
+  }
+  invisible(output_dir)
 }

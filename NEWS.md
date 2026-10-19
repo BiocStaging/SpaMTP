@@ -1,3 +1,17 @@
+# SpaMTP 0.99.12
+
+* Added a standalone installation workflow with a longer download timeout,
+  explicit remotes setup, official SpaMTPData installation and a staging
+  fallback for SpaMTPdb while it awaits repository publication.
+* Vignette installation checks Pandoc before installing the full dependency
+  set and discovers common Windows RStudio/Pandoc locations. Installation
+  settings propagate to child R processes and are restored on completion or
+  failure. Windows troubleshooting distinguishes incomplete ZIP downloads,
+  unavailable repositories and missing document tools.
+* Report export removes a verified empty destination before publishing the
+  completed report, accommodating Windows directory-rename restrictions.
+  Files added to the destination during rendering are preserved.
+
 # SpaMTP 0.99.11
 
 * Vignettes use bundled, reproducibly selected real spatial subsets: 160

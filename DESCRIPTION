@@ -1,7 +1,7 @@
 Package: SpaMTP
 Type: Package
 Title: Spatial Metabolomics and Multi-Omics Analysis
-Version: 0.99.11
+Version: 0.99.12
 Authors@R: c(
     person("Andrew", "Causer",
             email = "a.causer@uq.edu.au", 
