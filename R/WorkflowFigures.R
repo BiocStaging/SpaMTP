@@ -54,7 +54,7 @@
       ggplot2::scale_colour_manual(values = palette) +
       ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 3, alpha = 1))) +
       ggplot2::facet_grid(method ~ modality, scales = "free") +
-      ggplot2::labs(title = "Does joint structure agree with either individual modality?",
+      ggplot2::labs(title = "Individual and joint representations",
         subtitle = "Each panel uses the full representation; the same annotation colours apply across panels",
         x = "Embedding 1", y = "Embedding 2", colour = reference %||% "Sample") + .wf_plot_theme(),
       height = 7.5, caption = paste("Display:", paste(unique(vapply(reps,
@@ -76,7 +76,7 @@
         ggplot2::scale_colour_manual(values = stats::setNames(grDevices::hcl.colors(k, "Dark 3"), seq_len(k))) +
         ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 3))) +
         ggplot2::facet_grid(method + sample ~ modality) +
-        ggplot2::labs(title = paste("Where do the partitions differ?  K =", k),
+        ggplot2::labs(title = paste("Spatial partitions by representation; K =", k),
           subtitle = "Identical spatial coordinates and axis limits; cluster numbers are local to each panel",
           x = NULL, y = NULL, colour = "Local cluster") + .wf_plot_theme(), height = 8,
         caption = "Graph regularization encourages neighboring observations to have similar embeddings. Smooth spatial domains alone do not demonstrate better recovery of tissue anatomy.")
@@ -122,7 +122,7 @@
       ggplot2::aes(.data$region, .data$feature, size = .data$detection, colour = .data$z)) +
       ggplot2::geom_point() + ggplot2::scale_colour_gradient2(low = "#3b5b92", mid = "#f7f7f3", high = "#b73e45") +
       ggplot2::scale_size_area(max_size = 6, limits = c(0, 1)) +
-      ggplot2::labs(title = paste(name, "\u2014 are markers enriched or merely widely detected?"),
+      ggplot2::labs(title = paste(name, "\u2014 marker enrichment and detection"),
         x = "Region", y = NULL, size = "Non-zero fraction", colour = "Mean z-score") + .wf_plot_theme() +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 40, hjust = 1)),
       height = max(5, length(features) * 0.22 + 2))
@@ -136,7 +136,7 @@
         ggplot2::geom_segment(ggplot2::aes(x = .data$cohen_min_block, xend = .data$cohen_max_block,
           yend = .data$label), linewidth = 0.9) + ggplot2::geom_point(size = 2) +
         ggplot2::scale_colour_viridis_c(limits = c(0.5, 1), oob = scales::squish) +
-        ggplot2::labs(title = paste(name, "\u2014 does a spatial subregion drive the marker?"),
+        ggplot2::labs(title = paste(name, "\u2014 spatial-block marker sensitivity"),
           subtitle = "Line: range after leaving one spatial block out; point: full-tissue estimate",
           x = "Mean pairwise Cohen effect", y = NULL, colour = "Mean AUC") + .wf_plot_theme(),
         height = max(5, nrow(stable) * .22 + 2),
@@ -175,7 +175,7 @@
       ggplot2::geom_abline(slope = 1, intercept = 0, linetype = 2, colour = "grey70") +
       ggplot2::geom_point(size = 0.65, alpha = 0.3, colour = "#256e87") +
       ggplot2::coord_fixed(xlim = c(-1, 1), ylim = c(-1, 1)) +
-      ggplot2::labs(title = paste(name, "\u2014 how much correlation is explained by region and sample?"),
+      ggplot2::labs(title = paste(name, "\u2014 raw and region-adjusted correlations"),
         x = "Raw Pearson correlation", y = "Residual Pearson correlation") + .wf_plot_theme(),
       caption = paste(attr(t, "association")$interpretation, "Covariates:", paste(attr(t, "association")$covariates, collapse = ", ")))
     best <- d[1, ]; E1 <- .assayData(obj, result$settings$assay_names[[best$modality1]], "workflow")

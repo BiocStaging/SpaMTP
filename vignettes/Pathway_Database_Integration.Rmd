@@ -1,136 +1,129 @@
 ---
-title: "Pathway databases, interaction provenance, and rebuilding graphs"
-output: rmarkdown::html_vignette
+title: "6. SpaMTP: Pathway resources and network provenance"
+author: "Andrew Causer and Tianyao Lu"
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    css: spamtp-vignettes.css
 vignette: >
-  %\VignetteIndexEntry{Pathway databases, interaction provenance, and rebuilding graphs}
+  %\VignetteIndexEntry{6. SpaMTP: Pathway resources and network provenance}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(error = FALSE, cache = FALSE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
+    fig.align = "center", fig.width = 7, fig.height = 4.5,
+    out.width = "640px", dpi = 144)
+```
+
+# Choose membership and network resources
+
+SpaMTP uses [RaMP-DB](https://github.com/ncats/RaMP-DB) for identifiers and
+pathway memberships, and [graphite](https://bioconductor.org/packages/graphite/)
+for archived topology. Memberships define enrichment and score calculations;
+network edges supply interaction context for displaying those results.
+
+| Resource | Contents and use |
+|:--|:--|
+| `source_df`, `analyte` | Resolve measured identifiers to RaMP entities |
+| `pathway`, `analytehaspathway` | Build pathway memberships and measured universes |
+| `chem_props` | Chemical properties for mass-based annotation |
+| `ramp_kegg` | Human KEGG interactions |
+| `ramp_reactome` | Human Reactome interactions |
+| `ramp_wikipathway` | Human WikiPathways interactions |
+| `ramp_hmdb` | Human SMPDB interactions, under the historical SpaMTP resource name |
+
+Load only the required collections. The [joint-pathway guide](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
+uses memberships for measured genes and metabolites. The
+[annotation guide](Metabolite_Annotation_Pipeline.html#carry-the-annotation-threshold-into-real-pathway-analysis)
+shows how scored compound identities enter a network.
+
+## Snapshot versions and interpretation
+
+RaMP 3.0.7 memberships and graphite archive-19 topology (2022-11-01) have separate
+provenance. Source-specific pathway IDs and memberships are retained during
+identifier reconciliation. A pathway can have substantial measured membership
+and sparse available topology. Inspect both before interpreting a network.
+The viewer selects pathways by name; filter to one database when names recur
+across sources.
+
+# Inspect a pathway and its interactions
+
+`db` holds the requested collection. `cell_cycle$protEdges` records protein
+interactions, including source labels and direction. The example uses the pinned
+KEGG Cell Cycle pathway `hsa:04110` to inspect the available network evidence.
+
+```{r load-graphs, message=FALSE}
 library(SpaMTP)
-```
-
-## Membership and topology are separate resources
-
-SpaMTP combines identifiers and pathway memberships from
-[NCATS RaMP-DB](https://github.com/ncats/RaMP-DB) with network topology from
-[graphite](https://bioconductor.org/packages/graphite/). The `RAMP_*` identifiers
-on graph nodes describe the common identifier system; the interaction labels
-are derived from graphite's source graphs. They are not RaMP interaction IDs.
-
-| Resource | Contents and origin |
-|---|---|
-| `analyte`, `source_df` | RaMP entities and their source identifier cross-references |
-| `pathway`, `analytehaspathway` | Source-specific pathway descriptions and RaMP entity memberships |
-| `chem_props` | Pruned RaMP chemical properties used for metabolite annotation |
-| `ramp_kegg` | Human KEGG topology from graphite |
-| `ramp_reactome` | Human Reactome topology from graphite |
-| `ramp_wikipathway` | Human WikiPathways topology from graphite |
-| `ramp_hmdb` | Human **SMPDB** topology from graphite, retained under its historical SpaMTP resource name |
-
-The RaMP 3.0.7 membership snapshot and the graph snapshot have separate dates.
-The currently supported topology correction uses graphite archive 19, dated
-2022-11-01. Updating RaMP identifiers does not update the biological topology.
-SpaMTP does not construct a consensus of the four networks or treat equally
-named pathways as equivalent biological definitions. Membership tables retain
-their source identifiers. The network viewer selects a source graph; its
-legacy name-based selection can collapse identically named result rows, so
-filter results to a single database when comparing such pathways.
-
-## Identifier consolidation
-
-`data-raw/update_ramp_data.R` extracts the required columns from RaMP's SQLite
-`analyte`, `source`, `analytehaspathway`, `pathway`, and `chem_props` tables. It
-records RaMP and upstream database versions in `ramp_db_metadata`.
-
-The original topology builder translated graphite namespaces, for example
-`ENTREZID` to `entrez:` and `KEGGCOMP` to `kegg:`, then matched those source IDs
-to RaMP identifiers. The historical builder selected the first RaMP match;
-unmapped endpoints remain missing and the network viewer excludes these edges.
-That historical mapping is reproduced by the correction recipe to preserve
-the existing nodes, rather than introducing new biological identifier choices.
-
-`data-raw/ramp_graph_utils.R` migrates retired graph IDs to the current RaMP
-snapshot using the maximum number of shared stable source identifiers. Tied
-matches expand to multiple current entities. Two retired heme identifiers use
-explicit, validated replacements. The migration preserves interaction columns
-and deduplicates complete rows, keeping different interactions between the same
-pair of nodes distinct.
-
-## Interaction correction
-
-The original graphite-to-SpaMTP conversion used code equivalent to:
-
-```r
-ifelse(length(edge$type) == 0, NA, edge$type)
-```
-
-The test has length one, so the result contains only the first factor code.
-Creating the edge table recycled that value across all rows. The same issue
-affected `direction`. In addition, a factor code has meaning only within its
-source's factor levels; Reactome, WikiPathways, and SMPDB use different levels
-from KEGG. Interpreting all four using KEGG's numeric dictionary was incorrect.
-
-The corrected conversion in `data-raw/pathway_interaction_utils.R` reads
-**every source label and direction**, maps labels to stable SpaMTP style codes,
-and retains the exact label in `source_reaction_type`. Code 4 still means
-inhibition. Generic biochemical processes are not relabelled as activation or
-inhibition. Undirected edges are displayed without an arrowhead. These are
-source annotations, not causal relationships inferred from expression data.
-
-For KEGG Cell Cycle (`hsa:04110`), the repaired protein edge table has 1,009
-rows and 11 interaction types, including 286 inhibition rows, 113 activation
-rows, 84 phosphorylation rows, and 224 binding rows. The original table
-incorrectly assigned all 1,009 rows to inhibition.
-
-The correction covers all four topology collections. Restoring labels before
-ID migration also recovers parallel interactions that were incorrectly
-collapsed when their corrupted labels became identical.
-
-## Loading and inspecting corrected graphs
-
-Use SpaMTP's loader to obtain corrected graphs:
-
-```{r load-graphs, eval=TRUE}
 db <- loadSpaMTPDatabase("ramp_kegg", version = "3.0.7")
 cell_cycle <- db$ramp_kegg[["Cell cycle"]]
-table(cell_cycle$protEdges$source_reaction_type)
-attr(db$ramp_kegg, "spamtp_interaction_repair")
-stopifnot(nrow(cell_cycle$protEdges) == 1009L,
-  length(unique(cell_cycle$protEdges$source_reaction_type)) == 11L,
-  sum(cell_cycle$protEdges$source_reaction_type == "Process(inhibition)") == 286L)
+edges <- cell_cycle$protEdges
+edge_types <- as.data.frame(table(edges$source_reaction_type),
+    stringsAsFactors = FALSE)
+colnames(edge_types) <- c("source_label", "interaction_rows")
+edge_types <- edge_types[order(-edge_types$interaction_rows), ]
+knitr::kable(head(edges[, c("src", "dest", "directed", "source_reaction_type")]),
+    row.names = FALSE)
+stopifnot(nrow(edges) == 1009L, nrow(edge_types) == 11L)
 ```
 
-The correction is automatic in the database loader and network workflows,
-including custom bundles containing the exact affected snapshot. Compact
-correction files in `inst/extdata/*_interactions_v1.rds` are applied only when
-the resource's serialized contents match its pinned SHA-256 fingerprint.
-Other custom graphs and future snapshots are not modified. Corrected graphs
-carry `spamtp_interaction_repair` provenance and can be saved with `saveRDS()`.
+The `r nrow(edges)` rows describe recorded interactions; repeated endpoint pairs
+can have distinct labels or directions. Generic processes retain their source
+labels, and undirected edges have no arrowhead. These records support biological
+context; causal conclusions require experimental evidence.
 
-The published SpaMTPdb files, their checksums, and their external version remain
-unchanged. Calling `SpaMTPdb` directly or reading the original RDS bypasses
-SpaMTP's correction. This software fix does not publish a new data release.
-The `spamtp_database` attribute describes the original downloaded resource;
-`spamtp_interaction_repair` describes the additional in-memory correction.
+## Interaction coverage
 
-The membership-based enrichment functions do not use these edge labels. This
-bug affects network interactions and any downstream analysis that directly
-uses those interactions, rather than changing RaMP pathway memberships.
+Figure 6.\@ref(fig:interaction-types) shows the relative availability of the
+archived interaction types. Counts describe database records for this pathway.
 
-## Reproducing the correction
+```{r interaction-types, crop=NULL, fig.width=7, fig.height=4.5, out.width="640px", fig.cap="Interaction types in the pinned KEGG Cell Cycle graph. Each bar counts protein-edge records with the indicated source label; endpoint pairs may occur in more than one interaction type. The graph contains 1,009 edge records across 11 types."}
+ggplot2::ggplot(edge_types, ggplot2::aes(
+    x = reorder(source_label, interaction_rows), y = interaction_rows)) +
+    ggplot2::geom_col(fill = "#1a81c2", width = 0.7) +
+    ggplot2::coord_flip() +
+    ggplot2::theme_classic(base_size = 11) +
+    ggplot2::theme(plot.margin = ggplot2::margin(6, 16, 6, 6)) +
+    ggplot2::labs(x = NULL, y = "Recorded protein interactions")
+```
 
-The maintainer recipe is `data-raw/rebuild_pathway_interactions.R` in the source
-checkout. Its input URLs and MD5 checksums are pinned in
-`inst/extdata/pathway_interactions_provenance.csv`. It requires `digest` plus
-base R; installing graphite is unnecessary because it reads archived data.
+# Inspect resource provenance
 
-1. Download the four graphite archive-19 graphs and the pinned original RaMP
-   source mapping using the URLs and filenames in the provenance CSV.
-2. Stage the listed immutable SpaMTPdb 3.0.7 resources.
-3. From the source checkout, run:
+`spamtp_database` identifies the loaded source and checksum.
+`spamtp_interaction_repair` records the in-memory restoration of archived labels
+and parallel interactions. Corrections apply to exact fingerprint matches of the
+pinned snapshot. Save the returned collection with `saveRDS()` to retain both.
+
+```{r inspect-provenance}
+attr(db$ramp_kegg, "spamtp_database")
+attr(db$ramp_kegg, "spamtp_interaction_repair")
+provenance_file <- system.file("extdata", "pathway_interactions_provenance.csv",
+                              package = "SpaMTP")
+audit_file <- system.file("extdata", "pathway_interactions_audit.csv",
+                         package = "SpaMTP")
+stopifnot(file.exists(provenance_file), file.exists(audit_file))
+knitr::kable(utils::read.csv(audit_file), row.names = FALSE)
+```
+
+The audit summarizes all four collections. Published resource files retain their
+original checksums; SpaMTP records corrections separately when loading verified
+snapshots. RaMP membership-based enrichment uses the membership tables above.
+
+## Maintainer recipe
+
+<details>
+<summary>Rebuild the pinned interaction correction from a source checkout</summary>
+
+The [source-checkout recipe](https://github.com/SpaMTP-project/SpaMTP/blob/main/data-raw/rebuild_pathway_interactions.R)
+uses the identifier and interaction helpers in the same `data-raw` directory.
+These development scripts operate on a source checkout. Installed-package users
+can inspect the input URLs and checksums in `provenance_file` above.
+
+Download the graphite archive-19 files and original RaMP source mapping listed
+in that CSV, stage the pinned SpaMTPdb 3.0.7 resources, then run from the checkout:
 
 ```sh
 Rscript data-raw/rebuild_pathway_interactions.R \
@@ -138,22 +131,19 @@ Rscript data-raw/rebuild_pathway_interactions.R \
   /path/to/SpaMTPdb-resources/3.0.7
 ```
 
-The recipe verifies input checksums, reproduces the old faulty conversion,
-and requires every reconstructed endpoint, direction, and code to match the
-stored input **before** generating corrections. It then reconverts from source
-labels, repeats the same ID migration, and stores corrected row references,
-directions, style codes, and source labels. No new endpoints are invented.
-`inst/extdata/pathway_interactions_audit.csv` records all pathways and edge
-tables checked; edge counts there include historical all-missing empty-table
-sentinels. Regression tests cover vector preservation, factor order, source
-semantics, parallel interactions, input fingerprints, and the staged Cell
-Cycle resource. Set `SPAMTPDB_RESOURCE_DIR` to run the external-resource test.
+The recipe checks input fingerprints and reconstructs archived mappings before
+restoring source interaction labels. New resource releases require new
+fingerprints and provenance records.
 
-For a future graph release, build from labelled source edges using the
-conversion utilities before running ID migration. Publish rebuilt data under
-a new resource version; do not overwrite the immutable 3.0.7 files or reuse
-this correction's fingerprints for a different snapshot.
+</details>
+
+# Session information
+
+<details>
+<summary>R session and package versions</summary>
 
 ```{r session-info}
 sessionInfo()
 ```
+
+</details>

@@ -1,0 +1,5 @@
+# Use the numbered vignette title as the figure prefix in each article.
+language:
+  label:
+    fig: !expr |
+      function(x) paste0("Figure ", sub("\\..*", "", rmarkdown::metadata$title), ".", x, ": ")

@@ -347,13 +347,17 @@ visualisePathways = function(SpaMTP,
 #' @param sig_cutoff Within-family BH-adjusted P-value cutoff for the point
 #'   outline. NULL uses 0.05. Display selection does not recompute adjustment.
 #' @param num_display An integer specifying the number of pathways to display in the plot. If set to null will plot the smaller of either 10 pathways or the number of unique pathways provided in 'regpathway' (default = NULL).
-#' @param text_size A numeric value controlling the size of the text elements in the plot. If NULL the default text size is 12 (default = NULL).
+#' @param text_size Base text size in points. NULL uses 11 points. Pathway
+#'   labels and legend entries use a slightly smaller size.
 #' @param verbose Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
 #' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
 #' @param database_source Database source; see [loadSpaMTPDatabase()].
 #' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param label_width Maximum target line width for pathway names, in characters.
+#'   Defaults to 32. NULL keeps names on one line. Stable pathway identifiers
+#'   are displayed on a separate line in either case.
 #'
 #' @return A `ggplot` object representing the set enrichment analysis results.
 #' @export
@@ -371,7 +375,12 @@ plotRegionalPathways <- function(regpathway,
                                  database = NULL,
                                  database_version = "latest",
                                  database_source = c("auto", "spamtpdb"),
-                                 database_local_dir = NULL) {
+                                 database_local_dir = NULL,
+                                 label_width = 32) {
+
+  if (!is.null(label_width) && (length(label_width) != 1L ||
+      !is.numeric(label_width) || !is.finite(label_width) || label_width < 1))
+    stop("label_width must be NULL or a positive number.", call. = FALSE)
 
   resources <- .spamtp_db_bundle(c("analytehaspathway", "pathway"),
     database = database, version = database_version, source = match.arg(database_source),
@@ -396,21 +405,39 @@ plotRegionalPathways <- function(regpathway,
   }
   ordering <- if (length(ids) > 1L) ids[stats::hclust(stats::as.dist(distance), method = "average")$order] else ids
   d <- regpathway[regpathway$pathwayRampId %in% ids, , drop = FALSE]
-  labels <- stats::setNames(paste0(d$pathwayName, " [", d$pathwayRampId, "]"), d$pathwayRampId)
+  display_names <- if (is.null(label_width)) d$pathwayName else
+    stringr::str_wrap(d$pathwayName, width = label_width)
+  labels <- stats::setNames(paste0(display_names, "\n", d$pathwayRampId), d$pathwayRampId)
   d$.pathway <- factor(d$pathwayRampId, levels = rev(ordering))
   d$.region <- as.character(d[[ident.column]])
   d$.FDR <- factor(ifelse(!is.na(d$padj) & d$padj <= (sig_cutoff %||% .05), "Within-family BH FDR", "Above cutoff / unavailable"))
   limit <- max(abs(d$NES), na.rm = TRUE)
   p <- ggplot2::ggplot(d, ggplot2::aes(.data$.region, .data$.pathway)) +
-    ggplot2::geom_point(ggplot2::aes(fill = .data$NES, size = .data$size, colour = .data$.FDR), shape = 21, stroke = 0.8) +
+    ggplot2::geom_point(ggplot2::aes(fill = .data$NES, size = .data$size, colour = .data$.FDR),
+      shape = 21, stroke = 0.8, show.legend = TRUE) +
     ggplot2::scale_fill_gradient2(low = "#3b5b92", mid = "#f7f7f3", high = "#b73e45", limits = c(-limit, limit)) +
-    ggplot2::scale_colour_manual(values = c("Above cutoff / unavailable" = "#d0d7dc", "Within-family BH FDR" = "#132f40")) +
-    ggplot2::scale_size_area(max_size = 8) +
+    ggplot2::scale_colour_manual(
+      values = c("Within-family BH FDR" = "#132f40", "Above cutoff / unavailable" = "#d0d7dc"),
+      limits = c("Within-family BH FDR", "Above cutoff / unavailable"),
+      labels = c(paste0("BH-adjusted P <= ", sig_cutoff %||% .05),
+        "Above cutoff /\nunavailable")) +
+    ggplot2::scale_size_area(max_size = 5.5) +
     ggplot2::scale_y_discrete(labels = labels[rev(ordering)]) +
     ggplot2::labs(x = ident.column, y = NULL, fill = "NES", size = "Tested members", colour = "Outline",
-      subtitle = "Rows ordered by 1 - Jaccard member overlap; outlines use adjusted P values") +
+      subtitle = "Pathways ordered by membership overlap") +
+    ggplot2::guides(
+      fill = ggplot2::guide_colourbar(order = 1),
+      size = ggplot2::guide_legend(order = 2),
+      colour = ggplot2::guide_legend(order = 3,
+        override.aes = list(size = 3.5, fill = "white"))) +
     ggplot2::theme_minimal(base_size = text_size %||% 11) +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1), legend.position = "bottom")
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = 35, hjust = 1),
+      axis.text.y = ggplot2::element_text(size = ggplot2::rel(.85), lineheight = 1.05),
+      legend.position = "right", legend.box = "vertical",
+      legend.text = ggplot2::element_text(size = ggplot2::rel(.85)),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(12, 12, 12, 12))
   attr(p, "pathway_distance") <- distance
   attr(p, "selected_pathways") <- ids
   attr(p, "significance_column") <- "padj"

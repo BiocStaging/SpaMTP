@@ -1,39 +1,83 @@
-#' Small real spatial experiments for the vignettes
+#' Real spatial experiments for the vignettes
 #'
-#' Two demonstrators derived from the checksum-verified SpaMTPData 1.1.0
-#' native resources are installed in \code{extdata}. Read them with
-#' \code{readRDS(system.file("extdata", "dhb_demo.rds", package = "SpaMTP"))}
-#' or the corresponding \code{human_demo.rds} path.
+#' Three SpatialExperiment demonstrators from checksum-verified SpaMTPData 1.1.0
+#' resources are installed in \code{extdata}. Read one with
+#' \code{readRDS(system.file("extdata", "bladder_demo.rds", package = "SpaMTP"))},
+#' substituting the desired filename below.
 #'
 #' \describe{
-#'   \item{\code{dhb_demo.rds}}{160 paired DHB/Visium locations from one mouse
-#'     brain section: 80 on each archived lesion side, nearest that side's ACB
-#'     coordinate centroid. All 2,075 mass features and 32,285 RNA features
-#'     are retained. \code{RegionLoupe} and \code{lesion} retain source labels.}
+#'   \item{\code{bladder_demo.rds}}{2,210 mouse urinary bladder locations on a
+#'     four-pixel x/y grid. All 79 features from the archived annotated panel,
+#'     their processed intensities, coordinates and \code{ssc} labels are retained.
+#'     \code{archived_lipid_candidates} preserves historical candidate names.
+#'     The source workflow applies TIC normalization before peak integration.}
+#'   \item{\code{pig_demo.rds}}{All 4,959 locations from the PIGII_206 pig fetal
+#'     section, acquired by DESI on a Thermo LTQ. Three prespecified windows,
+#'     centred at m/z 187.36, 537.08 and 840.43 with a 0.5 m/z half-width, sum
+#'     original profile-bin intensities. These windows support ion-image display;
+#'     compound identification requires additional chemical evidence.}
 #'   \item{\code{human_demo.rds}}{240 paired locations nearest the coordinate-wise
-#'     median of the human brain section. All 574 mass features and 339 RNA
-#'     features are retained, with archived \code{cout_labels}.}
+#'     median of one aligned low-grade glioma section. All 574 processed MS
+#'     features and 339 targeted Xenium genes are retained. Archived
+#'     \code{cout_labels} comprise Astro, Mesenchymal, Neuronal, Oligo and
+#'     Progenitor groups; the exact assignment procedure is unavailable in
+#'     the resource. \code{sample_id} identifies the archived section.}
 #' }
-#' Distance ties are resolved by barcode. No expression, test statistic or
-#' annotation result is used to select observations. Counts, pairing and original
-#' coordinates are unchanged; cached annotations, derived layers and images are
-#' omitted. Both files contain a \code{SpatialExperiment} with counts and an
-#' \code{SPT} alternative experiment containing the paired RNA counts.
-#' \code{metadata(x)$vignette_subset} records the recipe, barcodes, original
-#' dimensions and source provenance. These are subsets of single specimens;
-#' regional and lesion differences are descriptive, not population inference.
 #'
-#' Recreate the files by sourcing the installed
-#' \code{workflows/prepare_vignette_data.R} and calling
-#' \code{prepareVignetteData(outputDir, nativeDir)} with a new output directory
-#' and an optional directory of verified native resources. The source files are
-#' \code{mouse_brain_dhb_striatum_spe.rds} (MD5
-#' \code{629a3f78651a512484550b4ba0e5d66c}) and
-#' \code{human_brain_integrated_spe.rds} (MD5
-#' \code{95a713223b184b4f9f38780ee5c16917}).
+#' All files contain a \code{counts} assay; the human file also contains
+#' paired RNA counts in \code{altExp(x, "SPT")}. Pig \code{logcounts} is
+#' \code{log1p(window intensity / total ion current * 10000)}, using all 10,200
+#' original profile bins for the stored \code{total_ion_current}. Bladder
+#' \code{counts} preserves the upstream processed peak intensities. The
+#' vignette displays their \code{log1p} values and evaluates additional
+#' panel normalization separately. Full-spectrum totals are absent from
+#' the bundled bladder object. Human MS values preserve the processed,
+#' spatially aligned source abundances; the RNA assay retains integer counts.
+#'
+#' Bladder \code{metadata(x)$archived_compartments} records the earlier SpaMTP
+#' interpretation of SSC groups 2, 5 and 6 as adventitia, muscle and urothelium.
+#' These labels describe interpreted algorithmic clusters. Archived lipid names
+#' remain candidate annotations requiring chemical validation.
+#' Pig organ-enrichment descriptions refer to the original Cardinal tutorial,
+#' without assigning anatomical labels to individual pixels.
+#'
+#' \code{metadata(x)$vignette_subset} records selection, source provenance and
+#' original dimensions. Bladder grid coordinates are anchored at the source x/y
+#' minima; human distance ties are resolved by barcode. These additional grid and
+#' distance selections do not use expression or test statistics. These
+#' single-section examples support descriptive regional comparisons.
+#'
+#' Source \code{workflows/prepare_vignette_data.R} to define the preparation
+#' functions. \code{prepareVignetteData(outputDir, nativeDir)} recreates the human
+#' subset and bladder data in a new directory; individual helpers are
+#' \code{prepareBladderVignetteData(outputFile, nativeDir)} and
+#' \code{preparePigVignetteData(outputFile, nativeDir)}. The optional directory
+#' supplies verified source files for offline preparation. Pig preparation uses
+#' \code{pig206.RDS}; the other helpers use native SpatialExperiment resources.
+#' The published source files are distributed under CC BY 4.0.
+#'
+#' Source MD5 checksums are:
+#' \describe{
+#'   \item{\code{human_brain_integrated_spe.rds}}{\code{95a713223b184b4f9f38780ee5c16917}}
+#'   \item{\code{mouse_bladder_annotated_spe.rds}}{\code{f9f34fec8d8e266c0cbb1853e0274ee1}}
+#'   \item{\code{pig206.RDS}}{\code{d056b5c31c136b6e64ffb975ebca9100}}
+#' }
 #' @return This documentation topic describes files containing
-#'   \code{SpatialExperiment} objects; it does not define a function.
-#' @source SpaMTPData native resources 1.1.0,
-#'   \url{https://zenodo.org/records/22733262}.
+#' \code{SpatialExperiment} objects; it does not define a function.
+#' @source SpaMTPData native resources, \url{https://zenodo.org/records/22733262};
+#' Human study: Drummond et al., Nature Medicine (2025),
+#' \doi{10.1038/s41591-025-03884-4}, using positive-mode MALDI imaging
+#' (iMScope QT, CHCA matrix) and a 339-gene Xenium panel on aligned serial
+#' sections. Paired study data: BioImage Archive, \doi{10.6019/S-BIAD1426};
+#' processed SpaMTP archive, \doi{10.5281/zenodo.18282678}.
+#' Pig archive, \url{https://doi.org/10.5281/zenodo.17246555}; original bladder
+#' study, \doi{10.1002/anie.200905559}, with public raw data at
+#' \url{https://www.ebi.ac.uk/pride/archive/projects/PXD001283}.
+#' Pig ion selection follows the Cardinal segmentation tutorial,
+#' \url{https://bioconductor.org/packages/release/data/experiment/vignettes/CardinalWorkflows/inst/doc/MSI-segmentation.html}.
+#' Upstream bladder processing is documented in the Cardinal case study,
+#' \url{https://github.com/Vitek-Lab/Cardinal3-vignettes/blob/main/Vignettes/Vignette1/case-study1-vignette.rmd}.
+#' Bladder interpretations are archived in the original SpaMTP tutorial,
+#' \url{https://genomicsmachinelearning.github.io/SpaMTP/articles/Mouse_Urinary_Bladder.html}.
 #' @name vignetteData
 NULL

@@ -185,9 +185,9 @@ renderSpaMTPReport <- function(result, output_dir, max_points = 5000,
     table(inventory, "Input and processing choices"),
     '<details><summary>Processing stages and methods</summary>', table(result$stages, "Workflow status"), '</details>')
   contract <- data.frame(
-    analytical_question = c("What is measured and retained?", "What changes after adding space or another modality?",
-      "Which features characterize a region?", "What is supported across biological replicates?",
-      "Does cross-omic association survive regional composition adjustment?", "Which pathway members were actually measured?"),
+    analysis_stage = c("Measurements and retained observations", "Spatial and joint representations",
+      "Regional marker characterization", "Biological-replicate contrasts",
+      "Composition-adjusted feature associations", "Measured pathway membership"),
     analysis = c("Declared layers, QC, correspondence weights and source provenance",
       "Matched-feature PCA / Graph PCA / multiOmicIntegration; K sensitivity and external-reference ARI",
       "findAllDEMs marker effects, pairwise AUC, native heatmaps and spatial-block sensitivity",

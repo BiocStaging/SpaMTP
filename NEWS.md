@@ -1,3 +1,49 @@
+# SpaMTP 0.99.13
+
+* Numbered all seven vignette titles and index entries to guide readers from
+  the introductory workflow through data access, companion resources,
+  metabolite annotation, gene mapping and pathway databases to the complete
+  spatial multi-omics workflow.
+* Added internal subsection navigation, declarative explanations, contextual
+  parameter definitions and direct prose. Refined table spacing and figure
+  layout while retaining BiocStyle typography and colours. Credited Andrew Causer and
+  Tianyao Lu in all vignette headers.
+* Numbered figures by vignette (for example, Figure 1.1 and Figure 7.1) with
+  linked in-text references. Added concise guidance on input alignment, stored
+  provenance and interpretation of annotation and pathway results.
+* Added figure captions and consistent display sizing. The complete workflow
+  now presents a compact regional pathway plot with wrapped labels and separate
+  legends, while retaining the complete pathway results and adjusted P values.
+  These layout defaults are shared by `plotRegionalPathways()`, with an optional
+  `label_width` argument for controlling name wrapping.
+* Replaced tiny spatial demonstrations with tissue-scale examples. The bundled
+  bladder panel retains 2,210 positions on a four-pixel grid, archived SSC labels
+  and explicitly historical lipid candidates. A new pig fetal DESI panel keeps
+  all 4,959 locations and three prespecified ion windows, normalized with the
+  full 10,200-bin total ion current. Source checksums, licenses and preparation
+  recipes are recorded; archived labels and candidates are not treated as
+  independent histological truth or confirmed chemical identifications.
+* Mouse-brain vignettes use all 876 paired DHB/Visium locations from pinned
+  SpaMTPData 1.1.0 to preserve lesion and anatomical context. Removed the unused
+  160-location bundled DHB subset (1.45 MB).
+  Report headings and figure titles use declarative wording.
+
+* Corrected annotation headings, chemical structure rendering, pathway links and
+  mass-defect result reporting. Added score distributions, candidate identities,
+  ambiguity counts at the downstream threshold, and network size summaries.
+* Normalized RNA before pathway maps and used regional markers for Fisher
+  enrichment. Added a human MS+RNA workflow with modality coverage and explicit
+  interpretation of its limited compound support and nonsignificant results.
+* Documented the human glioma study, acquisition platforms and source archives.
+  Distinguished archived processed MS values from RNA counts; bladder plots
+  retain upstream TIC scaling and include a panel-normalization sensitivity check.
+* Interpreted clustering agreement, modality silhouettes and covariate-adjusted
+  associations. Ranked displayed markers by AUC and qualified the sphingosine
+  mass match as a hypothesis for chemical follow-up.
+* Executed a temporary Cardinal imzML round trip, added installation and citation
+  guidance, documented function-name migration, and made pathway topology
+  provenance available through installed resources and a compact figure.
+
 # SpaMTP 0.99.12
 
 * Added a standalone installation workflow with a longer download timeout,

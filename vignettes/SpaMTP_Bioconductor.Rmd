@@ -1,399 +1,380 @@
 ---
-title: "SpaMTP: Spatial Metabolite Annotation"
-author: "Tianyao Lu"
+title: "1. SpaMTP: Spatial metabolomics with native containers"
+author: "Andrew Causer and Tianyao Lu"
 output:
   BiocStyle::html_document:
     toc: true
+    toc_depth: 3
+    number_sections: true
+    css: spamtp-vignettes.css
 vignette: >
-  %\VignetteIndexEntry{SpaMTP: Spatial Metabolite Annotation}
+  %\VignetteIndexEntry{1. SpaMTP: Spatial metabolomics with native containers}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "##",
-  fig.align = "center",
-  error = FALSE,
-  cache = FALSE
+  collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
+  fig.align = "center", fig.width = 7, fig.height = 4.5,
+  out.width = "720px", dpi = 144
 )
 ```
 
 # Overview
 
-`SpaMTP` provides analysis and visualisation methods for spatial metabolomics
-and paired spatial multi-omics experiments. Its primary containers are
-Cardinal's `MSImagingArrays`/`MSImagingExperiment` and Bioconductor's `SpatialExperiment`.
-Seurat is not an analysis dependency. Only the optional boundary-conversion
-example uses SeuratObject; all analysis runs on native containers. Explicit
-conversion functions connect existing Seurat workflows. Versioned
-annotation resources are supplied by the companion
-`SpaMTPdb` package and experiment data by `SpaMTPData`.
+`SpaMTP` analyses spatial metabolomics and paired multi-omics data in native
+Bioconductor containers. `SpaMTPdb` supplies annotation resources;
+`SpaMTPData` supplies versioned experiments.
 
-This vignette demonstrates a small, fully reproducible accurate-mass annotation
-workflow. It deliberately uses an in-memory database so that package checking
-does not require a network connection or a large data download.
+## Installation
 
-See [modern data access](Modern_Data_Access.html) for replacing historical
-container-internal reads and writes, and the
-[indexed annotation pipeline](Metabolite_Annotation_Pipeline.html) for the
-complete native annotation tutorial.
-The [companion workflow](SpaMTP_Companion_Workflow.html) demonstrates how
-SpaMTPData, SpaMTPdb and SpaMTP work together on published native resources;
-only its explicitly labelled historical conversion uses SeuratObject.
+Install a published Bioconductor version with `BiocManager::install("SpaMTP")`.
+For a submission build, install the supplied source package and the companion
+versions recorded in its `DESCRIPTION`. This article uses the installed package
+and its bundled examples.
+
+## Real tissue examples
+
+This introduction follows two tissue sections from measured intensities to
+spatial interpretation. Both compact datasets are bundled with SpaMTP.
+The linked mouse-brain workflow adds paired RNA, regional analysis and pathways.
+
+| Example | Measurements retained | Biological context |
+|---|---|---|
+| Mouse urinary bladder | 79 source-panel features at 2,210 grid locations | Ion distributions across archived tissue compartments |
+| Pig fetal section | Three profile-ion windows at all 4,959 source locations | Heart-, liver- and nervous-system-associated spatial patterns |
+| Mouse brain | 2,075 MSI features and 32,285 genes at all 876 archived paired locations | Striatal anatomy and intact/lesioned sides |
+
+Small files retain tissue context: the bladder uses a regular spatial grid;
+the pig example retains every source position and a prespecified ion panel.
+Preparation, source checksums and selection rules are documented in
+`help("vignetteData", package = "SpaMTP")`.
 
 ```{r load-package, message=FALSE}
 library(SpaMTP)
 ```
 
-# Bioconductor container model
+# Mouse bladder: compartments and lipid-associated ions
 
-The container depends on the data's processing stage:
+## Source and spatial coverage
 
-| Processing stage | Container | SpaMTP mapping |
-|---|---|---|
-| Raw or continuous spectra | Cardinal `MSImagingArrays` / `MSImagingExperiment` | File-backed spectra and unequal mass axes remain in Cardinal/matter |
-| Aligned or binned MSI | `SpatialExperiment` | Intensities in `assays()`, m/z and annotations in `rowData()`, pixel metadata in `colData()` |
-| Pixel coordinates | `SpatialExperiment` | `spatialCoords()` |
-| Optical images | `SpatialExperiment` | `imgData()` |
-| Paired transcriptome | `SpatialExperiment` | `altExp()` |
+`bladder_demo.rds` derives from the public
+[SpaMTPData bladder archive](https://zenodo.org/records/22733262).
+A four-pixel grid retains 2,210 of 34,840 source locations and all 79 features
+in its previously selected panel. The source is MALDI imaging of a mouse
+urinary-bladder section, also used in the
+[Cardinal case study](https://github.com/Vitek-Lab/Cardinal3-vignettes/blob/main/Vignettes/Vignette1/case-study1-vignette.rmd).
+That source workflow applies TIC normalization before integrating peaks.
+The archived `counts` assay contains processed panel intensities. Its original
+full-spectrum totals are unavailable in this object; the separate
+[raw-spectrum archive](https://zenodo.org/records/17246684) covers a subset
+of the section's locations.
 
-Raw imzML should be read and processed in Cardinal without materialising the
-spectra. Once features share a common axis, conversion is explicit:
+The stored `ssc` values are spatial shrunken-centroid classes. The
+[archived SpaMTP tutorial](https://genomicsmachinelearning.github.io/SpaMTP/articles/Mouse_Urinary_Bladder.html)
+interprets classes 2, 5 and 6 as adventitia, muscle and urothelium.
+We retain these algorithm-derived labels as **archived compartment
+interpretations**. The remaining classes stay visible.
 
-For a self-contained file-I/O example, first write two **synthetic** unequal-axis
-spectra to a temporary imzML/ibd pair. These are not a biological acquisition.
-The same reader accepts a real imzML path; do not discard its backing ibd file
-until file-backed processing has finished.
+```{r bladder-data}
+bladder <- readRDS(system.file("extdata", "bladder_demo.rds", package = "SpaMTP"))
+stopifnot(identical(dim(bladder), c(79L, 2210L)))
 
-```{r cardinal-workflow, eval=TRUE}
-binned_raw <- local({
-  directory <- tempfile("imzml-example-")
-  dir.create(directory)
-  on.exit(unlink(directory, recursive = TRUE))
-  input <- Cardinal::MSImagingArrays(
-    centroided = TRUE, continuous = FALSE,
-    spectraData = list(intensity = list(c(1, 2, 3), c(4, 5, 6, 7)),
-                      mz = list(c(100, 101, 102), c(100, 100.25, 101, 104))),
-    pixelData = Cardinal::PositionDataFrame(
-      coord = data.frame(x = c(1, 2), y = c(1, 1)),
-      run = factor(c("section", "section"))))
-  path <- file.path(directory, "section.imzML")
-  Cardinal::writeImzML(input, path, bundle = FALSE, verbose = FALSE)
-  raw <- Cardinal::readImzML(path, memory = FALSE, as = "MSImagingArrays")
-  raw <- normalizeSMData(raw) # Cardinal queues TIC processing.
-  binSpaMTP(raw, resolution = 0.01, units = "mz")
-})
-stopifnot(methods::is(binned_raw, "SpatialExperiment"), ncol(binned_raw) == 2L,
-  max(SummarizedExperiment::rowData(binned_raw)$mz) >= 104)
+compartment_names <- c(`2` = "Adventitia", `5` = "Muscle", `6` = "Urothelium")
+compartment <- unname(compartment_names[as.character(bladder$ssc)])
+compartment[is.na(compartment)] <- "Other SSC classes"
+bladder$archived_compartment <- factor(compartment,
+    levels = c(unname(compartment_names), "Other SSC classes"))
+table(bladder$archived_compartment)
 ```
 
-The S4 binning method executes Cardinal's queued processing and obtains a
-common axis before creating an SPE. The raw-array mass range is scanned across
-all spectra, not inferred from the first pixel alone. Calling
-`asSpatialExperiment()` on unaligned `MSImagingArrays` gives an explicit request
-to bin first; no resolution is guessed during conversion.
+## Tissue context
 
-The reverse coercion is also registered, so either the SpaMTP generic or the
-standard S4 coercion can be used:
+`spatialCoords()` supplies original pixel coordinates. In Figure
+1.\@ref(fig:bladder-compartments), colours identify the archived compartments;
+the reversed y-axis follows image orientation.
 
-```{r cardinal-coercion, eval=TRUE}
-cardinal <- asCardinal(binned_raw)
-cardinal <- methods::as(binned_raw, "MSImagingExperiment")
+```{r bladder-compartments, crop=NULL, fig.width=7, fig.height=4.8, out.width="720px", fig.cap="Mouse urinary bladder: all 2,210 retained grid locations in original pixel coordinates. Colours show the archived interpretation of SSC classes 2, 5 and 6; grey retains the other classes, including background. These algorithm-derived compartment labels summarize the archived spatial interpretation."}
+bladder_xy <- as.data.frame(SpatialExperiment::spatialCoords(bladder))
+bladder_xy$compartment <- bladder$archived_compartment
+compartment_palette <- c(Adventitia = "#3478A5", Muscle = "#D17A32",
+    Urothelium = "#238774", `Other SSC classes` = "#D5DADD")
+ggplot2::ggplot(bladder_xy, ggplot2::aes(x, y, colour = compartment)) +
+    ggplot2::geom_point(size = 1.05) +
+    ggplot2::coord_equal() + ggplot2::scale_y_reverse() +
+    ggplot2::scale_colour_manual(values = compartment_palette) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), legend.position = "bottom") +
+    ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2,
+        override.aes = list(size = 3))) +
+    ggplot2::labs(x = "Pixel x", y = "Pixel y", colour = "Archived compartment")
+```
+
+## Preserve the source scale and select ions
+
+Remove zero-total locations and apply `log1p` to the archived processed
+intensities. This preserves the upstream normalization for the spatial maps.
+The next section checks how an additional **79-feature panel normalization**
+changes the compartment comparison.
+
+The two displayed masses were selected for their compartment-associated
+patterns in the source tutorial. `which.min()` locates each nearest measured
+mass. `archived_lipid_candidates` preserves the alternative candidate identities
+reported in the source.
+
+```{r bladder-normalization}
+counts <- SummarizedExperiment::assay(bladder, "counts")
+bladder <- bladder[, Matrix::colSums(counts) > 0]
+SummarizedExperiment::assay(bladder, "logcounts") <-
+    log1p(SummarizedExperiment::assay(bladder, "counts"))
+mz <- SummarizedExperiment::rowData(bladder)$mz
+ion_rows <- vapply(c(741.53058, 798.54114),
+    function(target) which.min(abs(mz - target)), integer(1))
+ion_features <- rownames(bladder)[ion_rows]
+knitr::kable(data.frame(
+    measured_mz = round(mz[ion_rows], 5),
+    archived_candidates = SummarizedExperiment::rowData(bladder)$
+        archived_lipid_candidates[ion_rows]), row.names = FALSE)
+```
+
+## Spatial distributions and regional summaries
+
+`plotSpatialFeature()` reads the selected features from `logcounts`.
+`pointSize` controls marker size; `combine = FALSE` returns separate plots
+for adding axes and compact horizontal colour bars. Each ion in Figure
+1.\@ref(fig:bladder-spatial) has its own scale.
+
+```{r bladder-spatial, crop=NULL, fig.width=9, fig.height=4.7, out.width="100%", fig.cap="Two measured bladder ions across the retained nonzero grid locations. Colour shows log1p of the archived processed intensity; each panel has an independent colour scale. The source workflow applied TIC normalization before peak integration. Positions and orientation match the compartment map."}
+bladder_plots <- plotSpatialFeature(bladder, features = ion_features,
+    assayName = "logcounts", labels = sprintf("m/z %.5f", mz[ion_rows]),
+    pointSize = 1.1, combine = FALSE)
+bladder_plots <- lapply(bladder_plots, function(p) p +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), legend.position = "bottom") +
+    ggplot2::guides(colour = ggplot2::guide_colourbar(
+        title.position = "top", barwidth = grid::unit(3.6, "cm"))) +
+    ggplot2::labs(x = "Pixel x", y = "Pixel y", colour = "Archived intensity (log1p)"))
+cowplot::plot_grid(plotlist = bladder_plots, ncol = 2)
+```
+
+SM, PA, PC and PE denote sphingomyelin, phosphatidic acid, phosphatidylcholine
+and phosphatidylethanolamine.
+
+The table uses every retained nonzero location in each named compartment.
+`detected_percent` is the percentage with archived intensity above zero;
+`median_log1p` summarizes the displayed signal.
+
+```{r bladder-regional-summary}
+input <- SummarizedExperiment::assay(bladder, "counts")
+normalized <- SummarizedExperiment::assay(bladder, "logcounts")
+regional_summary <- do.call(rbind, lapply(unname(compartment_names), function(group) {
+    pixels <- which(bladder$archived_compartment == group)
+    data.frame(compartment = group, pixels = length(pixels),
+        mz = round(mz[ion_rows], 5),
+        median_log1p = apply(normalized[ion_rows, pixels, drop = FALSE], 1, median),
+        detected_percent = 100 * Matrix::rowMeans(input[ion_rows, pixels, drop = FALSE] > 0))
+}))
+knitr::kable(regional_summary, digits = 2, row.names = FALSE)
+```
+
+## Panel-composition sensitivity
+
+An abundant ion contributes to the denominator of panel normalization.
+Here, the two additional scales divide each intensity by either the complete
+panel total or the total after excluding m/z 741.53058, then multiply by 10,000
+and apply `log1p`. The table compares compartment medians for m/z 798.54114.
+
+```{r bladder-normalization-sensitivity}
+panel <- normalizeSMData(bladder, "LogNormalize", verbose = FALSE)
+reduced_total <- Matrix::colSums(input[-ion_rows[1], , drop = FALSE])
+stopifnot(all(reduced_total > 0))
+scales <- list(
+    `Archived input` = as.numeric(normalized[ion_rows[2], ]),
+    `79-feature panel` = as.numeric(
+        SummarizedExperiment::assay(panel, "logcounts")[ion_rows[2], ]),
+    `Panel excluding m/z 741.53058` = log1p(
+        as.numeric(input[ion_rows[2], ]) / reduced_total * 1e4))
+normalization_sensitivity <- do.call(rbind, lapply(names(scales), function(scale) {
+    values <- scales[[scale]]
+    urothelium <- median(values[bladder$archived_compartment == "Urothelium"])
+    muscle <- median(values[bladder$archived_compartment == "Muscle"])
+    data.frame(scale = scale, urothelium = urothelium, muscle = muscle,
+        median_difference = urothelium - muscle)
+}))
+stopifnot(all(normalization_sensitivity$median_difference > 0))
+knitr::kable(normalization_sensitivity, digits = 3, row.names = FALSE)
+```
+
+The urothelium-minus-muscle difference is
+`r round(normalization_sensitivity$median_difference[1], 3)` on the archived
+log1p scale, `r round(normalization_sensitivity$median_difference[2], 3)` after
+panel normalization and
+`r round(normalization_sensitivity$median_difference[3], 3)` after excluding
+m/z 741.53058 from the panel total. The direction persists across these scales;
+the magnitude depends on the denominator. Compartment differences therefore
+support a spatial distribution hypothesis within this section.
+
+The archive lists
+SM/PA alternatives for m/z 741.53058 and PC/PE alternatives for m/z 798.54114.
+These patterns motivate lipid-localization hypotheses; exact lipid species
+require additional chemical evidence. The comparison describes one bladder section.
+
+The [companion workflow](SpaMTP_Companion_Workflow.html) queries these same
+ions against a versioned RaMP database and retains candidate ambiguity.
+
+# Pig fetal section: organ-associated ion patterns
+
+## Prespecified windows across the complete source section
+
+`pig_demo.rds` derives from the public
+[pig fetal DESI dataset](https://zenodo.org/records/17246555), acquired on a
+Thermo LTQ instrument. It retains all 4,959 source tissue locations.
+The [Cardinal segmentation tutorial](https://bioconductor.org/packages/release/data/experiment/vignettes/CardinalWorkflows/inst/doc/MSI-segmentation.html)
+associates m/z 187.36 with heart, 537.08 with liver, and 840.43 with brain and
+spinal cord. These associations describe source-reported ion-localization
+patterns; organ labels and chemical identities require independent validation.
+
+Each row sums original profile bins within **±0.5 m/z** of one target.
+`total_ion_current` was calculated from all 10,200 original mass bins before
+subsetting. Use that stored total when normalizing; dividing by the three
+selected windows would change the biological comparison. `source_bins` reports
+how many original profile bins contribute to each window.
+
+```{r pig-data}
+pig <- readRDS(system.file("extdata", "pig_demo.rds", package = "SpaMTP"))
+stopifnot(identical(dim(pig), c(3L, 4959L)))
+window_intensity <- SummarizedExperiment::assay(pig, "counts")
+SummarizedExperiment::assay(pig, "logcounts") <- log1p(
+    sweep(window_intensity, 2, pig$total_ion_current, "/") * 1e4)
+knitr::kable(as.data.frame(SummarizedExperiment::rowData(pig))[
+    , c("target_mz", "window_lower", "window_upper", "source_bins")],
+    row.names = FALSE)
+```
+
+## Spatial interpretation
+
+All three panels in Figure 1.\@ref(fig:pig-spatial) use the same 4,959 source
+tissue coordinates. The source-selected
+signals occupy different anatomical areas across the complete section.
+
+```{r pig-spatial, fig.width=10, fig.height=5, out.width="100%", fig.cap="Pig fetal DESI section: three prespecified profile-ion windows at all 4,959 source tissue positions. Each window sums bins within ±0.5 m/z of the title mass. Colour shows log1p(window intensity / full-spectrum TIC × 10,000), with an independent scale per panel. Heart, liver and brain/spinal-cord associations are source interpretations from the Cardinal tutorial."}
+pig_plots <- plotSpatialFeature(pig, features = rownames(pig),
+    assayName = "logcounts", pointSize = 0.6, combine = FALSE,
+    labels = c("m/z 187.36", "m/z 537.08", "m/z 840.43"))
+contexts <- c("Heart-associated", "Liver-associated", "Brain / spinal cord")
+pig_plots <- lapply(seq_along(pig_plots), function(i) pig_plots[[i]] +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::scale_x_continuous(breaks = c(25, 50, 75, 100)) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), legend.position = "bottom",
+        plot.margin = ggplot2::margin(6, 10, 6, 6)) +
+    ggplot2::guides(colour = ggplot2::guide_colourbar(
+        title.position = "top", barwidth = grid::unit(3.2, "cm"))) +
+    ggplot2::labs(subtitle = contexts[i], x = "Pixel x", y = "Pixel y",
+        colour = "TIC-normalized log1p"))
+cowplot::plot_grid(plotlist = pig_plots, ncol = 3)
+```
+
+This three-window panel demonstrates spatial interpretation. Peak discovery,
+clustering and enrichment require the broader source spectra and appropriate
+feature coverage, available as `SpaMTPData::spaMTPData("pig_fetus_cardinal",
+version = "1.1.0")`.
+
+# Mouse brain: paired MSI and RNA
+
+The [end-to-end workflow](End_to_End_Workflow.html) uses all 876 locations in
+the archived striatal selection from a 6-OHDA mouse specimen
+([GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
+It relates measured m/z 400.14659 and the genes `Penk` and `Tac1` to anatomy
+and the recorded intact/lesioned sides, then demonstrates regional summaries
+and pathway analysis. The archived striatal selection follows the MSI clusters
+used in the original analysis.
+
+The [data-access guide](Modern_Data_Access.html) introduces public accessors
+using this same real paired experiment. The first load retrieves its pinned
+SpaMTPData resource unless a verified local or cached copy is available.
+
+# Native containers and raw data
+
+## Data locations
+
+| Data | Container or accessor |
+|---|---|
+| Raw, unequal-axis or file-backed spectra | Cardinal `MSImagingArrays` / `MSImagingExperiment` |
+| Aligned MSI intensities | `assay(spe, "counts")` |
+| Masses and annotation candidates | `rowData(spe)` |
+| Tissue labels and sample metadata | `colData(spe)` |
+| Pixel coordinates and optical images | `spatialCoords(spe)` and `imgData(spe)` |
+| Paired transcriptome | `altExp(spe, "SPT")` |
+
+For custom binned data, assay rows represent measured mass features and columns
+represent locations. Store numeric masses in `rowData(spe)$mz` and keep coordinate
+rows in the same order as assay columns. Retain tissue-section identifiers in
+`sample_id` and animal or donor identifiers in `colData()` for analyses across
+biological samples.
+
+## Raw imzML processing
+
+For your own files, keep the `.ibd` companion available while file-backed
+processing runs. `memory = FALSE` leaves spectra on disk; `normalizeSMData()`
+queues Cardinal TIC normalization. `binSpaMTP()` executes processing and creates
+a common mass axis at the requested resolution. Set resolution to suit the
+instrument and analytical goal. The small simulation below uses 16 pixels and
+0.1 m/z bins to demonstrate file creation, deferred processing and conversion.
+The [Cardinal guide](https://bioconductor.org/packages/release/bioc/vignettes/Cardinal/inst/doc/Cardinal3-guide.html)
+describes acquisition-specific preprocessing.
+
+```{r raw-imzml, message=FALSE}
+set.seed(1, kind = "L'Ecuyer-CMRG")
+simulated <- Cardinal::simulateImage(preset = 1, npeaks = 4,
+    dim = c(4, 4), centroided = TRUE, continuous = FALSE,
+    SAR = FALSE, verbose = FALSE, BPPARAM = BiocParallel::SerialParam())
+imzml <- tempfile(fileext = ".imzML")
+Cardinal::writeImzML(simulated, imzml, bundle = FALSE, verbose = FALSE,
+    BPPARAM = BiocParallel::SerialParam())
+raw <- Cardinal::readImzML(imzml, memory = FALSE,
+    as = "MSImagingArrays", verbose = FALSE)
+raw <- normalizeSMData(raw, verbose = FALSE)
+spe <- binSpaMTP(raw, resolution = 0.1, units = "mz")
+stopifnot(methods::is(spe, "SpatialExperiment"), ncol(spe) == 16L,
+    all(is.finite(SummarizedExperiment::assay(spe, "counts"))))
+dim(spe)
+```
+
+For binned data, `asCardinal()` and standard S4 coercion preserve the intensity
+matrix and coordinates. This evaluated example uses the real bladder object.
+
+```{r cardinal-coercion}
+cardinal <- asCardinal(bladder)
 stopifnot(methods::is(cardinal, "MSImagingExperiment"),
-          identical(dim(cardinal), dim(binned_raw)))
+    identical(dim(cardinal), dim(bladder)))
 ```
 
-# A binned MSI workflow
+# Continue the analysis
 
-The following small object illustrates the native layout without external
-files.
-
-```{r spatial-experiment}
-intensity <- matrix(
-  seq_len(24),
-  nrow = 4,
-  dimnames = list(
-    paste0("mz-", c(100.01, 100.02, 101.01, 101.02)),
-    paste0("pixel", seq_len(6))
-  )
-)
-coordinates <- cbind(
-  x = rep(seq_len(3), each = 2),
-  y = rep(seq_len(2), times = 3)
-)
-spe <- SpatialExperiment::SpatialExperiment(
-  assays = list(counts = intensity),
-  rowData = S4Vectors::DataFrame(
-    mz = c(100.01, 100.02, 101.01, 101.02)
-  ),
-  colData = S4Vectors::DataFrame(
-    region = rep(c("edge", "core"), 3)
-  ),
-  spatialCoords = coordinates,
-  sample_id = rep("sample01", ncol(intensity))
-)
-
-spe <- normalizeSMData(spe, normalisation.type = "LogNormalize")
-plotSpatialFeature(spe, features = "mz-100.01", assayName = "logcounts")
-```
-
-For paired measurements, transcriptomic data are stored as an alternative
-experiment and matched by pixel name. Integration uses Bioconductor reduced
-dimensions rather than Seurat assay internals.
-
-```{r alternative-experiment}
-transcriptome_sce <- SingleCellExperiment::SingleCellExperiment(
-  assays = list(counts = matrix(
-    c(1, 2, 3, 4, 4, 2, 1, 3, 2, 5, 4, 1,
-      3, 1, 5, 2, 1, 4, 2, 5, 5, 3, 1, 4),
-    nrow = 4,
-    dimnames = list(paste0("gene", seq_len(4)), colnames(spe))
-  ))
-)
-spe <- addTranscriptome(spe, transcriptome_sce, name = "transcriptome")
-spe <- normalizeSMData(spe, "LogNormalize", assay = "transcriptome")
-set.seed(42)
-spe <- multiOmicIntegration(spe, dims.list = list(1, 1))
-SingleCellExperiment::altExpNames(spe)
-SingleCellExperiment::reducedDim(spe, "integrated")
-
-# Reuse scater directly for standard expression visualisation.
-scater::plotExpression(
-  spe,
-  features = "mz-100.01",
-  x = "region",
-  exprs_values = "logcounts"
-)
-```
-
-The joint embedding concatenates standardized PCA scores with equal weight
-per modality. It is **not Seurat WNN**, and does not claim equivalent results.
-Only `main` and `transcriptome` are included by default; supply `modalities`
-explicitly to include another measured modality. Derived pathway scores are
-not included automatically.
-
-## Alignment and pixel mapping
-
-Spatial mapping uses matching `sample_id` values and a common coordinate
-system. Independent slices are never connected simply because their x/y
-coordinates overlap. The example below maps MSI to paired transcriptomic
-pixel centres; lower-resolution spots require an explicit radius or polygon.
-
-```{r native-mapping}
-target <- SpatialExperiment::SpatialExperiment(
-  assays = SummarizedExperiment::assays(transcriptome_sce),
-  colData = SummarizedExperiment::colData(spe),
-  spatialCoords = SpatialExperiment::spatialCoords(spe)
-)
-mapped <- mapSpatialOmics(
-  spe, target, ST.hires = TRUE, SM.pixel.width = 1
-)
-stopifnot(all(mapped$mapped), all(mapped$n_source_pixels == 1))
-SingleCellExperiment::altExpNames(mapped)
-
-affine <- diag(3)
-affine[1:2, 3] <- c(0.2, -0.1)
-aligned <- alignSpatialOmics(spe, target, transformation = affine)
-checkAlignment(aligned, target)
-```
-
-MSI values are averaged over matched source pixels. Unmapped targets are
-retained with `mapped = FALSE` and zero-filled intensities unless
-`dropUnmapped = TRUE`. These missing measurements must not be interpreted as
-observed biological zeros. Optical images are stored with `addSpatialImage()`
-and `imgData()`; their scale factors change display dimensions, not the stored
-spatial coordinates.
-
-## Binning and statistical reuse
-
-```{r native-binning}
-binned <- binSpaMTP(spe, resolution = 0.05, units = "mz")
-stopifnot(isTRUE(all.equal(
-  as.numeric(Matrix::colSums(SummarizedExperiment::assay(binned, "counts"))),
-  as.numeric(Matrix::colSums(SummarizedExperiment::assay(spe, "counts")))
-)))
-```
-
-Aligned-matrix binning assigns each feature once and conserves total intensity
-under sum aggregation. Raw Cardinal input retains Cardinal's reference-window
-binning semantics. Re-annotate the newly binned features before using
-annotation-dependent analyses.
-
-TMM factors are computed by `edgeR::normLibSizes()`. Differential testing uses
-`limma::lmFit()` and `limma::treat()`, while `runPooling()` uses
-`edgeR::sumTechReps()` for technical partitions. Random pixel pools are not
-independent biological replicates and cannot support population-level inference
-as if they were. Use independent biological samples for such inference.
-
-# Native feature plots and annotation ranking
-
-MSI plots read masses and annotations from `rowData()`, including when feature
-IDs are not formatted as `mz-...`. A `plusminus` window includes every peak
-within the tolerance of the nearest measured mass. Annotation plots sum all
-matching peaks; overlapping windows count each peak once.
-
-```{r native-feature-plots}
-SummarizedExperiment::rowData(spe)$all_IsomerNames <-
-  c("Candidate A", "Candidate A", "Candidate B", "Candidate C")
-imageMZAnnotationPlot(spe, "Candidate A", slot = "counts",
-                      dark.background = FALSE)
-massIntensityPlot(spe, group.by = "region", mz.labels = 100.01)
-```
-
-Use `spatialMZPlot(spe, 100.01, images="optical")` after attaching an image with
-`addSpatialImage()`. Its `imgData()` scale factor relates raster pixels to
-`spatialCoords()` units. Samples are displayed separately. Former Seurat
-segmentation/molecule/blending arguments are not supported. Interactive mass
-windows are available without Seurat; creating the app does not launch it:
-
-```{r native-window-app}
-app <- interactiveSpatialPlot(spe)
-class(app)
-# shiny::runApp(app)
-```
-
-The following synthetic example ranks three candidates for one feature using
-precomputed paired pathway expression. Real workflows can create these scores
-with `createPathwayObject()`, or let `calculateAnnotationStatistics()` reuse it
-on an alternative experiment indexed by RaMP analyte IDs.
-
-```{r native-annotation-ranking}
-ranking_demo <- spe
-SummarizedExperiment::rowData(ranking_demo)$all_Ramp_IDs <-
-  rep("RAMP_C_1; RAMP_C_2; RAMP_C_3", nrow(ranking_demo))
-pathway_values <- rbind(pA = 1:6, pB = c(2, 1, 5, 3, 6, 4), pC = 6:1)
-colnames(pathway_values) <- colnames(ranking_demo)
-SingleCellExperiment::altExp(ranking_demo, "pathway") <-
-  SingleCellExperiment::SingleCellExperiment(
-    assays = list(pathwayScores = pathway_values))
-rank_db <- list(
-  source_df = data.frame(rampId = paste0("RAMP_C_", 1:3),
-                         commonName = c("A", "B", "C")),
-  analytehaspathway = data.frame(
-    rampId = c("RAMP_C_1", "RAMP_C_1", "RAMP_C_2", "RAMP_C_3"),
-    pathwayRampId = c("pA", "pB", "pB", "pC")))
-calculateSingleAnnotationStatistics(100.01, ranking_demo, database = rank_db)
-```
-
-This retains the historical weighted z-score formula, now calculated directly
-from paired Pearson correlations. Its standard-normal tail and BH-adjusted
-values are **heuristic ranking measures, not calibrated identification
-p-values**. Correlated pathways and spatially dependent pixels violate the
-simple interpretation of that tail probability. Constant expression has
-undefined correlation; a constant candidate-score component contributes zero.
-
-# Optional Seurat conversion boundary
-
-SpaMTP analysis does not load Seurat or SeuratObject. Only these explicit
-converters need SeuratObject. Convert existing data once, then continue with
-native normalization, scaling, reductions and plotting.
-
-```{r optional-seurat}
-if (requireNamespace("SeuratObject", quietly = TRUE)) {
-    seurat_object <- spatialExperimentToSeurat(spe, includeAltExps = FALSE)
-    spe_again <- seuratToSpatialExperiment(seurat_object)
-    sce_again <- seuratToSingleCellExperiment(seurat_object)
-    stopifnot(identical(colnames(spe_again), colnames(sce_again)))
-}
-```
-
-Use seuratToSingleCellExperiment() for non-spatial transcriptomics; it never
-invents spatial coordinates. For spatial input, coordinates must have x/y
-columns and named pixels, or be supplied by a suitable Seurat image. Multiple
-images require an explicit selection or coordinate table. A single image/FOV
-is read through its public spatial accessor and takes precedence over cached
-metadata coordinates, which may predate alignment. The selected source is
-recorded in `metadata(spe_again)$seurat_interoperability`. Only one exact
-layer is transferred; split layers are not silently partially imported.
-Optical rasters, reductions and graphs are not transferred. Paired alternative
-assays are matched by pixel IDs, and unpaired assays are skipped with a warning.
-
-For an existing Seurat MSI workflow, the native sequence is:
-
-```{r native-scaling}
-scaled_spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
-scaled_spe <- scaleSMData(scaled_spe)
-SummarizedExperiment::assayNames(scaled_spe)
-```
-
-scaleSMData() centres/scales each feature across pixels and stores a separate
-scaled assay. This creates a dense matrix. Unlike the historical WNN workflow,
-multiOmicIntegration() combines equal-weight PCA embeddings; the algorithms
-must not be described as numerically equivalent.
-
-# Inspect available database resources
-
-`spaMTPDatabaseInfo()` reads the lightweight SpaMTPdb registry without
-downloading any annotation table.
-
-```{r database-registry}
-database_registry <- spaMTPDatabaseInfo(version = "latest")
-database_registry[
-  database_registry$resource %in% c("chem_props", "smiles_features"),
-  c("resource", "version", "category", "rows", "columns")
-]
-```
-
-# Create a small structure-aware database
-
-The example contains D-2-hydroxyglutaric acid and glucose. SMILES connectivity
-is decomposed into interpretable functional groups and ionisation sites before
-candidate generation.
-
-```{r demo-database}
-demo_database <- data.frame(
-  ramp_id = c("RAMP_C_2HG", "RAMP_C_GLUCOSE"),
-  chem_source_id = c("HMDB:HMDB0000606", "HMDB:HMDB0000122"),
-  common_name = c("D-2-hydroxyglutaric acid", "D-glucose"),
-  monoisotop_mass = c(148.037173, 180.063388),
-  mol_formula = c("C5H8O5", "C6H12O6"),
-  iso_smiles = c("O=C(O)CC(O)C(=O)O", "OCC1OC(O)C(O)C(O)C1O"),
-  stringsAsFactors = FALSE
-)
-
-demo_database <- annotateSMILESStructure(demo_database)
-demo_database[, c(
-  "common_name", "carboxyl_sites", "hydroxyl_sites",
-  "max_exchangeable_protons", "positive_mode_score",
-  "negative_mode_score", "alkali_affinity_score"
-)]
-```
-
-# Build and query an indexed search space
-
-Candidate masses are generated once and sorted. Repeated observed peaks can
-then be queried using a binary range search rather than scanning the full
-database for every peak.
-
-```{r indexed-search}
-annotation_index <- buildMZAnnotationIndex(
-  db = demo_database,
-  polarity = "negative",
-  adducts = c("[M-H]-", "[2M-H]-"),
-  infer_structure = "always"
-)
-
-observed_mz <- 147.02935
-candidates <- queryMZAnnotationIndex(
-  observed_mz = observed_mz,
-  index = annotation_index,
-  ppm = 5
-)
-
-candidates[, c(
-  "observed_mz", "expected_mz", "metabolite_names", "adduct",
-  "ppm_error", "score"
-)]
-```
+- [Modern data access](Modern_Data_Access.html): assays, coordinates, paired RNA and conversion.
+- [Companion workflow](SpaMTP_Companion_Workflow.html): real bladder-ion candidates and versioned resources.
+- [Metabolite annotation](Metabolite_Annotation_Pipeline.html): mass hypotheses, scoring and the full mouse-brain panel.
+- [Pathway databases](Pathway_Database_Integration.html) and [gene identifiers](Gene_Identifier_Mapping.html): measured coverage and identifier reconciliation.
+- [End-to-end workflow](End_to_End_Workflow.html): biological context, integration, regional pathways and reports.
 
 # Reproducibility
 
-For production analyses, record the database version returned by
-`spaMTPDatabaseInfo()` together with ion mode, matrix profile, adduct rules,
-mass tolerance, and annotation-score threshold.
+## Citation
+
+Use the installed package's citation when reporting a SpaMTP analysis.
+
+```{r package-citation}
+citation("SpaMTP")
+```
+
+## Session information
+
+<details>
+<summary>R session and package versions</summary>
 
 ```{r session-info}
 sessionInfo()
 ```
+
+</details>

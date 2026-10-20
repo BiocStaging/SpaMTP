@@ -1,18 +1,24 @@
 ---
-title: "SpaMTP, SpaMTPdb and SpaMTPData: A Native Companion Workflow"
-author: "Tianyao Lu"
+title: "3. SpaMTP: Companion data and annotation resources"
+author: "Andrew Causer and Tianyao Lu"
 output:
   BiocStyle::html_document:
     toc: true
+    toc_depth: 3
+    number_sections: true
+    css: spamtp-vignettes.css
 vignette: >
-  %\VignetteIndexEntry{SpaMTP, SpaMTPdb and SpaMTPData: A Native Companion Workflow}
+  %\VignetteIndexEntry{3. SpaMTP: Companion data and annotation resources}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "##", fig.align = "center",
-                     error = FALSE, cache = FALSE)
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
+  fig.align = "center", fig.width = 7, fig.height = 4.5,
+  out.width = "720px", dpi = 144
+)
 seuratBefore <- intersect(c("Seurat", "SeuratObject"), loadedNamespaces())
 ```
 
@@ -20,24 +26,28 @@ seuratBefore <- intersect(c("Seurat", "SeuratObject"), loadedNamespaces())
 
 | Package | Responsibility | Primary representations |
 |---|---|---|
-| SpaMTPData | Discoverable experiment resources and a small synthetic example | Cardinal, SpatialExperiment, auxiliary files; labelled historical archives |
+| SpaMTPData | Discoverable experiment resources | Cardinal, SpatialExperiment, auxiliary files; labelled historical archives |
 | SpaMTPdb | Versioned annotation and pathway resources | Independent tables/lists with checksums and provenance |
 | SpaMTP | Analysis, annotation, plotting and explicit conversion | Existing Bioconductor S4 containers and public accessors |
 
-The data packages do not import SpaMTP or Seurat. SpaMTP imports SpaMTPdb and
-suggests SpaMTPData for demonstrations; there is no circular runtime dependency.
-Use SpaMTP >= 0.99.11, SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5 together.
-The package versions are not the same thing as RaMP or experiment-data versions.
+SpaMTP imports SpaMTPdb and suggests SpaMTPData. Both data packages expose
+resource interfaces that can be used independently of SpaMTP and Seurat. The
+examples require SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5.
 
-SpaMTPData is installed from the official Bioconductor repository. During
-review, SpaMTPdb may still require its BiocStaging source. The
-[installation guide](https://github.com/BiocStaging/SpaMTP#installation)
-covers download timeouts, staging dependencies and Windows Pandoc discovery.
+Package, RaMP and experiment-data releases have separate versions.
 
-The first experiment and small chemical table are explicitly synthetic teaching
-inputs. Later sections load the complete pinned RaMP resources and real brain
-datasets, downloading them when no verified local copy or cache is available.
-All R code blocks are evaluated when building this article.
+## Installation and example scope
+
+Use `BiocManager::install(c("SpaMTP", "SpaMTPdb", "SpaMTPData"))` for packages
+available in your Bioconductor release. The maintained
+[installation guide](https://github.com/SpaMTP-project/SpaMTP#installation)
+documents review-stage source installation, download timeouts and Windows
+requirements. `citation("SpaMTP")` supplies the package reference.
+
+This guide combines measured mouse-brain MSI/RNA and a mouse-bladder MSI
+panel with pinned RaMP annotation resources. Resources are downloaded on first
+use unless a verified local or cached copy is available. All code runs during
+the build.
 
 ```{r packages, message=FALSE}
 library(SpaMTP)
@@ -46,31 +56,56 @@ stopifnot(requireNamespace("SpaMTPData", quietly = TRUE))
 
 # Data to a native analysis container
 
+## Native experiment structure
+
 ```{r native-data}
-spe <- SpaMTPData::spaMTPExampleData()
+spe <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
 stopifnot(methods::is(spe, "SpatialExperiment"))
 SummarizedExperiment::assayNames(spe)
-SummarizedExperiment::rowData(spe)$mz
+dim(spe)
 SingleCellExperiment::altExpNames(spe)
 ```
 
-Counts/intensities, feature metadata, pixel metadata and coordinates have
-separate public accessors. The paired transcriptome already has matching pixel
-names and is stored in `altExp()`. Independent measurements must first be
-spatially aligned and mapped; they cannot be paired merely by renaming columns.
+The complete archived striatal dataset retains all measured mass features and
+locations. It was previously selected by MSI clusters from one brain section.
+Paired RNA in `altExp(spe, "SPT")` shares location names with MSI; independent
+measurements require alignment and mapping before pairing.
 
-```{r preprocess, fig.width=6, fig.height=4}
+## Normalization and spatial display
+
+`LogNormalize` adds `logcounts`; `npcs = 2` requests two principal components.
+Figure 3.\@ref(fig:preprocess) displays the measured mass nearest m/z 400.14659,
+a focal feature in the original mouse-brain tutorial. Its spatial distribution can be examined alongside the
+archived anatomy and side labels in the [complete workflow](End_to_End_Workflow.html).
+Assigning a metabolite identity requires additional chemical evidence.
+
+```{r preprocess, fig.width=7, fig.height=5, message=FALSE, out.width="450px", fig.cap="Measured m/z 400.14659 across all archived mouse-brain striatal locations. Each point retains its original image coordinates, displayed in thousands of pixels with y increasing downwards; colour shows LogNormalize intensity. All locations come from one specimen; comparisons describe variation within that specimen."}
 spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
 spe <- runMetabolicPCA(spe, npcs = 2, slot = "logcounts")
-plotSpatialFeature(spe, features = "peak1", assayName = "logcounts",
-  labels = "Synthetic peak 1", pointSize = 4)
+mz <- SummarizedExperiment::rowData(spe)$mz
+feature_index <- which.min(abs(mz - 400.14659))
+brain_map <- plotSpatialFeature(spe, features = rownames(spe)[feature_index],
+  assayName = "logcounts", labels = sprintf("m/z %.4f", mz[feature_index]),
+  pointSize = 1.3, combine = FALSE)[[1]]
+brain_map +
+  ggplot2::scale_x_continuous(labels = function(z) z / 1000, n.breaks = 3) +
+  ggplot2::scale_y_reverse(labels = function(z) z / 1000, n.breaks = 3) +
+  ggplot2::theme_classic(base_size = 11) +
+  ggplot2::theme(legend.position = "bottom") +
+  ggplot2::guides(colour = ggplot2::guide_colourbar(title.position = "top")) +
+  ggplot2::labs(x = "Image x (1000 pixels)", y = "Image y (1000 pixels)",
+    colour = "Logcounts")
 SingleCellExperiment::reducedDimNames(spe)
 ```
 
+Retrieve the embedding with `SingleCellExperiment::reducedDim(spe, "pca")`.
+`metadata(spe)$reduction_inputs$pca` records the expression layer and features
+used for PCA.
+
 # Database discovery without network access
 
-The registry is lightweight package metadata. Both access paths below describe
-the same resource release and use the coordinated camelCase API.
+Both registry accessors return the same packaged metadata without downloading
+resources.
 
 ```{r database-registry}
 registry <- SpaMTPdb::spaMTPdbResources(version = "3.0.7")
@@ -79,9 +114,12 @@ registry[registry$resource %in% c("chem_props", "smiles_features", "pathway"),
   c("resource", "version", "r_data_class", "bytes", "md5")]
 ```
 
-For a production analysis, `loadSpaMTPDatabase()` uses the same resource reader
-and retains database provenance. A staged official file must match its size and
-checksum; `offline = TRUE` can also reuse a verified download cache.
+## Verified resource retrieval
+
+`loadSpaMTPDatabase()` validates file size and checksum and retains provenance.
+Use `offline = TRUE` to reuse verified local files or cached downloads.
+Set `local_dir` to the directory containing the published RDS files when
+staging resources on a shared system.
 
 ```{r production-resources, eval=TRUE}
 database <- loadSpaMTPDatabase(
@@ -90,41 +128,64 @@ database <- loadSpaMTPDatabase(
 stopifnot(nrow(database$chem_props) == 289754L)
 ```
 
-# Annotate without inventing a downloaded database
+`attr(database$chem_props, "spamtp_database")` exposes the resource version,
+source URL and expected checksum for recording alongside analysis results.
 
-This small custom table contains two neutral masses and explicit illustrative
-identifiers. It is supplied as a custom database rather than being placed under
-an official resource filename with an incorrect checksum.
+# Measured bladder ions and RaMP candidates
+
+The bundled bladder subset retains the spatial extent and all 79 features of
+an archived annotated panel. Select its two ions nearest m/z 741.53058 and
+798.54114 for a concise annotation example, retaining every supplied location.
+Their historical labels are stored separately in `archived_lipid_candidates`.
+
+`buildMZAnnotationIndex()` indexes the verified RaMP `chem_props` table using
+potassium adducts (`M+K`, positive mode). `annotateSM()` searches within 5 ppm;
+`min_score = 0` retains matched candidates for review. The database's
+precomputed structure features are reused automatically.
 
 ```{r annotation}
-custom <- data.frame(
-  id = c("demo-2HG", "demo-glucose"),
-  name = c("2-hydroxyglutarate", "glucose"),
-  formula = c("C5H8O5", "C6H12O6"),
-  exactmass = c(148.037173366, 180.063388104)
-)
-index <- buildMZAnnotationIndex(custom, adducts = "M+H", polarity = "positive")
-annotated <- annotateSM(spe, index = index, adducts = "M+H",
-  ppm_error = 5, return.only.annotated = FALSE, verbose = FALSE)
-stopifnot(identical(dim(annotated), dim(spe)),
-  identical(colnames(SingleCellExperiment::altExp(annotated, "transcriptome")),
-    colnames(spe)))
-SummarizedExperiment::rowData(annotated)[,
-  c("mz", "all_IsomerNames", "all_Scores")]
+bladder <- readRDS(system.file("extdata", "bladder_demo.rds", package = "SpaMTP"))
+bladder_mz <- SummarizedExperiment::rowData(bladder)$mz
+ion_rows <- vapply(c(741.5305786, 798.5411377),
+  function(target) which.min(abs(bladder_mz - target)), integer(1))
+ions <- bladder[ion_rows, ]
+index <- buildMZAnnotationIndex(database$chem_props,
+  adducts = "M+K", polarity = "positive")
+annotated <- annotateSM(ions, index = index, adducts = "M+K",
+  polarity = "positive", ppm_error = 5, min_score = 0,
+  return.only.annotated = FALSE, save.intermediate = TRUE, verbose = FALSE)
+stopifnot(identical(dim(annotated), dim(ions)))
+
+candidates <- S4Vectors::metadata(annotated)$mz_annotation$results
+candidate_counts <- tabulate(candidates$ID, nbins = nrow(annotated))
+data.frame(
+  measured_mz = SummarizedExperiment::rowData(annotated)$mz,
+  archived_candidates = SummarizedExperiment::rowData(annotated)$archived_lipid_candidates,
+  RaMP_candidate_records = candidate_counts)
 annotationInfo(annotated)
 ```
 
-These accurate-mass candidates are hypotheses, not confirmed identifications
-or calibrated probabilities. The [full annotation tutorial](Metabolite_Annotation_Pipeline.html)
-explains index reuse, contextual scoring and interpretation.
+## Candidate interpretation
+
+The archived alternatives are SM 34:1 / PA 37:1 and PC 34:1 / PE 37:1;
+SM, PA, PC and PE denote sphingomyelin, phosphatidic acid, phosphatidylcholine
+and phosphatidylethanolamine. These labels preserve the archive's candidate
+assignments. Each ion matches multiple RaMP records under the stated adduct
+and mass tolerance; individual records can group several isomers. Resolving
+these lipid identities requires additional chemical evidence. Scores use a
+heuristic scale. The [annotation tutorial](Metabolite_Annotation_Pipeline.html)
+covers index reuse and contextual scoring.
 
 # Published native datasets and historical archives
 
-The published experiment registry records what the source files actually
-contain. The default resource release, `1.1.0`, supplies seven native
-SpatialExperiment datasets with new URLs and hashes in
+The default resource release, `1.1.0`, provides seven native SpatialExperiment
+datasets with URLs and hashes in
 [Zenodo record 22733262](https://zenodo.org/records/22733262).
 Historical Seurat files remain explicitly available in release `1.0.0`.
+
+`metadata = TRUE` returns registry records without downloading data.
+`native_metadata` describes release 1.1.0; `archive` describes the same
+resource's historical 1.0.0 Seurat file.
 
 ```{r inspect-native}
 native_metadata <- SpaMTPData::spaMTPData("mouse_brain_fmp10", metadata = TRUE)
@@ -141,28 +202,33 @@ stopifnot(identical(intersect(c("Seurat", "SeuratObject"), loadedNamespaces()),
   seuratBefore))
 ```
 
-The one-time preparation recipe shipped by SpaMTPData creates a separate
-native RDS for each of the seven historical archives. The published files can
-now be retrieved directly; no Seurat conversion is needed when using them:
+## Direct native-data retrieval
+
+SpaMTPData's preparation recipe produces one native RDS per historical archive.
+Retrieve these published files directly, without Seurat conversion.
+
+`native` reuses the DHB/Visium object loaded above, with paired RNA in `SPT`.
+`version = "1.1.0"` pins the data release independently of the package version.
 
 ```{r read-published-native, eval=TRUE}
-native <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
-native <- normalizeSMData(native, verbose = FALSE)
+native <- spe
 SingleCellExperiment::altExpNames(native) # SPT
-stopifnot(identical(dim(native), c(2075L, 876L)),
+stopifnot(identical(colnames(SingleCellExperiment::altExp(native, "SPT")),
+  colnames(native)),
   identical(intersect(c("Seurat", "SeuratObject"), loadedNamespaces()), seuratBefore))
 ```
 
-The native files have their own checksum/provenance manifest and do not
-replace the original archive URLs or checksums. They preserve
-counts and any complete `data` layer; the latter is not automatically relabelled
-as `logcounts`. Optical rasters, polygons and Seurat graphs/weights/reductions
-are omitted. Source annotations, including historical `db_3`, retain their
-original interpretation and are not upgraded to new scored annotations.
+Native files have separate checksums and provenance; original archives remain
+unchanged. Counts and complete `data` layers are preserved without relabelling
+`data` as `logcounts`. Optical rasters, polygons and Seurat graphs, weights and
+reductions are omitted. Historical annotations, including `db_3`, retain their
+original candidate assignments and provenance.
 
-To work with a historical archive instead, conversion remains explicit. Only
-this boundary example loads the suggested SeuratObject package; the preceding
-native analysis does not require it.
+## Explicit archive conversion
+
+Only this archive conversion requires SeuratObject. `legacy` is the historical
+FMP10 object: `assay = "Spatial"` selects MSI and `image = "fov"` selects
+coordinates. `converted_archive` has 1,538 features and 3,005 locations.
 
 ```{r convert-archive, eval=TRUE}
 stopifnot(requireNamespace("SeuratObject", quietly = TRUE))
@@ -173,12 +239,19 @@ stopifnot(methods::is(converted_archive, "SpatialExperiment"),
   identical(dim(converted_archive), c(1538L, 3005L)))
 ```
 
-Select coordinates, layers and images deliberately. Optical rasters, graphs
-and reductions are not transferred. See [modern data access](Modern_Data_Access.html)
-for the conversion contract and [the native workflow](SpaMTP_Bioconductor.html)
-for further analysis. Older PascalCase resource calls must be updated along
-with the coordinated companion package versions.
+Select coordinates, layers and images explicitly; optical rasters, graphs and
+reductions are omitted. See [modern data access](Modern_Data_Access.html) for
+conversion details and [the native workflow](SpaMTP_Bioconductor.html) for
+analysis. The [migration table](Modern_Data_Access.html#migrating-existing-scripts)
+lists common historical calls and their native replacements.
+
+# Session information
+
+<details>
+<summary>R session and package versions</summary>
 
 ```{r session-info}
 sessionInfo()
 ```
+
+</details>

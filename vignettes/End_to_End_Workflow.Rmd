@@ -1,103 +1,144 @@
 ---
-title: "Designing and evaluating a spatial multi-omics workflow"
-author: "Tianyao Lu"
+title: "7. SpaMTP: Spatial multi-omics analysis and evaluation"
+author: "Andrew Causer and Tianyao Lu"
 output:
   BiocStyle::html_document:
     toc: true
+    toc_depth: 3
+    number_sections: true
+    css: spamtp-vignettes.css
 vignette: >
-  %\VignetteIndexEntry{Designing and evaluating a spatial multi-omics workflow}
+  %\VignetteIndexEntry{7. SpaMTP: Spatial multi-omics analysis and evaluation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "##", fig.width = 9,
-                     fig.height = 5, error = FALSE, cache = FALSE)
-library(SpaMTP)
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
+  fig.align = "center", fig.width = 7, fig.height = 4.5,
+  out.width = "720px", dpi = 144
+)
 ```
 
-# Analysis questions determine the workflow
+# Analysis scope and workflow overview {#analysis-questions-determine-the-workflow}
 
-A comprehensive report should expose the consequences of analytical choices.
-Its purpose is not to produce an attractive embedding or maximize the number of
-significant features. The workflow follows the analysis chain of the historical
-mouse-brain vignette: inspect measurements and correspondence; compare individual,
-spatial and integrated representations; characterize regions; examine paired
-features; then connect measured identities to pathways and networks.
+## Analysis stages
 
-| Question | Native interface | Evidence to inspect |
+This workflow covers spatial integration, regional markers, associations and
+pathways using native Bioconductor containers. It follows the original
+[mouse-brain tutorial](https://genomicsmachinelearning.github.io/SpaMTP/articles/Multi-Omic_Mouse_Brain.html).
+
+| Stage | Main interface | Output |
 |:--|:--|:--|
-| What was measured and retained? | `normalizeSMData()`, native containers and image access | Selected layer, QC exclusions, scale and acquisition provenance |
-| What changes when spatial information is added? | `runMetabolicPCA()`, `scaleSMData()`, `runSpatialGraphPCA()` | Same selected features and all retained observations in both representations |
-| Does integration improve the representation? | `multiOmicIntegration()`, `getKmeanClusters()` | Individual versus joint structure; external-reference ARI, approximate silhouettes and sensitivity across K |
-| Which features characterize a region? | `findAllDEMs(method="markers")`, `demsHeatmap()` | Pairwise AUC, Cohen effects, detection, mean expression and spatial-block sensitivity |
-| Which differences reproduce across biological samples? | `findAllDEMs(method="replicate")` | Explicit design, replicate means, effect intervals and the complete BH family |
-| Is an association explained by regional composition? | `findCorrelatedFeatures()`, `plot3DFeature()` | Raw versus covariate-residual correlations and matched spatial layers |
-| Which members support a pathway? | `buildPathwayIndex()`, `createPathwayAssay()`, `findRegionalPathways()` | Measured coverage, ambiguity exclusions, complete ranks and leading edges |
-| Are pathway members coordinated and where are they? | `runRAMPGeseca()`, `plotRegionalPathways()`, `pathwayNetworkPlots()` | The same identity assay and membership index in every downstream view |
+| Normalization | `normalizeSMData()` | A declared expression scale for each modality |
+| Representation | `runMetabolicPCA()`, `runSpatialGraphPCA()`, `multiOmicIntegration()` | Individual, spatial and joint embeddings |
+| Regional markers | `findAllDEMs(method = "markers")` | AUC, effect sizes, detection and spatial sensitivity |
+| Replicate contrasts | `findAllDEMs(method = "replicate")` | Biological-replicate effects and uncertainty |
+| Feature associations | `findCorrelatedFeatures()` | Raw and covariate-adjusted correlations |
+| Pathways | `buildPathwayIndex()`, `createPathwayAssay()`, `findRegionalPathways()` | Identity-level expression, coverage and enrichment |
+| Reporting | `renderSpaMTPReport()` | Linked figures, tables and analysis provenance |
 
-The main example uses a bundled **real DHB/Visium mouse-brain subset** from
-SpaMTPData 1.1.0. It retains 160 paired locations, all 2,075 measured mass features
-and all 32,285 RNA features. On each lesion side, the 80 locations nearest the
-archived ACB coordinate centroid are retained. Selection uses coordinates and
-archived labels, not expression or statistical results. The ACB, CP and nearby
-regions remain available for descriptive comparisons.
+## Demonstration datasets
 
-The [gene-mapping guide](Gene_Identifier_Mapping.html) and
-[annotation guide](Metabolite_Annotation_Pipeline.html) use the same bundled
-real-data demonstrators for their respective tasks. The installed full-data
-recipes remain available for analyses of the complete sections. Only the
-replicate-design example below uses simulated observations.
+We retain all 876 paired locations, 2,075 mass features and
+32,285 RNA features in the archived DHB/Visium striatal dataset. The source is a
+coronal section from a 6-OHDA mouse (mouse 3, V11L12-038_B1;
+[GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
+The original analysis selected these striatal locations from the source section.
 
-# Supply modalities and study design explicitly
+The pathway example uses 240 locations from an aligned human low-grade glioma
+MSI/Xenium dataset, retaining all 574 MS features and the 339-gene targeted panel.
+It derives from [Drummond et al.](https://doi.org/10.1038/s41591-025-03884-4)
+and [BioImage Archive S-BIAD1426](https://doi.org/10.6019/S-BIAD1426), via the
+[archived SpaMTP object](https://zenodo.org/records/18282678). `cout_labels`
+contains the archived Astro, Mesenchymal, Neuronal, Oligo and Progenitor groups;
+the transferred object preserves these assignments without their assignment recipe.
+Both datasets represent single sections; the replicate-design example is simulated. The pinned mouse resource downloads once (about 48 MB) and is
+cached. See `help("vignetteData")` for the bundled human subset's selection rule.
 
-```{r inputs}
-x <- readRDS(system.file("extdata", "dhb_demo.rds", package = "SpaMTP"))
+# Input modalities and study design {#supply-modalities-and-study-design-explicitly}
+
+## Paired measurements and modality definitions
+
+`x` is the mouse-brain `SpatialExperiment`. Its main assay stores MSI intensities;
+`altExp(x, "SPT")` stores RNA at the same locations. `spec` declares each modality's
+measurement type, input matrix (`layer`) and species.
+For paired inputs, use unique feature and observation names, finite assay values,
+and identical observation names and column order across modalities.
+
+```{r inputs, message=FALSE}
+library(SpaMTP)
+x <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
 spec <- list(
     main = list(type = "metabolomics", layer = "counts", species = "Mus musculus"),
     SPT = list(type = "transcriptomics", layer = "counts", species = "Mus musculus")
 )
-stopifnot(identical(dim(x), c(2075L, 160L)),
+stopifnot(identical(dim(x), c(2075L, 876L)),
           nrow(SingleCellExperiment::altExp(x, "SPT")) == 32285L)
-table(x$RegionLoupe, x$lesion)
-S4Vectors::metadata(x)$vignette_subset[c("rule", "features", "source")]
+region_side_counts <- table(x$RegionLoupe, x$lesion)
+region_side_counts
+S4Vectors::metadata(x)$SpaMTPData[c("resource", "version", "md5")]
 ```
 
-ACB denotes nucleus accumbens, CP caudoputamen, OT olfactory tubercle and aco
-anterior commissure, olfactory limb, following the archived region labels.
-These two sides belong to **one section**, not independent biological replicates.
-The very small aco compartment is retained in the input but does not meet the
-workflow's minimum of three observations for regional marker scoring. Cropping
-also changes boundary neighborhoods, so these results describe this subset.
-The selected sides contain different proportions of ACB and CP. A difference
-associated with lesion status can therefore reflect regional composition; the
-raw and region-adjusted associations below illustrate this distinction.
+## Anatomical labels and spatial layout
 
-```{r input-spatial-layout}
+`RegionLoupe` contains archived anatomical labels: CP, caudoputamen; ACB,
+nucleus accumbens; OT, olfactory tubercle; cc, corpus callosum; CTX, cortex;
+LSX, lateral septal complex; and aco, anterior commissure, olfactory limb.
+`lesion` labels the two sides. CP contains `r region_side_counts["CP", "intact"]`
+intact-side and `r region_side_counts["CP", "lesioned"]` lesioned-side locations.
+Groups with fewer than three locations are excluded from marker scoring.
+
+`coordinates` combines these labels with image-pixel positions; y increases downwards.
+
+Figure 7.\@ref(fig:input-spatial-layout) locates the archived regions and lesion
+sides in the retained section.
+
+```{r input-spatial-layout, fig.width=7, fig.height=4.8, out.width="720px", fig.cap="Archived DHB/Visium striatal dataset. Each point is one of 876 paired locations; colour denotes the archived anatomical region and shape denotes lesion side. Axes are original image pixels, with y increasing downwards."}
 coordinates <- as.data.frame(SpatialExperiment::spatialCoords(x))
 colnames(coordinates)[1:2] <- c("x", "y")
 coordinates$region <- x$RegionLoupe
 coordinates$lesion <- x$lesion
 ggplot2::ggplot(coordinates, ggplot2::aes(x, y, colour = region, shape = lesion)) +
-    ggplot2::geom_point(size = 2) + ggplot2::scale_y_reverse() + ggplot2::coord_equal() +
+    ggplot2::geom_point(size = 1.2) +
+    ggplot2::scale_y_reverse() +
+    ggplot2::coord_equal() +
     ggplot2::theme_classic() +
     ggplot2::labs(x = "Original image x", y = "Original image y")
 ```
 
-The workflow preserves the supplied layers. Its declared baseline uses native
-library-size normalization followed by conversion to log2 units for raw MS/RNA
-counts, and log2(1 + value) for protein counts. For already transformed data,
-choose `normalization="none"`. This baseline does not replace vendor-specific
-spectral processing, RNA count QC or a platform-appropriate normalization design.
-In particular, logged values must not be logged again or labelled raw counts.
+## Normalization and replication
 
-Biological replication is an explicit metadata field. A pixel, technical pool,
-spatial block, image channel or integration cluster does not create an independent
-specimen. Transcriptomics, metabolomics and proteomics can be declared as three
-modalities; H&E, DAPI and RGB channels remain contextual images unless their
-measurements support a separate stated assay model.
+`runSpaMTPWorkflow()` preserves the input layers and adds library-size-normalized,
+log2 MS/RNA values; protein values use log2(1 + value). Use
+`normalization = "none"` for transformed inputs. Complete spectral processing
+and RNA quality control beforehand.
 
-# Compare representations using the same observations and features
+Lesion sides, pixels and spatial blocks belong to one section. We preserve the
+archived spatial coverage and compare both sides within the same archived CP
+region. Results describe this specimen; population-level
+inference requires independent biological samples.
+
+# Individual, spatial and joint representations {#compare-representations-using-the-same-observations-and-features}
+
+## Workflow settings
+
+`fit` stores normalized modalities, embeddings, markers and associations.
+Regional marker analysis retains all measured features.
+
+| Argument | Meaning in this example |
+|:--|:--|
+| `group`, `regions` | Metadata columns for lesion side and archived anatomy |
+| `clusters = 3` | Number of clusters in the primary representation |
+| `npcs = 8`, `max_features = 1000` | Up to eight PCs from at most 1,000 variable features per modality |
+| `association_features = 4` | Maximum marker/variable-feature anchors per modality pair, selected across regions |
+| `coordinate_units` | Unit label for spatial coordinates and report provenance |
+| `structure$primary = "spatial"` | Spatial representation used for downstream structure analysis |
+| `structure$k_grid = c(3, 4)` | Candidate cluster counts used for sensitivity comparisons |
+| `structure$reference = "RegionLoupe"` | Archived anatomy used to calculate adjusted Rand index (ARI) |
+| `structure$umap = FALSE` | Display the first two components of each representation |
+| `structure$stability_blocks = 3` | Three coordinate-based block omissions for clustering sensitivity |
 
 ```{r workflow}
 fit <- runSpaMTPWorkflow(x, spec, group = "lesion", regions = "RegionLoupe",
@@ -106,70 +147,151 @@ fit <- runSpaMTPWorkflow(x, spec, group = "lesion", regions = "RegionLoupe",
     structure = list(primary = "spatial", k_grid = c(3, 4),
                      reference = "RegionLoupe", umap = FALSE,
                      stability_blocks = 3))
-fit$structure$metrics
+metrics <- fit$structure$metrics
+knitr::kable(metrics[, c("representation", "k", "approx_silhouette",
+    "reference_ARI", "spatial_neighbor_agreement")], digits = 3)
 ```
 
-For this short demonstration, PCA uses at most 1,000 variable features per
-modality, eight components, two candidate values of K and three spatial-block
-omissions. All measured features remain in the object and regional marker
-analysis. Displays use the first two components (`umap = FALSE`); set `umap = TRUE`
-to add UMAP displays. These are explicit teaching settings, not newly recommended
-analysis defaults.
+Inspect `fit$qc` for modality-specific totals and detected-feature counts,
+`fit$retained` for observation inclusion, and `fit$stages` for completion details.
 
-`runMetabolicPCA(features=...)` records all selected features explicitly.
-Ordinary and graph PCA use the same variable features, centred and scaled in the
-same way. Graph PCA uses a sparse Laplacian for every retained observation and
-keeps different samples in separate spatial graphs. It is not fitted on a small
-report preview and then discarded: graph embeddings feed the spatial joint
-representation and can be selected as the downstream primary representation.
+## Representation construction
 
-The joint representation uses `multiOmicIntegration()` to concatenate standardized
-modality embeddings. This native implementation is **not Seurat WNN**. Recovering
-and benchmarking WNN requires a separate, validated method implementation.
-UMAP is a visualization of a representation; clusters and metrics use its complete
-retained dimensions. A nicer-looking UMAP is not a performance test.
+PCA and graph PCA use the same centred, scaled features, recorded by
+`runMetabolicPCA(features = ...)`. `runSpatialGraphPCA()` builds a sparse
+Laplacian per sample. `multiOmicIntegration()` concatenates standardized
+embeddings with equal modality weights.
 
-The number of clusters and primary method are chosen before examining reference
-ARI. Approximate silhouettes assess separation, while ARI compares to supplied
-external annotation. Spatial-neighbor agreement is a smoothness diagnostic; spatial
-regularization increases it by construction. Spatial-block omission refits
-clustering **conditional on full-data embeddings**. It does not validate feature
-selection, normalization or generalization to new specimens.
+## Metric interpretation
 
-# Region characterization is richer than a mean difference
+Approximate silhouette measures separation within each representation; spatial-neighbor
+agreement measures smoothness. [Adjusted Rand index (ARI)](https://mclust-org.github.io/mclust/reference/adjustedRandIndex.html)
+compares clusters with `RegionLoupe`, with expected value zero for random partitions.
+Here ARI ranges from `r sprintf("%.3f", min(metrics$reference_ARI))` to
+`r sprintf("%.3f", max(metrics$reference_ARI))`, indicating weak anatomical agreement.
+CP accounts for `r sum(x$RegionLoupe == "CP")` of `r ncol(x)` locations, leaving
+limited coverage of smaller regions. ARI remains chance-adjusted with unequal
+class sizes; these results show that the fitted clusters recover little of the
+archived anatomical partition.
 
-```{r markers}
+At the primary `k = 3`, joint PCA has silhouette
+`r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "Joint / PCA" & metrics$k == 3])`,
+compared with
+`r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "main / PCA" & metrics$k == 3])`
+for MSI and
+`r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "SPT / PCA" & metrics$k == 3])`
+for RNA. Equal-weight integration therefore provides no improvement in this
+separation diagnostic. Smooth spatial clusters can still have weak anatomical
+agreement. Retain the declared reference and settings when reporting this outcome;
+independent sections are needed to evaluate biological reproducibility.
+
+Block omission refits clustering on fixed full-data embeddings to assess spatial
+sensitivity. See the [report panels](#report-panels) for embeddings and partitions.
+
+# Molecular patterns across the striatum
+
+## Paired ion and transcript maps
+
+`Penk` ([preproenkephalin](https://www.ncbi.nlm.nih.gov/gene/18619)) and `Tac1`
+([tachykinin 1](https://www.ncbi.nlm.nih.gov/gene/21333)) encode neuropeptide
+precursors. We map their RNA alongside m/z 400.14659, the measured DHB ion
+featured in the original tutorial (Figure 7.\@ref(fig:brain-molecular-maps)).
+
+`feature_values` extracts their `workflow` values from `fit$object`:
+log2(1 + 10,000 × value / total), using all features in each modality for totals.
+`display` places these three rows in one spatial container and retains the
+measured m/z as the ion label.
+
+```{r brain-molecular-maps, fig.width=10.5, fig.height=4.7, message=FALSE, out.width="100%", fig.cap="Paired ion and transcript maps across all 876 archived striatal locations. Point positions are shared across panels; axes show original image coordinates in thousands of pixels, with y increasing downwards. Each colour bar shows log2 library-size-normalized values on a feature-specific scale. The ion panel retains the measured m/z label; compound identification requires independent chemical evidence."}
+brain <- fit$object
+rna <- SingleCellExperiment::altExp(brain, "SPT")
+feature_values <- rbind(
+    `m/z 400.14659` = SummarizedExperiment::assay(brain, "workflow")[
+        "mz-400.14659", ],
+    as.matrix(SummarizedExperiment::assay(rna, "workflow")[
+        c("Penk", "Tac1"), , drop = FALSE]))
+display <- SpatialExperiment::SpatialExperiment(
+    assays = list(workflow = feature_values),
+    spatialCoords = SpatialExperiment::spatialCoords(brain))
+brain_maps <- plotSpatialFeature(display, features = rownames(display),
+    assayName = "workflow", pointSize = 0.8, combine = FALSE)
+brain_maps <- lapply(brain_maps, function(p) p +
+    ggplot2::scale_x_continuous(labels = function(z) z / 1000, n.breaks = 3) +
+    ggplot2::scale_y_reverse(labels = function(z) z / 1000, n.breaks = 3) +
+    ggplot2::theme_classic(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom") +
+    ggplot2::guides(colour = ggplot2::guide_colourbar(title.position = "top")) +
+    ggplot2::labs(x = "Image x (1000 pixels)", y = "Image y (1000 pixels)",
+                  colour = "log2 normalized value"))
+cowplot::plot_grid(plotlist = brain_maps, ncol = 3)
+```
+
+## Side differences within the caudoputamen
+
+`cp_sides` groups CP locations by archived lesion label. `cp_means` summarizes
+the same normalized values displayed above; column headings retain group sizes.
+
+```{r brain-cp-summary}
+cp <- brain$RegionLoupe == "CP"
+cp_sides <- split(which(cp), brain$lesion[cp])
+cp_means <- vapply(cp_sides, function(i)
+    rowMeans(feature_values[, i, drop = FALSE]), numeric(nrow(feature_values)))
+rownames(cp_means) <- rownames(feature_values)
+cp_difference <- cp_means[, "lesioned"] - cp_means[, "intact"]
+stopifnot(cp_difference["Penk"] > 0, cp_difference["m/z 400.14659"] > 0,
+          cp_difference["Tac1"] < 0)
+colnames(cp_means) <- paste0(names(cp_sides), " (n = ", lengths(cp_sides), ")")
+knitr::kable(cp_means, digits = 2,
+             caption = "Mean normalized values within the caudoputamen (CP).")
+```
+
+`Penk` and m/z 400.14659 are higher on the lesioned side of CP, whereas `Tac1`
+is higher on the intact side. This comparison uses CP locations on both sides
+and describes variation within this specimen.
+
+# Regional marker characterization {#region-characterization-is-richer-than-a-mean-difference}
+
+## Marker scores and heatmap
+
+`markers` contains `scran::scoreMarkers()` MSI scores: mean/minimum pairwise AUC,
+standardized Cohen effects and non-zero detection fractions. Other eligible
+regions receive equal weight. `logFC` is the difference on the selected scale.
+
+`demsHeatmap(n = 2)` selects up to two positive markers per region by `mean_auc`
+and plots row-standardized means in Figure 7.\@ref(fig:markers).
+`logfc.threshold = 0` retains positive effects
+on the selected expression scale.
+
+```{r markers, fig.width=7, fig.height=5.5, out.width="700px", fig.crop=FALSE, fig.cap="Regional MSI markers across all 876 archived mouse-brain locations. Rows are selected mass features and columns are eligible archived regions. Up to two positive markers per region are selected by mean AUC; duplicate selections appear once. Colours show row-standardized mean expression (z-scores), and the top strip identifies the region."}
 markers <- fit$region_analysis$modalities$main$markers
-head(markers$DEMs[, c("gene", "cluster", "logFC", "mean_auc",
-                     "min_auc", "mean_cohen", "direction_stability")])
+marker_order <- order(-markers$DEMs$mean_auc, -markers$DEMs$logFC,
+                      markers$DEMs$gene, na.last = TRUE)
+knitr::kable(head(markers$DEMs[marker_order, c("gene", "cluster", "logFC",
+    "mean_auc", "min_auc", "mean_cohen", "direction_stability")]), digits = 3)
 demsHeatmap(markers, n = 2, only.pos = TRUE, logfc.threshold = 0,
     order.by = "mean_auc", fontsize_row = 9, fontsize_col = 10)
 ```
 
-The native marker mode delegates pairwise scoring to `scran::scoreMarkers()`.
-AUC measures pairwise concordance, including half credit for ties. Mean and minimum
-AUC distinguish broadly specific markers from features that separate only some
-regions. Cohen effects account for within-region variability. Summaries equally
-weight other eligible regions so that the largest anatomical compartment does not
-automatically dominate the reference. Detection fractions refer to non-zero values
-on the explicitly selected layer; residualized layers need different interpretation.
+## Spatial-block sensitivity
 
-Coordinate-only blocks support a leave-one-block-out sensitivity analysis. The
-result records the range of Cohen effects, marker-rank changes, direction agreement
-and omitted fits that were ineligible because a region became too small. These
-ranges are **not confidence intervals**. Region labels are held fixed, including
-when learned from these data, and no pixel-based P values are manufactured.
+Leave-one-spatial-block-out fits keep region labels fixed and record effect
+ranges, rank changes, effect-direction agreement (`direction_stability`) and
+ineligible small-region fits.
+These summaries describe sensitivity to the omission of individual spatial blocks.
+A `direction_stability` of 1 means that every evaluable block-omission fit
+preserved the full-data mean Cohen effect's sign.
 
-`demsHeatmap()` uses the analysis expression matrix directly. Its FDR ordering now
-sorts numerical FDR; it no longer sorts a regulation label or applies CPM to an
-already transformed marker matrix. The heatmap, detection plot, spatial feature
-maps and interactive explorer use the same ranked feature identifiers.
+# Inference across biological replicates {#keep-biological-replicate-inference-separate}
 
-# Keep biological-replicate inference separate
+## Simulated paired design
 
-The published brain sections do not provide independent biological replicates.
-This design example therefore explicitly simulates four paired patients, each
-with three observations per condition; it is not an analysis of the real sections.
+`design` has four simulated patients and three observations per condition.
+`expression` has six features, with a 1.2-unit treatment shift in the first two.
+`replicate_example` stores both in a `SingleCellExperiment`.
+
+`findAllDEMs(method = "replicate")` compares `condition` within `patient_id`
+pairs (`paired = TRUE`). `assay = "main"` and `slot = "logcounts"` select the
+primary experiment's log-expression matrix.
 
 ```{r replicate-design, eval=TRUE}
 design <- expand.grid(pixel = seq_len(3), condition = c("control", "treated"),
@@ -190,50 +312,103 @@ stopifnot(identical(replicate_de$tests$treatment_control$status, "completed"))
 head(replicate_de$tests$treatment_control$table)
 ```
 
-This mode fits limma to equally weighted biological-replicate means of the selected
-values. Paired contrasts retain complete pairs; at least three complete pairs (or
-three independent replicates per arm) are required. The result retains the design,
-coefficient, residual degrees of freedom, replicate expression matrix, pointwise
-moderated intervals, and every tested feature. BH correction is within modality
-and contrast. A `logFC` column is a difference on the selected workflow scale;
-it is not automatically a fold change in raw abundance. RNA count models may
-instead require independently designed count pseudobulking and edgeR/DESeq2.
+## Replicate means and effect interpretation
 
-The historical random-pool mode remains available for compatibility and emits a
-warning about technical partitions. It is never used by the automatic workflow.
+This mode fits limma to equally weighted replicate means: at least three complete
+pairs, or three replicates per arm for an unpaired design. `replicate_de` retains
+the design, all tests, moderated intervals and BH-adjusted P values per modality
+and contrast. `logFC` uses the supplied scale; RNA count inference may require a
+separate pseudobulk model.
 
-# Ask whether colocalization survives regional composition
+Single-section examples support descriptive spatial comparisons. Replicate
+inference requires independent biological samples recorded in `patient_id` or
+an equivalent sample identifier.
+
+# Regional composition and feature associations {#ask-whether-colocalization-survives-regional-composition}
+
+## Raw and adjusted correlations
+
+`fit$associations` compares marker anchors with PCA-selected targets.
+`findCorrelatedFeatures(covariates = ...)` records matched observations, raw
+Pearson correlations and correlations after adjusting both features for the
+declared sample, replicate and region fields.
+In the returned table, `correlation` is covariate-adjusted, `correlation_raw`
+uses the original values, and `observations` gives the number of matched locations.
 
 ```{r associations}
-head(fit$associations[[1]])
+associations <- fit$associations[[1]]
+knitr::kable(head(associations[, c("feature1", "feature2", "correlation_raw",
+    "correlation", "observations")]), digits = 3, row.names = FALSE)
+myelin_associations <- associations[associations$feature1 == "mz-264.268615" &
+    associations$feature2 %in% c("Mbp", "Plp1", "Mobp"), ]
+stopifnot(nrow(myelin_associations) == 3L,
+          all(myelin_associations$correlation > 0))
 ```
 
-`findCorrelatedFeatures(covariates=...)` retains raw Pearson correlation and the
-correlation between both features after regression on the declared sample,
-replicate and region fields. The workflow queries regional marker anchors against
-all PCA-selected target features. It records those selection sets and the matched
-observations. Strong raw association can disappear after removing a common regional
-shift. A residual association can still reflect spatial autocorrelation or other
-unmeasured structure, and selected pairs require independent validation.
+For m/z 264.268615 and the myelin-associated genes
+[Mbp](https://www.ncbi.nlm.nih.gov/gene/17196),
+[Plp1](https://www.ncbi.nlm.nih.gov/gene/18823) and
+[Mobp](https://www.ncbi.nlm.nih.gov/gene/17433), adjustment changes each correlation
+by at most `r sprintf("%.3f", max(abs(myelin_associations$correlation - myelin_associations$correlation_raw)))`.
+The positive associations persist after adjustment for the recorded region and
+sample labels, supporting a spatial association with the myelin expression program
+within this section.
 
-Exact feature identifiers work for RNA and protein as well as metabolites; no
-artificial m/z metadata is needed. The report includes paired scatter plots and
-native `plot3DFeature()` views of the same selected pairs.
+A chemical follow-up is the doubly dehydrated sphingosine ion
+`[M+H-2H2O]+`. [Sphingosine](https://www.kegg.jp/entry/C00319) has formula
+C18H37NO2; the calculation below uses monoisotopic atomic masses and proton mass.
+[MassBank RP014702](https://massbank.eu/MassBank/RecordDisplay?id=MSBNK-BGC_Munich-RP014702)
+records a fragment near m/z 264.2682 from a sphingosine standard.
 
-# Map identities before pathway statistics
+```{r myelin-mass-hypothesis}
+neutral_mass <- 18 * 12 + 37 * 1.00782503223 + 14.00307400443 + 2 * 15.99491461957
+water_mass <- 2 * 1.00782503223 + 15.99491461957
+expected_mz <- neutral_mass + 1.007276466621 - 2 * water_mass
+observed_mz <- SummarizedExperiment::rowData(x)$mz[
+    match("mz-264.268615", rownames(x))]
+knitr::kable(data.frame(candidate = "Sphingosine [M+H-2H2O]+",
+    observed_mz = observed_mz, expected_mz = expected_mz,
+    absolute_ppm_error = abs(observed_mz - expected_mz) / expected_mz * 1e6),
+    digits = c(0, 6, 6, 3), row.names = FALSE)
+```
 
-Here the bundled 240-location human-brain subset supplies the complete measured
-339-gene panel and its
-archived `cout_labels` cell labels. These are descriptive groups from a single
-section, not independent replicates or newly validated anatomical boundaries.
+The [annotation example](Metabolite_Annotation_Pipeline.html) retains competing
+identities for this peak and excludes it from the unambiguous compound pathway
+assay. This mass match motivates targeted validation of sphingoid-base chemistry.
+Related sphingolipids can yield the same fragment, so precursor-resolved MS/MS
+and standards are needed to distinguish free sphingosine from other sources.
 
-```{r pathway-chain, eval=TRUE}
+## Matched spatial views
+
+The report pairs scatter plots with `plot3DFeature()` views of the same features.
+Adjusted correlations can still reflect spatial dependence or unmeasured
+structure and require independent validation.
+
+# Identity mapping and pathway analysis {#map-identities-before-pathway-statistics}
+
+The [gene and joint-pathway guide](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
+combines compound and gene evidence in the paired human dataset. This section
+uses RNA rankings to illustrate regional enrichment and its display.
+
+## Human gene identities and complete rankings
+
+`database` supplies RaMP 3.0.7 memberships; `gene_reference` supplies HGNC 2026.7.7
+identities. `gene_index` reconciles IDs and `index` joins them to pathways.
+`real_data` contains 240 low-grade glioma locations grouped by archived `cout_labels`.
+
+`identity` stores normalized RNA aggregated to `gene_ids`. `ranks` contains
+identity-by-group mean-expression contrasts across all mapped identities.
+`min_path_size` and `max_path_size` limit tested pathways to 5–500 ranked members;
+`spatial_blocks = 0` skips marker sensitivity resampling.
+
+```{r pathway-chain, eval=TRUE, warning=FALSE}
 database <- loadSpaMTPDatabase(
     c("source_df", "analyte", "analytehaspathway", "pathway"), version = "3.0.7")
 gene_reference <- SpaMTPdb::spaMTPdbGeneReference(version = "2026.7.7")
 gene_index <- buildGeneMappingIndex(database$source_df,
                                   gene_reference = gene_reference)
 index <- buildPathwayIndex(database, gene_index = gene_index)
+
 real_data <- readRDS(system.file("extdata", "human_demo.rds", package = "SpaMTP"))
 real_data <- normalizeSMData(real_data, "LogNormalize", assay = "SPT", verbose = FALSE)
 identity <- createPathwayAssay(real_data, analyte_type = "genes",
@@ -241,47 +416,62 @@ identity <- createPathwayAssay(real_data, analyte_type = "genes",
     pathway_index = index, organism = "Homo sapiens")
 identity_markers <- findAllDEMs(identity, ident = "cout_labels", assay = "gene_ids",
     slot = "logcounts", method = "markers", spatial_blocks = 0)
+
 # Build a feature-by-region matrix of the complete identity-level effects.
 ranks <- identity_markers$expression
 for (region in colnames(ranks)) {
     tab <- identity_markers$DEMs[identity_markers$DEMs$cluster == region, ]
     ranks[, region] <- tab$logFC[match(rownames(ranks), tab$gene)]
 }
+
 set.seed(1234)
 regional <- findRegionalPathways(identity, ident = "cout_labels",
     ranks = list(genes = ranks), pathway_index = index,
     min_path_size = 5, max_path_size = 500)
 stopifnot(nrow(regional) > 0, ncol(identity) == ncol(real_data))
-plotRegionalPathways(regional, database = database)
 ```
 
-The ranks interface uses the complete measured feature ranking, with no FDR or
-foreground prefilter. It retains every used rank and the complete eligible pathway
-family. Competitive feature-set P values do not establish reproducibility across
-specimens. Joint gene/metabolite ranks can be RMS-scaled per modality, but pathways
-with many measured genes can still be dominated by transcriptomic coverage.
+## Regional pathway display
 
-For metabolomics, `createPathwayAssay(metabolite_ambiguity="exclude")` excludes
-mass features with multiple candidate compound identities. Original candidates,
-exclusions, aggregation weights and measured members remain inspectable. The
-workflow uses this policy by default; the public native interface retains the
-historical `expand` option. Sparse matrices stay sparse during identity aggregation.
-The network viewer can consume this identity assay directly, preventing re-expansion
-of excluded mass candidates. GESECA, scores and networks therefore use the same
-identity definition as regional enrichment.
+`regional` retains all results. `num_display = 8` selects pathways by maximum
+absolute normalized enrichment score (NES), ordered by membership Jaccard
+distance. Display selection preserves the original adjusted P values.
 
-The pathway dot plot uses **adjusted** P values for significance outlines and
-`1 - Jaccard similarity` for pathway ordering. It handles a single pathway. Mouse
-genes are not silently uppercased into a human HGNC index; the registered mouse
-recipes currently show compound pathways until an explicit compatible gene identity
-or orthology reference is supplied.
+`label_width` wraps names, `text_size` sets font size, and `sig_cutoff` sets the
+BH-adjusted P-value outline threshold. In Figure 7.\@ref(fig:regional-pathway-plot),
+fill shows NES and point area shows tested members.
+Positive NES indicates enrichment toward higher regional expression contrasts;
+negative NES indicates enrichment toward lower contrasts.
 
-# Apply the workflow to complete reference sections
+```{r regional-pathway-plot, fig.width=10, fig.height=6.6, fig.crop=FALSE, message=FALSE, out.width="900px", fig.cap="Regional gene-set enrichment in the 240-location low-grade glioma subset (339 measured RNA features before identity mapping). Up to eight pathways are selected by maximum absolute NES across archived cout_labels groups and ordered by membership overlap. Fill: signed NES; point area: tested members; dark outline: within-family BH-adjusted P <= 0.05. These competitive gene-set results describe one section."}
+pathway_plot <- plotRegionalPathways(regional, database = database,
+    num_display = 8, label_width = 32, text_size = 11, sig_cutoff = 0.05)
+pathway_plot + ggplot2::labs(x = "Archived cell group (cout_labels)")
+```
 
-The installed scripts retain the full DHB/Visium and FMP10/Visium analyses,
-including annotation, spatial integration, pathways and report generation. The
-vignette builds the small demonstration above; running the complete recipes is
-an explicit analysis step with larger resource and runtime requirements.
+## Coverage, ambiguity and species
+
+Competitive gene-set P values summarize enrichment within these section-level
+rankings. Review measured coverage and excluded IDs when interpreting pathways.
+Inspect `attr(regional, "pathway_coverage")` for measured and tested membership
+and `attr(regional, "ranks")` for the exact identity rankings used in each region.
+
+For metabolites, `metabolite_ambiguity = "exclude"` omits features with multiple
+candidate identities; candidates, exclusions and aggregation weights remain
+inspectable. Reuse the identity assay and index for GESECA, scores and networks.
+
+HGNC applies to human genes. Mouse genes need a species-specific or orthology
+reference, so installed mouse recipes demonstrate compound pathways. See the
+[gene-mapping](Gene_Identifier_Mapping.html) and
+[annotation](Metabolite_Annotation_Pipeline.html) guides.
+
+# Extended reference workflows {#apply-the-workflow-to-complete-reference-sections}
+
+## Reference scripts
+
+The installed scripts extend the DHB/Visium and FMP10/Visium analyses with
+annotation, integration, pathways and reports. `prepare` and `run`
+below are script paths; `source()` makes their entry points available.
 
 ```{r reference-recipes}
 prepare <- system.file("workflows", "prepare_mouse_brain.R", package = "SpaMTP")
@@ -292,65 +482,73 @@ formals(prepareMouseBrain)
 formals(runMouseBrain)
 ```
 
-Call `prepareMouseBrain(outputDir = a_new_input_directory)` to resolve the
-pinned native SpaMTPData 1.1.0 resources, then
+`prepareMouseBrain(outputDir = a_new_input_directory)` resolves pinned
+SpaMTPData 1.1.0 resources. Then
 `runMouseBrain(a_new_input_directory, outputDir = a_new_report_directory,
-case = "dhb")`. An explicit `nativeDir` selects verified local files and defaults
-to offline mode. Existing output directories are not overwritten. Source
-`examples/pathway_network_mouse_brain_demo.R` from the installed package for
-the corresponding full-data network recipe.
+case = "dhb")` runs the DHB analysis. Replace the two directory placeholders with
+new filesystem paths; existing output directories are protected from overwrite.
+An explicit `nativeDir` selects verified local files and defaults to offline mode.
+`examples/pathway_network_mouse_brain_demo.R` provides the full-data network recipe.
 
-For FMP10/Visium, preparation additionally requires a measured target spot radius
-in the original image coordinate system through `spatialConfig`. For the exact
-registered V11L12-109_B1 pair, `extdata/mouse_brain_scalefactors.json` retains the
-Space Ranger value `spot_diameter_fullres = 376.942`, from
-[Vicari et al.](https://doi.org/10.17632/w7nw4km7xd.1); use half that value as
-`target_radius`. Do not reuse it for another sample. H&E is optional and omitted
-from the native resources. Independently supplied images require explicit scale
-and orientation checks.
+## Spatial calibration and subset regeneration
 
-Pairing is documented for these registered specimens; species alone does not
-establish pairing. Both full-data runners re-annotate with the pinned chemical
-database and an explicit positive-mode DHB or FMP-10 index. Ambiguous compound
-assignments are excluded; mouse genes are not converted to human genes. The
-[annotation guide](Metabolite_Annotation_Pipeline.html) executes annotation,
-compound pathways and network generation on the small real DHB example.
+FMP10/Visium preparation requires a measured target radius in original image
+coordinates via `spatialConfig`. For the registered V11L12-109_B1 pair only,
+`extdata/mouse_brain_scalefactors.json` records Space Ranger's
+`spot_diameter_fullres = 376.942` from [Vicari et al.](https://doi.org/10.17632/w7nw4km7xd.1).
+Set `target_radius` to half that value for this pair. Other specimens require
+their own calibration. Optional optical images need checked scale and orientation.
 
-To regenerate the bundled subsets, source `workflows/prepare_vignette_data.R`
-and call `prepareVignetteData()` with a new output directory. See
-`help("vignetteData")` for the deterministic selection rules and source checksums.
+Both runners use pinned positive-mode DHB or FMP-10 annotation and exclude
+ambiguous compound assignments. To regenerate the vignette subsets, source
+`workflows/prepare_vignette_data.R` and call `prepareVignetteData()` with a new
+output directory.
 
-# Render and retain a reviewable analysis
+# Reports and exported results {#render-and-retain-a-reviewable-analysis}
+
+## Report generation
+
+`renderSpaMTPReport()` writes the analysis, figures and tables into a new directory.
+`report` is the resulting HTML path; `tempfile()` supplies a temporary directory
+name here. Use a persistent new directory for an analysis you intend to retain.
 
 ```{r report, eval=TRUE}
 report <- renderSpaMTPReport(fit, tempfile("dhb-demo-report-"))
 stopifnot(file.exists(report))
 ```
 
-These panels come from the report just computed on all 160 retained locations.
-Compare the archived region labels in the embeddings with the spatial partitions;
-smoothness alone does not establish better recovery of anatomy. Cluster numbers
-are local to each panel and do not identify matching cell types across methods.
+## Embeddings and spatial partitions {#report-panels}
 
-```{r report-panels, out.width="100%"}
+These panels use all 876 archived mouse-brain locations. `figures` is the report's
+figure manifest, and `selected` locates the embedding and spatial panels.
+Embedding colours in Figure 7.\@ref(fig:report-panels-1) show archived regions.
+Spatial colours in Figure 7.\@ref(fig:report-panels-2) show method-specific
+clusters. Each method assigns its own cluster numbers.
+
+```{r report-panels, out.width="960px", fig.cap=c("Individual and joint embeddings of all 876 archived DHB/Visium locations. Each point is a paired location coloured by its archived anatomical region. Axes are the first two components of each representation; their scales are method-specific.", "Spatial partitions of the same 876 locations in original image coordinates. Colours indicate clusters fitted separately for each representation. Cluster numbers are local to each panel. Anatomical accuracy requires comparison with independent anatomical annotations.")}
 figures <- utils::read.csv(file.path(dirname(report), "figure_index.csv"))
 selected <- match(c("structure_embedding", "structure_spatial"), figures$name)
 stopifnot(!anyNA(selected))
 knitr::include_graphics(file.path(dirname(report), figures$png[selected]))
 ```
 
-Reports follow the analytical sequence above. They include a linked region/DE
-explorer with feature search, directional AUC/effect/stability/FDR filters, spatial
-zoom and pan, coordinated feature profiles and complete CSV exports. Native 3D and
-network views are available when their input requirements are satisfied. Figures
-are embedded as PNGs and also exported as PDFs. Open the HTML in a browser or an IDE
-HTML preview that permits JavaScript; Markdown previews may disable interaction.
-The output directory also contains the complete workflow RDS, settings, inputs used
-by each stage, source and database provenance, and file checksums.
+## Exported data and methods
 
-For methods, see the [Bioconductor marker-scoring documentation](https://bioconductor.org/books/release/OSCA.basic/marker-detection.html)
-and the [GraphPCA paper](https://doi.org/10.1186/s13059-024-03429-x).
+The report includes searchable region/feature tables, spatial views and CSV
+exports. The output directory retains the workflow RDS, stage inputs, settings,
+reference provenance, checksums and PNG/PDF figures. Open the HTML in a browser
+that permits JavaScript to use linked interactive views.
+
+Methods: [Bioconductor marker scoring](https://bioconductor.org/books/release/OSCA.basic/marker-detection.html)
+and [GraphPCA](https://doi.org/10.1186/s13059-024-03429-x).
+
+# Session information
+
+<details>
+<summary>R session and package versions</summary>
 
 ```{r session-info}
 sessionInfo()
 ```
+
+</details>

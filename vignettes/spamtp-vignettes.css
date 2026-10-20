@@ -1,0 +1,70 @@
+/* Retain BiocStyle typography, colours and code highlighting. */
+/* Use the article width for compact figures and wide annotation tables. */
+body { font-size: 15px; line-height: 1.6; }
+body .main-container { max-width: 1040px; padding: 0 28px 36px; }
+.main-container p, .main-container dl { padding: 0; text-align: left; }
+.main-container h1, .main-container h2, .main-container h3,
+.main-container h4, .main-container h5, .main-container h6 {
+  margin-right: 0; padding-left: 0; text-indent: 0;
+}
+.main-container .header-section-number { float: none; width: auto; margin-right: 0.5em; }
+.main-container ul, .main-container ol { padding-right: 0; padding-left: 1.6em; }
+.main-container pre { max-width: 100%; overflow-x: auto; margin: 1em 0; padding: 0 14px; }
+.main-container pre code { padding: 12px 0; }
+div#TOC > ul { padding: 0; columns: 2; column-gap: 2.5em; }
+div#TOC > ul > li { break-inside: avoid; padding-bottom: 0.6em; }
+div#TOC ul ul { padding-left: 1.4em; }
+
+/* Light table rules, consistent spacing and aligned numeric columns. */
+.main-container table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.2em 0 1.5em;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-top: 1px solid #cfd5dc;
+  border-bottom: 1px solid #cfd5dc;
+  font-size: 0.94em;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.main-container table > thead > tr > th {
+  padding: 0.65em 0.85em;
+  background: #f0f2f4;
+  border-bottom: 1px solid #cfd5dc;
+  text-align: left;
+  vertical-align: bottom;
+}
+.main-container table > tbody > tr > td {
+  padding: 0.6em 0.85em;
+  border-top: 1px solid #e4e7eb;
+  vertical-align: top;
+}
+.main-container table [align="right"] { text-align: right; }
+.main-container table [align="center"] { text-align: center; }
+.main-container table > tbody > tr:nth-child(even) { background: #f8f9fa; }
+.main-container td p, .main-container th p { margin: 0; }
+.main-container table code { background: transparent; padding: 0; }
+.main-container table caption { padding: 0.4em 0 0.65em; text-align: left; font-size: 0.95em; line-height: 1.5; }
+
+.main-container img { padding: 0; }
+.main-container summary { cursor: pointer; }
+.figure { margin: 1.4em auto 2em; }
+.figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.main-container .figure .caption, .main-container p.caption {
+  margin: 0.7em 0 0;
+  font-size: 0.94em;
+  line-height: 1.5;
+  text-align: left;
+}
+@media screen and (max-width: 767px) {
+  body .main-container { padding: 0 16px 24px; }
+  div#TOC { display: block; }
+  div#TOC > ul { columns: 1; }
+}
+@media print {
+  .figure, tr { break-inside: avoid; }
+  .main-container table { display: table; width: auto; font-size: 0.85em; }
+}
