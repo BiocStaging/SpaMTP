@@ -24,12 +24,14 @@ options(width = 100)
 
 # Overview
 
-SpaMTP indexes plausible adducts, matches observed m/z within a mass tolerance,
-and ranks candidates using chemical priors and optional MS1 evidence.
+SpaMTP annotates mass spectrometry imaging (MSI) features by matching observed
+m/z to plausible adducts within a mass tolerance. It ranks candidates using
+chemical priors and optional first-stage mass spectrometry (MS1) evidence.
 
 ## Annotation stages
 
-1. Parse functional groups and ionisation sites from SMILES.
+1. Parse functional groups and ionization sites from simplified molecular-input
+   line-entry system (SMILES) strings.
 2. Apply ion-mode, matrix and molecule-specific adduct rules.
 3. Build a sorted index and query observed m/z values.
 4. Score mass, structure, isotope and adduct-family evidence.
@@ -90,16 +92,16 @@ chem_props_registry[, c(
 
 # A worked 2-hydroxyglutarate example
 
-A single RaMP record and simulated ion masses isolate the indexing and scoring
-steps. These are computational fixtures; the real tissue example follows below.
+A single RaMP record and simulated ion masses show how indexing and scoring
+work. The complete-database example below then applies the same steps to a
+mouse striatal section.
 
 `target_db` contains D-2-hydroxyglutaric acid (2HG; neutral mass 148.0372 Da).
-`annotateSMILESStructure()` adds functional groups and ionisation-site counts
+`annotateSMILESStructure()` adds functional groups and ionization-site counts
 from its `iso_smiles` structure.
 
 ```{r target-database}
-# This one-row computational fixture is copied from SpaMTPdb 3.0.7.
-# The identifiers and structure retain the pinned snapshot values.
+# One chemical record from the pinned SpaMTPdb 3.0.7 snapshot.
 target_db <- data.frame(
   ramp_id = "RAMP_C_000219574",
   chem_data_source = "hmdb",
@@ -129,9 +131,9 @@ It preserves curated values and fills missing fields from SMILES.
 
 # From functional groups to ion-mode behaviour
 
-`deconvolveSMILES()` also derives mode-specific, bounded chemical-prior
-scores. These scores use a heuristic scale; candidate validation requires
-experimental evidence.
+`annotateSMILESStructure()` calls `deconvolveSMILES()` internally to derive
+functional groups and mode-specific chemical-prior scores. These bounded
+heuristics express the structural support for each ion mode.
 
 ```{r structure-priors}
 structure_summary <- target_db[, c(
@@ -153,7 +155,7 @@ knitr::kable(t(structure_summary), col.names = "Value", digits = 2)
 - **Negative mode:** acidic groups support deprotonation; ordinary alcohols
   provide weaker evidence.
 - **Neutral matching:** compares neutral molecular masses independently of
-  ionisation-site requirements.
+  ionization-site requirements.
 
 For 2HG, two carboxyl groups support deprotonation. Its oxygen donors favour
 alkali binding over simple protonation. `structure_evidence` records the sites:
@@ -192,10 +194,10 @@ knitr::kable(
 )
 ```
 
-Predicted families require support from observed mass, isotopes, co-occurring
-adducts, spatial evidence or pseudo-MS/MS.
+The following steps combine these structural predictions with observed mass
+and optional isotope and adduct-family evidence.
 
-# Validated adduct rules
+# Adduct rules and structural constraints
 
 `adductRules()` returns each rule's mass shift, molecular multiplier, charge,
 proton losses, class and prior. Both `[M+H]+` and `M+H` notation are accepted.
@@ -213,6 +215,12 @@ rule_summary <- positive_rules[
 rule_summary <- rule_summary[match(selected_adducts, rule_summary$name), ]
 knitr::kable(rule_summary, digits = 7, row.names = FALSE)
 ```
+
+Positive-mode rules also include `[M+H-H2O]+` and `[M+H-2H2O]+`.
+SMILES-derived `dehydration_sites` and `max_water_losses` constrain these
+fragment hypotheses: the requested water loss must fit the structure's
+dehydration capacity. The real-data example below shows the resulting
+structure-compatible candidates.
 
 ## Expected mass-to-charge ratio
 
@@ -366,6 +374,12 @@ Absent optional MS1 context receives a neutral scoring factor. When a
 contextual spectrum is supplied, missing expected isotope or base-adduct peaks
 can reduce the score.
 
+`use_mass_defect = TRUE` applies an additional chemical heuristic: for CHO-only
+formulae and adducts without metal or halogen, a signed mass defect
+(`observed_mz - round(observed_mz)`) from −0.15 to −0.01 gives
+`chemical_score = 0.2`. Other candidates receive a factor of 1. Setting
+`use_mass_defect = FALSE` disables this factor for sensitivity comparisons.
+
 ## Adduct-family support
 
 A complex ion is more credible when a corresponding base monomer is present in
@@ -405,60 +419,6 @@ data.frame(
   knitr::kable(digits = 3, row.names = FALSE)
 ```
 
-## Mass-defect heuristic
-
-An unusually negative signed mass defect penalizes nominally CHO-only
-candidates without removing them. A universal exclusion would also reject
-valid halogenated, metal-containing or unusual biological ions.
-
-This deliberately inconsistent test record combines the CHO formula
-`C2H2O2` (58.0055 Da) with a supplied mass of 99.9427 Da to trigger the
-heuristic. The pair is a software fixture; real database records require
-formula and mass consistency.
-
-```{r mass-defect}
-background_like_db <- data.frame(
-  formula = "C2H2O2",
-  exactmass = 99.942723533379,
-  id = "synthetic-background-like-candidate",
-  name = "Synthetic background-like candidate"
-)
-background_index <- buildMZAnnotationIndex(
-  background_like_db,
-  polarity = "positive",
-  adducts = "M+H"
-)
-background_mz <- background_index$expected_mz[[1L]]
-
-with_penalty <- queryMZAnnotationIndex(
-  background_mz,
-  background_index,
-  ppm = 0,
-  use_mass_defect = TRUE,
-  check_isotopes = FALSE,
-  check_adduct_network = FALSE
-)
-without_penalty <- queryMZAnnotationIndex(
-  background_mz,
-  background_index,
-  ppm = 0,
-  use_mass_defect = FALSE,
-  check_isotopes = FALSE,
-  check_adduct_network = FALSE
-)
-
-data.frame(
-  setting = c("mass-defect heuristic on", "mass-defect heuristic off"),
-  signed_mass_defect = background_mz - round(background_mz),
-  chemical_score = c(
-    with_penalty$chemical_score,
-    without_penalty$chemical_score
-  ),
-  retained = c(nrow(with_penalty) > 0L, nrow(without_penalty) > 0L)
-) |>
-  knitr::kable(digits = 3, row.names = FALSE)
-```
-
 # Annotate individual mass values
 
 `annotateMZ()` is a convenience wrapper for individual or small batches of
@@ -487,8 +447,9 @@ knitr::kable(
 
 `annotateSM(db = NULL)` resolves RaMP through `SpaMTPdb`. For repeated calls,
 load the table and reuse an index. Omitting `adducts` uses all rules for the
-mode or MALDI matrix, subject to structural priors; specify a list when the
-acquisition protocol excludes ion families.
+mode or matrix-assisted laser desorption/ionization (MALDI) matrix, subject to
+structural priors; specify a list when the acquisition protocol excludes ion
+families.
 
 ## Precomputed structural features
 
@@ -501,18 +462,18 @@ or explicitly choose
 
 ## Complete-database annotation on real data
 
-This example annotates all 2,075 measured mass features across the 876 paired
-locations in the archived DHB/Visium striatal dataset. The source is a 6-OHDA
-mouse section (mouse 3, V11L12-038_B1;
+This example annotates all 2,075 MSI features across the 876 paired locations in
+the archived 2,5-dihydroxybenzoic acid (DHB) MALDI/Visium striatal dataset.
+The source is a mouse section from a 6-hydroxydopamine (6-OHDA) lesion model
+(mouse 3, V11L12-038_B1;
 [GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
 The archived striatum was selected in the original analysis; no further spatial
 crop is applied here. See the [workflow guide](End_to_End_Workflow.html) for
 anatomy, lesion-side labels and paired molecular maps.
 
 Pinned data and references are cached after download. `ms1` pools mean
-intensities across these locations for exploratory scoring. Pixel-specific
-co-occurrence requires spectra from matching locations; chemical identity
-requires additional experimental evidence.
+intensities across these locations for section-level scoring. For pixel-specific
+co-occurrence, supply spectra from matching locations.
 
 `assay = "main"` selects MSI and `raw.mz.column = "mz"` supplies measured masses.
 `return.only.annotated = FALSE` retains unmatched features; `save.intermediate`
@@ -581,9 +542,11 @@ knitr::kable(threshold_summary, row.names = FALSE)
 ```
 
 The 0.05 cutoff retains a broad candidate set for exploratory pathway analysis.
-Its effect on coverage and ambiguity is shown above. The score combines
-heuristic evidence; a calibrated confidence level requires external validation.
-The stricter cutoffs illustrate sensitivity to this analysis choice.
+The table shows its coverage and ambiguity alongside stricter cutoffs, allowing
+sensitivity to the threshold to be assessed.
+Single-identity feature counts can initially rise as weaker competing identities
+fall below the cutoff. At a stricter cutoff, the last candidate for many features
+also falls below the threshold, reducing coverage.
 
 ```{r annotation-score-distribution, fig.width=7, fig.height=3.6, out.width="760px", fig.cap="Best candidate score per measured mass feature in the mouse striatal section. Each bar counts features; the dashed line marks the exploratory 0.05 cutoff. Features without a ppm-valid candidate are reported in the text."}
 best_score <- tapply(stored_candidates$Score, stored_candidates$ID, max)
@@ -601,11 +564,14 @@ Figure 4.\@ref(fig:annotation-score-distribution) summarizes the score range;
 
 ## Candidate identities for selected mass features
 
-The following masses are selected from the paired molecular-map and association
-examples before inspecting candidate scores. For each nearest measured feature,
-show up to three distinct compound/adduct hypotheses and the
-number of distinct RaMP identities surviving 0.05. `ppm_error` measures mass
-agreement; multiple identities require further chemical evidence.
+The m/z 400.1466 and 264.2686 features also appear in the
+[paired molecular maps](End_to_End_Workflow.html#paired-ion-and-transcript-maps)
+and [association analysis](End_to_End_Workflow.html#raw-and-adjusted-correlations)
+in Article 7. They were selected before inspecting candidate scores.
+For each nearest measured feature, the table shows up to three distinct
+compound/adduct hypotheses and the number of RaMP identities surviving 0.05.
+`ppm_error` measures mass agreement, while the identity count records the
+remaining chemical ambiguity.
 
 ```{r real-candidate-examples}
 example_mz <- c(264.2686, 400.1466)
@@ -615,11 +581,15 @@ example_features <- vapply(example_mz, function(mz) {
 }, integer(1))
 identities_at_cutoff <- identity_count(
   stored_candidates[stored_candidates$Score >= 0.05, ])
-candidate_examples <- do.call(rbind, lapply(example_features, function(feature) {
+candidates_for <- function(feature) {
   candidates <- stored_candidates[stored_candidates$ID == feature, ]
   candidates <- candidates[order(-candidates$Score, candidates$Error), ]
-  candidates <- head(candidates[!duplicated(
-    candidates[, c("Ramp_IDs", "Adduct")]), ], 3)
+  candidates <- candidates[!duplicated(candidates[, c("Ramp_IDs", "Adduct")]), ]
+  candidates$rank <- seq_len(nrow(candidates))
+  candidates
+}
+candidate_examples <- do.call(rbind, lapply(example_features, function(feature) {
+  candidates <- head(candidates_for(feature), 3)
   if (!nrow(candidates)) return(NULL)
   data.frame(mz = candidates$observed_mz,
     candidate = candidates$IsomerNames, adduct = candidates$Adduct,
@@ -628,13 +598,61 @@ candidate_examples <- do.call(rbind, lapply(example_features, function(feature) 
 }))
 candidate_examples$identities_at_0.05[
   is.na(candidate_examples$identities_at_0.05)] <- 0L
+focal_candidates <- candidates_for(example_features[[2L]])
+difloxacin_candidate <- focal_candidates[
+  focal_candidates$IsomerNames == "Difloxacin" &
+    focal_candidates$Adduct == "M+H", ]
+stopifnot(nrow(difloxacin_candidate) == 1L,
+          all(c("M+H-H2O", "M+H-2H2O") %in% ramp_positive_index$rules$name))
 knitr::kable(candidate_examples, format = "html", digits = 4, row.names = FALSE)
 ```
 
 Both selected features retain multiple compound identities at 0.05 and are
-excluded from the compound pathway assay below. For example, the difloxacin
-mass match requires pharmacological context and orthogonal chemical evidence
-before assigning that identity to this mouse section.
+excluded from the compound pathway assay below. At m/z
+`r sprintf("%.4f", difloxacin_candidate$observed_mz)`, difloxacin `[M+H]+`
+ranks `r difloxacin_candidate$rank`, with score
+`r sprintf("%.3f", difloxacin_candidate$Score)`.
+Difloxacin is a [veterinary fluoroquinolone antibiotic](https://www.ema.europa.eu/en/documents/mrl-report/difloxacin-extension-all-food-producing-species-summary-report-5-committee-veterinary-medicinal-products_en.pdf).
+Assigning this identity to the mouse section requires exposure information and
+orthogonal chemical evidence.
+
+## Sphingosine within the complete candidate search
+
+Article 7 follows the spatial association of m/z 264.2686 with myelin-related
+transcripts. The table below locates the sphingosine `[M+H-2H2O]+` hypothesis
+within this complete database search. `rank` orders distinct compound/adduct
+hypotheses by score, then mass error. `max_water_losses` gives the
+structure-derived capacity and `dehydration_status` records the engine's
+eligibility decision.
+
+```{r sphingosine-full-search}
+myelin_candidates <- candidates_for(example_features[[1L]])
+sphingosine_full <- myelin_candidates[
+  grepl("(^|;[[:space:]]*)RAMP_C_000042035($|;)",
+        myelin_candidates$Ramp_IDs) &
+    myelin_candidates$Adduct == "M+H-2H2O", ]
+stopifnot(nrow(sphingosine_full) > 0L,
+          all(sphingosine_full$WaterLoss == 2L),
+          all(sphingosine_full$MaxWaterLosses >= 2L))
+knitr::kable(data.frame(
+  rank = sphingosine_full$rank,
+  candidate = sphingosine_full$IsomerNames,
+  adduct = sphingosine_full$Adduct,
+  ppm_error = sphingosine_full$Error,
+  score = sphingosine_full$Score,
+  max_water_losses = sphingosine_full$MaxWaterLosses,
+  dehydration_status = sphingosine_full$DehydrationStatus
+), format = "html", digits = 4, row.names = FALSE)
+```
+
+The same feature retains
+`r as.integer(identities_at_cutoff[as.character(example_features[[1L]])])`
+RaMP identities at the exploratory 0.05 cutoff. Its competing candidates
+include ammonium adducts of other compounds. The water-loss rule brings
+sphingosine into the ranked results with explicit structural support. The
+[formula-specific comparison](End_to_End_Workflow.html#structure-constrained-chemical-follow-up)
+in Article 7 inspects the corresponding structural alternatives without
+rebuilding the complete index.
 
 # Carry the annotation threshold into real pathway analysis
 
@@ -647,13 +665,15 @@ in mouse requires species-specific supporting evidence.
 `annotation_score_threshold = 0.05` applies the exploratory cutoff examined
 above. `metabolite_ambiguity = "exclude"` removes multi-identity peaks before
 computing `markers` and `ranks`; pathway tests require 3–100 ranked members.
+`LogNormalize` uses the natural logarithm, computing
+`log1p(10000 * intensity / location_total)` before compound aggregation.
 
 `network_directory` receives the HTML network. `top_n_pathways` and `max_nodes`
 limit display size; `SM_assay`/`SM_slot` select compound logcounts. `DE.list`
 supplies node scores, `analyte_types` limits nodes to compounds, and
 `image = NULL` omits an optical background.
 
-```{r downstream-thresholds, eval=TRUE}
+```{r downstream-thresholds, eval=TRUE, message=FALSE}
 pathway_index <- buildPathwayIndex(database, gene_mapping = "ramp",
                                  organism = "Mus musculus")
 object <- normalizeSMData(object, "LogNormalize", verbose = FALSE)
@@ -708,10 +728,8 @@ knitr::kable(data.frame(
 
 `network_file` is a self-contained interactive HTML file that can be opened in a
 browser or copied to a permanent results directory. The summary below reports
-reference topology nodes, reaction edges and measured compound nodes; identical
-view sizes are grouped with their number of regional views. These broad reference
-sets summarize overlapping candidate chemistry. Experimental confirmation is
-needed before interpreting them as biological pathway activity.
+reference topology nodes, reaction edges and measured compound nodes.
+`regional_views` counts regions with the same pathway and node/edge counts.
 
 ```{r network-summary, echo=FALSE}
 network_html <- readLines(network_file, warn = FALSE)
@@ -735,33 +753,40 @@ names(network_overview)[names(network_overview) == "region"] <- "regional_views"
 knitr::kable(network_overview, format = "html", row.names = FALSE)
 ```
 
-# Interpretation and limitations
+The displayed networks contain
+`r min(network_overview$measured_compounds)`–`r max(network_overview$measured_compounds)`
+measured compounds among
+`r min(network_overview$nodes)`–`r max(network_overview$nodes)` nodes.
+Most nodes therefore provide reference topology around the measured compounds.
+The measured-node overlay identifies the signals contributing experimental
+coverage to each pathway; pathway activity requires further biological evidence.
 
-## Candidate identity and supporting evidence
+# Interpreting and following up annotations
 
-- Each annotation ranks a chemical hypothesis on a heuristic score scale.
-  Identity confirmation and error-rate calibration require independent evidence.
-- Structural-isomer assignments generally require evidence beyond accurate mass.
-- Isotope and adduct-family checks require a spectrum from an appropriate
-  retention-time, pixel, or regional context.
+## Candidate ranking and identity
 
-## Chemical heuristics and structural assumptions
+Scores combine mass agreement, chemical priors and available MS1 context to
+prioritize candidate identities. Confirm key assignments with authentic
+standards or complementary measurements such as retention time, ion mobility
+and tandem mass spectrometry (MS/MS). Structural isomers and water-loss
+fragments particularly benefit from precursor-resolved fragmentation.
+Calibrating score thresholds to an identification error rate requires an
+independently validated reference set.
 
-- The mass-defect rule reduces scores for the targeted candidate class.
-- SMILES priors summarise common functional groups. Effects of pKa, gas-phase
-  chemistry, solvent, salt, matrix and instrumentation require additional
-  modelling. Unparsed exotic or organometallic structures retain mass-rule scoring.
-- Tautomers and protonation states affect inferred sites. Use standardized
-  neutral SMILES and inspect `structure_evidence` for key assignments.
+## Structure and acquisition context
 
-## Orthogonal validation
-
-- Orthogonal evidence such as authentic standards, retention time, ion
-  mobility, or MS/MS remains necessary for high-confidence identification.
+Use standardized neutral SMILES and inspect `structure_evidence` for key
+assignments, since tautomer and protonation choices affect inferred sites.
+SMILES priors describe common functional groups; pKa, gas-phase chemistry,
+solvent, salt, matrix and instrumentation can further influence ion formation.
+For unparsed structures, ordinary adducts retain mass-rule scoring; water-loss
+rules require a structure-derived dehydration capacity. Supply isotope and
+adduct-family checks with spectra from a matching retention-time window, pixel
+or region.
 
 Continue to [pathway resources](Pathway_Database_Integration.html) and the
 [evaluated workflow](End_to_End_Workflow.html) for pathway coverage, spatial
-comparisons and candidate prioritisation.
+comparisons and candidate prioritization.
 
 # Session information
 

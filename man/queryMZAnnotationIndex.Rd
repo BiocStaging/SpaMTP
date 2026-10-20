@@ -37,12 +37,21 @@ family is absent from \code{ms1_spectrum}.}
 \item{min_score}{Minimum final score to retain.}
 }
 \value{
-A ranked candidate data frame.
+A ranked candidate data frame. \code{water_loss} is the required number
+of neutral water losses; \code{dehydration_sites} and \code{max_water_losses} record
+the checked structure's site count and capacity. \code{dehydration_status} is
+\code{"structure-compatible"} for retained positive water losses and
+\code{"not_required"} for other rules. Missing capacities for other rules are
+left as \code{NA}. These fields describe eligibility, not confirmed identity.
 }
 \description{
 Candidates are pruned by ppm tolerance and proton/charge validity during
 index construction, then ranked using mass error, rule prior, mass-defect,
-isotope, and contextual adduct-family evidence.
+isotope, and contextual adduct-family evidence. Positive water-loss
+candidates additionally require compatible alcohol OH and neighbouring
+carbon H sites. Older structure tables are checked lazily for mass-matched
+records; \code{infer_structure = "never"} requires precomputed dehydration
+capacity. Isomer identities are resolved separately for these losses.
 }
 \examples{
 utils::str(formals(queryMZAnnotationIndex))

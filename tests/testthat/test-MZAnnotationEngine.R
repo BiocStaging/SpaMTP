@@ -277,7 +277,9 @@ test_that("profile-only reactive matrices do not invent product masses", {
     rules <- maldiMatrixRules("DPP-TFB", polarity = "positive"),
     "does not yet bundle a universal"
   )
-  expect_true(all(rules$rule_class == "standard_adduct"))
+  expect_true(all(rules$rule_class[rules$water_loss == 0L] == "standard_adduct"))
+  expect_true(all(rules$rule_class[rules$water_loss > 0L] ==
+                    "structure_constrained_neutral_loss"))
   expect_false(any(grepl("DPP", rules$name, fixed = TRUE)))
 })
 

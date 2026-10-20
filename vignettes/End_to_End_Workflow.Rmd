@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Analysis scope and workflow overview {#analysis-questions-determine-the-workflow}
+# Analysis scope and workflow overview {#analysis-scope-and-workflow-overview}
 
 ## Analysis stages
 
@@ -41,23 +41,30 @@ pathways using native Bioconductor containers. It follows the original
 
 ## Demonstration datasets
 
-We retain all 876 paired locations, 2,075 mass features and
-32,285 RNA features in the archived DHB/Visium striatal dataset. The source is a
-coronal section from a 6-OHDA mouse (mouse 3, V11L12-038_B1;
+We retain all 876 paired locations, 2,075 mass spectrometry imaging (MSI)
+features and 32,285 RNA features in the archived striatal dataset, acquired
+with a 2,5-dihydroxybenzoic acid (DHB) matrix and paired with Visium RNA.
+The source is a coronal section from a 6-hydroxydopamine (6-OHDA)-lesioned mouse (mouse 3, V11L12-038_B1;
 [GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
 The original analysis selected these striatal locations from the source section.
 
 The pathway example uses 240 locations from an aligned human low-grade glioma
-MSI/Xenium dataset, retaining all 574 MS features and the 339-gene targeted panel.
+MSI/Xenium dataset, retaining all 574 MSI features and the 339-gene targeted panel.
 It derives from [Drummond et al.](https://doi.org/10.1038/s41591-025-03884-4)
 and [BioImage Archive S-BIAD1426](https://doi.org/10.6019/S-BIAD1426), via the
-[archived SpaMTP object](https://zenodo.org/records/18282678). `cout_labels`
+[archived SpaMTP object](https://zenodo.org/records/18282678). Each paired
+location retains a Xenium cell position. The published study assigns the mean
+registered MSI intensity within 20 micrometres to each cell; this vignette
+subsets those positions without further RNA pooling. The archived object does
+not retain the pixel-to-cell averaging weights.
+
+`cout_labels`
 contains the archived Astro, Mesenchymal, Neuronal, Oligo and Progenitor groups;
 the transferred object preserves these assignments without their assignment recipe.
 Both datasets represent single sections; the replicate-design example is simulated. The pinned mouse resource downloads once (about 48 MB) and is
 cached. See `help("vignetteData")` for the bundled human subset's selection rule.
 
-# Input modalities and study design {#supply-modalities-and-study-design-explicitly}
+# Input modalities and study design {#input-modalities-and-study-design}
 
 ## Paired measurements and modality definitions
 
@@ -110,17 +117,21 @@ ggplot2::ggplot(coordinates, ggplot2::aes(x, y, colour = region, shape = lesion)
 
 ## Normalization and replication
 
-`runSpaMTPWorkflow()` preserves the input layers and adds library-size-normalized,
-log2 MS/RNA values; protein values use log2(1 + value). Use
-`normalization = "none"` for transformed inputs. Complete spectral processing
-and RNA quality control beforehand.
+`runSpaMTPWorkflow()` preserves input layers. Its default MSI/RNA transform is
+`log2(1 + 10000 * value / column_sum)`; protein values use `log2(1 + value)`.
+Standalone `normalizeSMData(..., "LogNormalize")` in the earlier guides and the
+[human pathway section](#human-gene-identities-and-complete-rankings) uses
+natural `log1p`. Values and mean differences across the two scales require
+conversion: divide natural-log values by `log(2)` to obtain log2 units. Use
+`normalization = "none"` for already transformed inputs. Complete spectral
+processing and RNA quality control beforehand.
 
 Lesion sides, pixels and spatial blocks belong to one section. We preserve the
 archived spatial coverage and compare both sides within the same archived CP
 region. Results describe this specimen; population-level
 inference requires independent biological samples.
 
-# Individual, spatial and joint representations {#compare-representations-using-the-same-observations-and-features}
+# Individual, spatial and joint representations {#individual-spatial-and-joint-representations}
 
 ## Workflow settings
 
@@ -168,11 +179,10 @@ Approximate silhouette measures separation within each representation; spatial-n
 agreement measures smoothness. [Adjusted Rand index (ARI)](https://mclust-org.github.io/mclust/reference/adjustedRandIndex.html)
 compares clusters with `RegionLoupe`, with expected value zero for random partitions.
 Here ARI ranges from `r sprintf("%.3f", min(metrics$reference_ARI))` to
-`r sprintf("%.3f", max(metrics$reference_ARI))`, indicating weak anatomical agreement.
-CP accounts for `r sum(x$RegionLoupe == "CP")` of `r ncol(x)` locations, leaving
-limited coverage of smaller regions. ARI remains chance-adjusted with unequal
-class sizes; these results show that the fitted clusters recover little of the
-archived anatomical partition.
+`r sprintf("%.3f", max(metrics$reference_ARI))`, indicating low concordance with
+archived anatomical labels in this section. CP accounts for
+`r sum(x$RegionLoupe == "CP")` of `r ncol(x)` locations; smaller regions contribute
+fewer observations. ARI remains chance-adjusted with unequal class sizes.
 
 At the primary `k = 3`, joint PCA has silhouette
 `r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "Joint / PCA" & metrics$k == 3])`,
@@ -180,10 +190,11 @@ compared with
 `r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "main / PCA" & metrics$k == 3])`
 for MSI and
 `r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "SPT / PCA" & metrics$k == 3])`
-for RNA. Equal-weight integration therefore provides no improvement in this
-separation diagnostic. Smooth spatial clusters can still have weak anatomical
-agreement. Retain the declared reference and settings when reporting this outcome;
-independent sections are needed to evaluate biological reproducibility.
+for RNA. The joint representation has lower silhouette separation in this
+dataset. Consider separation and spatial-neighbor agreement together when
+selecting a representation. ARI evaluates correspondence with the declared
+anatomical reference; the molecular maps below describe feature-level spatial
+patterns within those regions.
 
 Block omission refits clustering on fixed full-data embeddings to assess spatial
 sensitivity. See the [report panels](#report-panels) for embeddings and partitions.
@@ -249,7 +260,7 @@ knitr::kable(cp_means, digits = 2,
 is higher on the intact side. This comparison uses CP locations on both sides
 and describes variation within this specimen.
 
-# Regional marker characterization {#region-characterization-is-richer-than-a-mean-difference}
+# Regional marker characterization {#regional-marker-characterization}
 
 ## Marker scores and heatmap
 
@@ -281,7 +292,7 @@ These summaries describe sensitivity to the omission of individual spatial block
 A `direction_stability` of 1 means that every evaluable block-omission fit
 preserved the full-data mean Cohen effect's sign.
 
-# Inference across biological replicates {#keep-biological-replicate-inference-separate}
+# Inference across biological replicates {#inference-across-biological-replicates}
 
 ## Simulated paired design
 
@@ -314,8 +325,8 @@ head(replicate_de$tests$treatment_control$table)
 
 ## Replicate means and effect interpretation
 
-This mode fits limma to equally weighted replicate means: at least three complete
-pairs, or three replicates per arm for an unpaired design. `replicate_de` retains
+This mode fits limma to equally weighted replicate means and requires at least
+three complete pairs, or three replicates per arm for an unpaired design. `replicate_de` retains
 the design, all tests, moderated intervals and BH-adjusted P values per modality
 and contrast. `logFC` uses the supplied scale; RNA count inference may require a
 separate pseudobulk model.
@@ -324,7 +335,7 @@ Single-section examples support descriptive spatial comparisons. Replicate
 inference requires independent biological samples recorded in `patient_id` or
 an equivalent sample identifier.
 
-# Regional composition and feature associations {#ask-whether-colocalization-survives-regional-composition}
+# Regional composition and feature associations {#regional-composition-and-feature-associations}
 
 ## Raw and adjusted correlations
 
@@ -354,37 +365,89 @@ The positive associations persist after adjustment for the recorded region and
 sample labels, supporting a spatial association with the myelin expression program
 within this section.
 
-A chemical follow-up is the doubly dehydrated sphingosine ion
-`[M+H-2H2O]+`. [Sphingosine](https://www.kegg.jp/entry/C00319) has formula
-C18H37NO2; the calculation below uses monoisotopic atomic masses and proton mass.
+## Structure-constrained chemical follow-up
+
+The spatial association motivates examining sphingoid-base chemistry.
+[Sphingosine](https://www.kegg.jp/entry/C00319) has formula C18H37NO2.
 [MassBank RP014702](https://massbank.eu/MassBank/RecordDisplay?id=MSBNK-BGC_Munich-RP014702)
 records a fragment near m/z 264.2682 from a sphingosine standard.
 
-```{r myelin-mass-hypothesis}
-neutral_mass <- 18 * 12 + 37 * 1.00782503223 + 14.00307400443 + 2 * 15.99491461957
-water_mass <- 2 * 1.00782503223 + 15.99491461957
-expected_mz <- neutral_mass + 1.007276466621 - 2 * water_mass
+This focused search includes **all C18H37NO2 records** in the pinned RaMP
+table. `annotateSMILESStructure()` derives dehydration sites and the maximum
+number of supported water losses for each structure. The index includes the
+protonated ion and its one- and two-water-loss hypotheses. The measured m/z and
+mean spectrum come from the same mouse section used in the full
+[annotation example](Metabolite_Annotation_Pipeline.html#sphingosine-within-the-complete-candidate-search).
+
+```{r myelin-structure-family, message=FALSE}
+chemical_reference <- loadSpaMTPDatabase(
+    "chem_props", version = "3.0.7")$chem_props
+structure_family <- chemical_reference[
+    which(chemical_reference$mol_formula == "C18H37NO2"), ]
+structure_family <- annotateSMILESStructure(structure_family)
+family_structures <- unique(structure_family[
+    c("iso_smiles", "dehydration_sites", "max_water_losses")])
+capacity_summary <- as.data.frame(table(family_structures$max_water_losses))
+names(capacity_summary) <- c("max_water_losses", "distinct_smiles")
+knitr::kable(capacity_summary, row.names = FALSE)
+
+family_index <- buildMZAnnotationIndex(structure_family,
+    polarity = "positive", maldi_matrix = "DHB",
+    adducts = c("M+H", "M+H-H2O", "M+H-2H2O"))
 observed_mz <- SummarizedExperiment::rowData(x)$mz[
     match("mz-264.268615", rownames(x))]
-knitr::kable(data.frame(candidate = "Sphingosine [M+H-2H2O]+",
-    observed_mz = observed_mz, expected_mz = expected_mz,
-    absolute_ppm_error = abs(observed_mz - expected_mz) / expected_mz * 1e6),
-    digits = c(0, 6, 6, 3), row.names = FALSE)
+mean_spectrum <- data.frame(
+    mz = SummarizedExperiment::rowData(x)$mz,
+    intensity = Matrix::rowMeans(SummarizedExperiment::assay(x, "counts")))
+family_matches <- queryMZAnnotationIndex(
+    observed_mz, family_index, ppm = 5,
+    ms1_spectrum = mean_spectrum, min_score = 0)
+stopifnot(nrow(family_matches) > 0L,
+          all(family_matches$water_loss == 2L),
+          all(family_matches$max_water_losses >= 2L),
+          any(grepl("(^|;[[:space:]]*)RAMP_C_000042035($|;)",
+                    family_matches$ramp_ids)))
+family_matches <- family_matches[order(-family_matches$score,
+    family_matches$ppm_error), ]
+family_candidates <- family_matches[
+    !duplicated(family_matches[, c("ramp_ids", "adduct")]), ]
 ```
 
-The [annotation example](Metabolite_Annotation_Pipeline.html) retains competing
-identities for this peak and excludes it from the unambiguous compound pathway
-assay. This mass match motivates targeted validation of sphingoid-base chemistry.
+The formula family contains `r nrow(structure_family)` database records and
+`r nrow(family_structures)` distinct SMILES strings. `max_water_losses` counts
+structurally supported dehydration steps; spectra are needed to establish which
+fragments form under the acquisition conditions. The table below shows the
+engine's mass-matched hypotheses for the actual
+m/z `r sprintf("%.6f", observed_mz)` feature. `min_score = 0` exposes every
+returned hypothesis before downstream score filtering. Repeated RaMP
+identity/adduct pairs retain their highest-scoring database record in this display.
+
+```{r myelin-engine-candidates}
+knitr::kable(data.frame(
+    candidate = family_candidates$metabolite_names,
+    adduct = family_candidates$adduct,
+    ppm_error = family_candidates$ppm_error,
+    score = family_candidates$score,
+    max_water_losses = family_candidates$max_water_losses,
+    dehydration_status = family_candidates$dehydration_status
+), format = "html", digits = 4, row.names = FALSE)
+```
+
+These scores compare candidates within the selected molecular-formula family.
+Article 4 reports their positions among the
+[complete database candidates](Metabolite_Annotation_Pipeline.html#sphingosine-within-the-complete-candidate-search),
+including alternative formulae and adducts, and applies the pathway threshold.
+The structural result and myelin association motivate targeted validation.
 Related sphingolipids can yield the same fragment, so precursor-resolved MS/MS
 and standards are needed to distinguish free sphingosine from other sources.
 
 ## Matched spatial views
 
 The report pairs scatter plots with `plot3DFeature()` views of the same features.
-Adjusted correlations can still reflect spatial dependence or unmeasured
-structure and require independent validation.
+Read these alongside the recorded covariates: spatial dependence and unmeasured
+structure can also contribute to adjusted correlations.
 
-# Identity mapping and pathway analysis {#map-identities-before-pathway-statistics}
+# Identity mapping and pathway analysis {#identity-mapping-and-pathway-analysis}
 
 The [gene and joint-pathway guide](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
 combines compound and gene evidence in the paired human dataset. This section
@@ -440,8 +503,8 @@ distance. Display selection preserves the original adjusted P values.
 `label_width` wraps names, `text_size` sets font size, and `sig_cutoff` sets the
 BH-adjusted P-value outline threshold. In Figure 7.\@ref(fig:regional-pathway-plot),
 fill shows NES and point area shows tested members.
-Positive NES indicates enrichment toward higher regional expression contrasts;
-negative NES indicates enrichment toward lower contrasts.
+Positive NES indicates enrichment towards higher regional expression contrasts;
+negative NES indicates enrichment towards lower contrasts.
 
 ```{r regional-pathway-plot, fig.width=10, fig.height=6.6, fig.crop=FALSE, message=FALSE, out.width="900px", fig.cap="Regional gene-set enrichment in the 240-location low-grade glioma subset (339 measured RNA features before identity mapping). Up to eight pathways are selected by maximum absolute NES across archived cout_labels groups and ordered by membership overlap. Fill: signed NES; point area: tested members; dark outline: within-family BH-adjusted P <= 0.05. These competitive gene-set results describe one section."}
 pathway_plot <- plotRegionalPathways(regional, database = database,
@@ -458,18 +521,20 @@ and `attr(regional, "ranks")` for the exact identity rankings used in each regio
 
 For metabolites, `metabolite_ambiguity = "exclude"` omits features with multiple
 candidate identities; candidates, exclusions and aggregation weights remain
-inspectable. Reuse the identity assay and index for GESECA, scores and networks.
+inspectable. Reuse the identity assay and index for [gene set co-regulation analysis
+(GESECA)](https://bioconductor.org/packages/release/bioc/vignettes/fgsea/inst/doc/geseca-tutorial.html),
+scores and networks.
 
 HGNC applies to human genes. Mouse genes need a species-specific or orthology
 reference, so installed mouse recipes demonstrate compound pathways. See the
 [gene-mapping](Gene_Identifier_Mapping.html) and
 [annotation](Metabolite_Annotation_Pipeline.html) guides.
 
-# Extended reference workflows {#apply-the-workflow-to-complete-reference-sections}
+# Extended reference workflows {#extended-reference-workflows}
 
 ## Reference scripts
 
-The installed scripts extend the DHB/Visium and FMP10/Visium analyses with
+The installed scripts extend the DHB/Visium and FMP-10/Visium analyses with
 annotation, integration, pathways and reports. `prepare` and `run`
 below are script paths; `source()` makes their entry points available.
 
@@ -492,7 +557,7 @@ An explicit `nativeDir` selects verified local files and defaults to offline mod
 
 ## Spatial calibration and subset regeneration
 
-FMP10/Visium preparation requires a measured target radius in original image
+FMP-10/Visium preparation requires a measured target radius in original image
 coordinates via `spatialConfig`. For the registered V11L12-109_B1 pair only,
 `extdata/mouse_brain_scalefactors.json` records Space Ranger's
 `spot_diameter_fullres = 376.942` from [Vicari et al.](https://doi.org/10.17632/w7nw4km7xd.1).
@@ -504,7 +569,7 @@ ambiguous compound assignments. To regenerate the vignette subsets, source
 `workflows/prepare_vignette_data.R` and call `prepareVignetteData()` with a new
 output directory.
 
-# Reports and exported results {#render-and-retain-a-reviewable-analysis}
+# Reports and exported results {#reports-and-exported-results}
 
 ## Report generation
 

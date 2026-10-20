@@ -1,3 +1,24 @@
+# SpaMTP 0.99.14
+
+* Streamlined vignette interpretation while retaining observed metrics,
+  pathway significance and identity ambiguity. Removed an artificial
+  inconsistent-mass fixture from the user guide; regression tests retain
+  coverage of the mass-defect penalty.
+* Reconciled vignette descriptions with executed code and displayed output:
+  equal-weight integration, visible QC summaries, pinned native-data retrieval,
+  Fisher table columns, pathway names and topology repair provenance.
+* Added positive single- and double-water-loss rules gated by alcohol groups,
+  neighbouring hydrogen availability and valence-compatible losses. Older
+  structural tables are checked only for mass-matched candidates; each isomer
+  retains its own eligibility. Candidate tables expose the capacity and
+  eligibility status.
+* Demonstrated engine-generated sphingosine dehydration candidates within the
+  complete RaMP search and a formula-specific structural comparison. Clarified
+  annotation ambiguity across score cutoffs and the difloxacin mass candidate.
+* Explained the human example's Xenium observation unit, log transformation
+  bases and joint-pathway coverage. Standardized terminology, abbreviations,
+  section links and numeric formatting across the seven guides.
+
 # SpaMTP 0.99.13
 
 * Numbered all seven vignette titles and index entries to guide readers from

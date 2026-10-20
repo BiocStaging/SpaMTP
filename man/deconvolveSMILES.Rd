@@ -27,13 +27,22 @@ supporting \code{parallel::mclapply()}. The default is controlled by
 }
 \value{
 A data frame with functional-group counts, ion-mode scores, and a
-human-readable \code{structure_evidence} field.
+human-readable \code{structure_evidence} field. \code{dehydration_sites} counts
+alcohol OH groups on saturated, non-aromatic carbons with an adjacent
+carbon-bound hydrogen available for local elimination.
+\code{max_water_losses} is the supported bound, capped at two: paired losses
+require distinct OH groups and sufficient donor hydrogens in one connected
+component while preserving carbon valence. Carboxylic acids, phenols and
+ethers do not supply alcohol-elimination sites. These fields encode
+structural compatibility; fragmentation abundance, rearrangements and
+reaction energetics require additional evidence. Invalid structures have
+missing values.
 }
 \description{
 A lightweight, dependency-free SMILES graph parser identifies common
 metabolite functional groups and derives interpretable positive-ion,
 negative-ion, alkali-binding, and neutral-mass priors. The parser is intended
-for candidate prioritisation rather than pKa, proton-affinity, or quantum
+for candidate prioritization rather than pKa, proton-affinity, or quantum
 chemistry calculations. Stereochemistry is accepted but does not change the
 counts.
 }

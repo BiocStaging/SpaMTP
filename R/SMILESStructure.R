@@ -346,6 +346,110 @@
   explicit + implicit
 }
 
+# Count local alcohol-elimination motifs, without predicting fragmentation
+# abundance or a gas-phase rearrangement mechanism. The supported bound is two
+# waters. A pair must use distinct OH groups and available beta hydrogens in
+# the same connected component; one hydrogen cannot supply two eliminations.
+.smiles_dehydration_capacity <- function(smiles = NULL, graph = NULL) {
+  unknown <- list(dehydration_sites = NA_real_, max_water_losses = NA_real_)
+  if (is.null(graph)) graph <- .parse_smiles_graph(smiles)
+  if (!isTRUE(graph$valid) || !nrow(graph$atoms)) return(unknown)
+
+  atoms <- graph$atoms
+  atom_ids <- seq_len(nrow(atoms))
+  neighbours <- lapply(atom_ids, function(i) .smiles_neighbours(graph, i))
+  heavy <- lapply(neighbours, function(x) {
+    keep <- atoms$element[x$atom] != "H"
+    list(atom = x$atom[keep], order = x$order[keep])
+  })
+  aromatic <- atoms$aromatic | .smiles_kekule_aromatic_atoms(graph)
+  hydrogen <- vapply(atom_ids, function(i) {
+    n <- neighbours[[i]]
+    attached <- sum(atoms$element[n$atom] == "H")
+    if (atoms$bracket[[i]]) return(atoms$explicit_h[[i]] + attached)
+    # Explicit H atoms consume valence too. Count them once, even when the
+    # connected C or O is written as an unbracketed organic-subset atom.
+    target <- if (atoms$element[[i]] == "C") 4 else {
+      if (atoms$element[[i]] == "O") 2 else 0
+    }
+    attached + max(0, target - sum(n$order))
+  }, numeric(1))
+  valence <- vapply(heavy, function(n) sum(n$order), numeric(1)) + hydrogen
+  neutral_carbon <- atoms$element == "C" & atoms$charge == 0 &
+    !aromatic & valence == 4
+  saturated_carbon <- neutral_carbon & vapply(
+    heavy, function(n) all(n$order == 1), logical(1)
+  )
+  hydroxyl <- atom_ids[vapply(atom_ids, function(i) {
+    n <- heavy[[i]]
+    atoms$element[[i]] == "O" && atoms$charge[[i]] == 0 &&
+      !aromatic[[i]] && hydrogen[[i]] == 1 &&
+      length(n$atom) == 1L && n$order[[1]] == 1 &&
+      saturated_carbon[[n$atom[[1]]]]
+  }, logical(1))]
+
+  events <- lapply(hydroxyl, function(oxygen) {
+    alpha <- heavy[[oxygen]]$atom[[1]]
+    n <- heavy[[alpha]]
+    beta <- n$atom[n$order == 1 & neutral_carbon[n$atom] &
+                     hydrogen[n$atom] >= 1]
+    if (!length(beta)) return(NULL)
+    data.frame(oxygen = oxygen, alpha = alpha, beta = beta)
+  })
+  events <- do.call(rbind, events)
+  if (is.null(events) || !nrow(events)) {
+    return(list(dehydration_sites = 0L, max_water_losses = 0L))
+  }
+  sites <- length(unique(events$oxygen))
+  capacity <- list(dehydration_sites = sites, max_water_losses = 1L)
+  if (sites < 2L) return(capacity)
+
+  # Disconnected SMILES components cannot lend each other elimination sites.
+  component <- integer(nrow(atoms))
+  for (start in atom_ids) {
+    if (component[[start]] != 0L) next
+    pending <- start
+    component[[start]] <- start
+    while (length(pending)) {
+      current <- pending[[length(pending)]]
+      pending <- pending[-length(pending)]
+      adjacent <- neighbours[[current]]$atom
+      fresh <- adjacent[component[adjacent] == 0L]
+      component[fresh] <- start
+      pending <- c(pending, fresh)
+    }
+  }
+
+  compatible <- function(first, second) {
+    if (first$oxygen == second$oxygen ||
+        component[[first$alpha]] != component[[second$alpha]]) return(FALSE)
+    used_h <- tabulate(c(first$beta, second$beta), nbins = nrow(atoms))
+    if (any(used_h > hydrogen)) return(FALSE)
+
+    # Each event removes one C-O bond and increases an adjacent C-C bond by
+    # one. Check the resulting carbon valences explicitly. Both starting bonds
+    # are single, so even two increments on a shared bond stop at a triple bond.
+    final_valence <- valence - used_h
+    final_valence[first$alpha] <- final_valence[first$alpha] - 1
+    final_valence[second$alpha] <- final_valence[second$alpha] - 1
+    for (event in list(first, second)) {
+      final_valence[c(event$alpha, event$beta)] <-
+        final_valence[c(event$alpha, event$beta)] + 1
+    }
+    changed <- unique(c(first$alpha, first$beta, second$alpha, second$beta))
+    all(final_valence[changed] == 4)
+  }
+  for (i in seq_len(nrow(events) - 1L)) {
+    for (j in seq.int(i + 1L, nrow(events))) {
+      if (compatible(events[i, , drop = FALSE], events[j, , drop = FALSE])) {
+        capacity$max_water_losses <- 2L
+        return(capacity)
+      }
+    }
+  }
+  capacity
+}
+
 .deconvolve_smiles_one <- function(smiles) {
   graph <- .parse_smiles_graph(smiles)
   empty <- list(
@@ -367,7 +471,8 @@
     alkali_affinity_score = NA_real_, neutral_mass_score = NA_real_,
     positive_site_atoms = NA_character_, negative_site_atoms = NA_character_,
     alkali_site_atoms = NA_character_,
-    structure_evidence = NA_character_
+    structure_evidence = NA_character_,
+    dehydration_sites = NA_real_, max_water_losses = NA_real_
   )
   if (!isTRUE(graph$valid)) return(empty)
 
@@ -531,6 +636,7 @@
   }
   neutral_score <- if (sum(atoms$charge) == 0L) 1 else 0.4
   fmp10_sites <- primary_amine + secondary_amine + length(phenolic_oxygen)
+  dehydration <- .smiles_dehydration_capacity(graph = graph)
 
   atom_labels <- function(ids) {
     ids <- sort(unique(as.integer(ids)))
@@ -598,7 +704,9 @@
     positive_site_atoms = positive_site_atoms,
     negative_site_atoms = negative_site_atoms,
     alkali_site_atoms = alkali_site_atoms,
-    structure_evidence = evidence
+    structure_evidence = evidence,
+    dehydration_sites = dehydration$dehydration_sites,
+    max_water_losses = dehydration$max_water_losses
   )
 }
 
@@ -607,7 +715,7 @@
 #' A lightweight, dependency-free SMILES graph parser identifies common
 #' metabolite functional groups and derives interpretable positive-ion,
 #' negative-ion, alkali-binding, and neutral-mass priors. The parser is intended
-#' for candidate prioritisation rather than pKa, proton-affinity, or quantum
+#' for candidate prioritization rather than pKa, proton-affinity, or quantum
 #' chemistry calculations. Stereochemistry is accepted but does not change the
 #' counts.
 #'
@@ -622,7 +730,16 @@
 #'   `options(SpaMTP.smiles_workers = 1)`.
 #'
 #' @return A data frame with functional-group counts, ion-mode scores, and a
-#'   human-readable `structure_evidence` field.
+#'   human-readable `structure_evidence` field. `dehydration_sites` counts
+#'   alcohol OH groups on saturated, non-aromatic carbons with an adjacent
+#'   carbon-bound hydrogen available for local elimination.
+#'   `max_water_losses` is the supported bound, capped at two: paired losses
+#'   require distinct OH groups and sufficient donor hydrogens in one connected
+#'   component while preserving carbon valence. Carboxylic acids, phenols and
+#'   ethers do not supply alcohol-elimination sites. These fields encode
+#'   structural compatibility; fragmentation abundance, rearrangements and
+#'   reaction energetics require additional evidence. Invalid structures have
+#'   missing values.
 #' @examples
 #' utils::str(formals(deconvolveSMILES))
 #' @export

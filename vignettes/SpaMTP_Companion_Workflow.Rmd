@@ -32,22 +32,21 @@ seuratBefore <- intersect(c("Seurat", "SeuratObject"), loadedNamespaces())
 
 SpaMTP imports SpaMTPdb and suggests SpaMTPData. Both data packages expose
 resource interfaces that can be used independently of SpaMTP and Seurat. The
-examples require SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5.
-
-Package, RaMP and experiment-data releases have separate versions.
+examples require SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5; package, RaMP
+and experiment-data releases have separate versions.
 
 ## Installation and example scope
 
 Use `BiocManager::install(c("SpaMTP", "SpaMTPdb", "SpaMTPData"))` for packages
 available in your Bioconductor release. The maintained
 [installation guide](https://github.com/SpaMTP-project/SpaMTP#installation)
-documents review-stage source installation, download timeouts and Windows
+documents source installation, download timeouts and Windows
 requirements. `citation("SpaMTP")` supplies the package reference.
 
-This guide combines measured mouse-brain MSI/RNA and a mouse-bladder MSI
-panel with pinned RaMP annotation resources. Resources are downloaded on first
-use unless a verified local or cached copy is available. All code runs during
-the build.
+This guide combines mouse-brain mass spectrometry imaging (MSI) and paired
+RNA with a mouse-bladder MSI panel and pinned RaMP annotation resources.
+Resources are downloaded on first use unless a verified local or cached copy
+is available.
 
 ```{r packages, message=FALSE}
 library(SpaMTP)
@@ -73,7 +72,9 @@ measurements require alignment and mapping before pairing.
 
 ## Normalization and spatial display
 
-`LogNormalize` adds `logcounts`; `npcs = 2` requests two principal components.
+`LogNormalize` adds `logcounts` using the natural-log transformation
+`log1p(10000 * intensity / total_intensity)`; `npcs = 2` requests two
+principal components.
 Figure 3.\@ref(fig:preprocess) displays the measured mass nearest m/z 400.14659,
 a focal feature in the original mouse-brain tutorial. Its spatial distribution can be examined alongside the
 archived anatomy and side labels in the [complete workflow](End_to_End_Workflow.html).
@@ -172,9 +173,9 @@ SM, PA, PC and PE denote sphingomyelin, phosphatidic acid, phosphatidylcholine
 and phosphatidylethanolamine. These labels preserve the archive's candidate
 assignments. Each ion matches multiple RaMP records under the stated adduct
 and mass tolerance; individual records can group several isomers. Resolving
-these lipid identities requires additional chemical evidence. Scores use a
-heuristic scale. The [annotation tutorial](Metabolite_Annotation_Pipeline.html)
-covers index reuse and contextual scoring.
+these lipid identities requires additional chemical evidence. The
+[annotation tutorial](Metabolite_Annotation_Pipeline.html) shows candidate
+scores, their heuristic interpretation and index reuse.
 
 # Published native datasets and historical archives
 
@@ -207,11 +208,13 @@ stopifnot(identical(intersect(c("Seurat", "SeuratObject"), loadedNamespaces()),
 SpaMTPData's preparation recipe produces one native RDS per historical archive.
 Retrieve these published files directly, without Seurat conversion.
 
-`native` reuses the DHB/Visium object loaded above, with paired RNA in `SPT`.
+The call below retrieves the same mouse-brain dataset acquired with
+2,5-dihydroxybenzoic acid (DHB) matrix and paired Visium RNA in `SPT`.
+It reuses the verified local or cached resource from the first retrieval.
 `version = "1.1.0"` pins the data release independently of the package version.
 
 ```{r read-published-native, eval=TRUE}
-native <- spe
+native <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
 SingleCellExperiment::altExpNames(native) # SPT
 stopifnot(identical(colnames(SingleCellExperiment::altExp(native, "SPT")),
   colnames(native)),
@@ -227,7 +230,7 @@ original candidate assignments and provenance.
 ## Explicit archive conversion
 
 Only this archive conversion requires SeuratObject. `legacy` is the historical
-FMP10 object: `assay = "Spatial"` selects MSI and `image = "fov"` selects
+FMP-10 object: `assay = "Spatial"` selects MSI and `image = "fov"` selects
 coordinates. `converted_archive` has 1,538 features and 3,005 locations.
 
 ```{r convert-archive, eval=TRUE}

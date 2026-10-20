@@ -23,9 +23,8 @@ knitr::opts_chunk$set(
 
 # Reference ownership and reproducibility
 
-SpaMTP resolves gene identifiers using versioned RaMP and HGNC references
-from SpaMTPdb and species metadata from SpaMTPData. Use SpaMTPdb >= 0.99.4
-and SpaMTPData >= 0.99.5 together.
+SpaMTP resolves gene identifiers using versioned RaMP and HUGO Gene Nomenclature
+Committee (HGNC) references from SpaMTPdb, with species metadata from SpaMTPData.
 
 ```{r registry}
 library(SpaMTP)
@@ -47,16 +46,22 @@ after `altExp()` extraction.
 
 The examples run during builds on 240 aligned human glioma locations nearest the
 coordinate-wise median, selected independently of expression or mapping. All
-339 RNA features and paired MS features are retained; see `help("vignetteData")`
+339 RNA features and paired mass spectrometry imaging (MSI) features are retained;
+see `help("vignetteData")`
 for the recipe and checksums. Missing references download automatically;
 `offline = TRUE` uses local files or verified caches.
 
 The [original integrated archive](https://doi.org/10.5281/zenodo.18282678)
-contains low-grade glioma tissue with paired MALDI MSI and a 339-gene Xenium
-panel aligned across serial sections. The linked
+contains low-grade glioma tissue with paired matrix-assisted laser
+desorption/ionization (MALDI) MSI and a 339-gene Xenium panel aligned across
+serial sections. The linked
 [study](https://doi.org/10.1038/s41591-025-03884-4) describes iMScope QT acquisition
-with CHCA matrix and provides the paired data through
+with alpha-cyano-4-hydroxycinnamic acid (CHCA) matrix and provides the paired data through
 [BioImage Archive S-BIAD1426](https://doi.org/10.6019/S-BIAD1426).
+Each paired location is an archived Xenium cell position. The study assigned
+the mean registered MSI intensity within 20 micrometres of each cell to that
+cell; this vignette retains the cell-level RNA counts and selects 240 paired
+positions without further RNA pooling.
 The archived `cout_labels` column groups locations as Astro, Mesenchymal,
 Neuronal, Oligo or Progenitor. These source labels provide cell-state groups
 for descriptive contrasts; the packaged archive does not retain the exact
@@ -118,7 +123,7 @@ ambiguity; biological function requires separate evidence.
 
 ## Feature annotation
 
-`spe` contains the human-brain subset; `rna` is its `SPT` experiment.
+`spe` contains the low-grade glioma subset; `rna` is its `SPT` experiment.
 `annotateGeneIdentifiers()` reads row names and checks `organism`.
 `unresolved` selects rows whose status differs from `mapped`.
 
@@ -162,11 +167,13 @@ this audit alongside the annotated experiment.
 
 ## Foreground and measured universe
 
-The foreground contains the 20 highest-AUC positive markers of the archived
+The foreground contains the 20 positive markers with the highest mean area
+under the receiver operating characteristic curve (AUC) for the archived
 `Oligo` group. `LogNormalize` divides each location by its total measured RNA
-count, multiplies by 10,000 and applies `log1p`. `mean_auc` ranks each gene's
-separation of this group from the remaining groups. The measured RNA panel
-supplies the background; `min_path_size = 5` requires five mapped members.
+count, multiplies by 10,000 and applies the natural-log transform `log1p`.
+`mean_auc` ranks each gene's separation of this group from the remaining groups.
+The measured RNA panel supplies the background; `min_path_size = 5` requires
+five mapped members.
 
 ```{r enrichment, eval=TRUE, warning=FALSE}
 spe <- normalizeSMData(spe, "LogNormalize", assay = "SPT", verbose = FALSE)
@@ -194,17 +201,20 @@ knitr::kable(head(result[, c("pathway_name", "analytes_in_pathways",
 ```
 
 These enrichments summarize the selected markers of one archived cell-state
-group. Foreground selection and testing use the same section, so the FDR
-values describe this exploratory selection and require independent validation.
+group. Foreground selection and testing use the same section, so the false
+discovery rate (FDR) values describe this exploratory selection and require
+independent validation.
 
 ## Identity counting and multiple testing
 
 Foreground and universe share one identity index: memberships are united
-across RaMP records and each gene counts once. K is the mapped foreground
-size, M the pathway size within the background, U the mapped background size,
-and overlap their intersection.
+across RaMP records and each gene counts once. In the displayed table,
+`analytes_in_pathways` is the foreground-pathway overlap and `total_in_pathways`
+is the pathway size within the measured background (M). The full result also
+stores mapped foreground size (K) in `foreground_analytes_number` and mapped
+background size (U) in `background_analytes_number`.
 
-The universe is fixed before size filtering. BH correction includes eligible
+The universe is fixed before size filtering. Benjamini-Hochberg (BH) correction includes eligible
 zero-overlap pathways; `pval_cutoff` filters afterward. Unresolved identifiers
 are reported and excluded, so U counts resolved identities in the panel.
 
@@ -218,7 +228,7 @@ a separate step.
 Identity reconciliation can change saved mappings and P values without
 changing Fisher's calculation.
 
-Share `gene_index` between `findRegionalPathways()` and `pathwayNetworkPlots()`
+Share `pathway_index` between `findRegionalPathways()` and `pathwayNetworkPlots()`
 to preserve identity and provenance.
 
 # One membership index for enrichment, expression and plots
@@ -279,16 +289,16 @@ each specimen; biological replication requires independent specimens.
 
 `pathway_index` is shared across aggregation, scoring and plotting. `pathways`
 stores scores; `coverage` records measured and excluded members. The two
-prespecified processes, neuronal signalling and axon guidance, connect the
-targeted brain panel to neural function. Their exact RaMP IDs are selected by
-name and source, then checked for at least five measured genes.
+prespecified Reactome pathways, **Neuronal System** and **Axon guidance**,
+connect the targeted brain panel to neural function. Their exact RaMP IDs are
+selected by name and source, then checked for at least five measured genes.
 
 `plots` sums member log-normalized expression, divides by the square root of
 member count, and standardizes each pathway across locations. Figure
 5.\@ref(fig:human-pathway-closure) uses a shared z-score colour bar; each map
 shows relative spatial variation within its pathway.
 
-```{r human-pathway-closure, eval=TRUE, fig.width=9, fig.height=4.6, fig.crop=FALSE, out.width="860px", warning=FALSE, fig.cap="Prespecified neuronal signalling and axon-guidance pathway scores at the same 240 aligned glioma locations. Scores use log-normalized RNA and retain the archived coordinates. A shared z-score colour scale (-3 to 3) shows relative spatial variation within each pathway; the displayed titles identify the selected pathways."}
+```{r human-pathway-closure, eval=TRUE, fig.width=9, fig.height=4.6, fig.crop=FALSE, out.width="860px", warning=FALSE, fig.cap="Prespecified Reactome Neuronal System and Axon guidance pathway scores at the same 240 aligned glioma locations. Scores use log-normalized RNA and retain the archived coordinates. A shared z-score colour scale (-3 to 3) shows relative spatial variation within each pathway; the displayed titles identify the selected pathways."}
 spe <- createPathwayAssay(spe, analyte_type = "genes", assay = "SPT",
   slot = "logcounts", new_assay = "gene_ids", pathway_index = pathway_index)
 spe <- createPathwayObject(spe, assay = "gene_ids", new.assay = "gene_pathways",
@@ -340,7 +350,7 @@ unmeasured and conflict-only pathways even when no score is drawn.
 
 ## Candidate identities and measured coverage
 
-The same locations retain `r nrow(spe)` MS features and `r nrow(rna)` RNA
+The same locations retain `r nrow(spe)` MSI features and `r nrow(rna)` RNA
 features. We annotate the positive-mode MSI using CHCA and three prespecified
 singly charged adducts: proton, sodium and potassium addition. Positive polarity
 is recorded in the [original processing script](https://github.com/GenomicsMachineLearning/SpaMTP/blob/main/inst/Publication_Files/FigS6_script.Rmd).
@@ -385,7 +395,7 @@ identity_summary <- data.frame(
 knitr::kable(identity_summary, row.names = FALSE)
 ```
 
-`r length(retained_ms)` MS features contribute `r nrow(compounds)` distinct
+`r length(retained_ms)` MSI features contribute `r nrow(compounds)` distinct
 compound identities; `r length(compound_audit$excluded_conflicts)` features
 have competing compound identities at the stated threshold. Multiple retained
 features assigned to one compound are averaged before ranking. The unmatched MS count includes features with no RaMP candidate passing the
@@ -395,7 +405,7 @@ score floor; RNA exclusions are detailed in the mapping audit above.
 
 We reuse the `Oligo` contrast. `ranks_for_group()` retains every mapped
 identity's mean-expression effect, including negative effects. Joint
-`findRegionalPathways()` root-mean-square scales each modality's complete
+`findRegionalPathways()` root-mean-square (RMS) scales each modality's complete
 rank vector before pooling. Pathways with 5–500 measured identities are tested;
 BH correction covers the whole eligible family. The table selects five
 pathways with measured members from both modalities after testing and reports
@@ -434,19 +444,19 @@ stopifnot(nrow(both) > 0L, ncol(compounds) == ncol(rna),
           all(head(both$leading_compounds, 5) == 0))
 ```
 
-Among `r nrow(joint)` tested pathways, `r nrow(both)` contain measured members
-from both modalities and `r sum(both$padj <= 0.05, na.rm = TRUE)` of these meet
-BH FDR <= 0.05. The strongest displayed results have leading edges contributed
-by RNA alone. Only `r sum(both$leading_genes > 0 & both$leading_compounds > 0)`
-pathways have leading-edge members from both modalities, showing the limited
-compound coverage under these annotation settings.
+Among `r format(nrow(joint), big.mark = ",")` tested pathways,
+`r nrow(both)` contain measured members from both modalities;
+`r if (sum(both$padj <= 0.05, na.rm = TRUE) == 0L) "none" else format(sum(both$padj <= 0.05, na.rm = TRUE), big.mark = ",")`
+of these meet BH FDR <= 0.05. Of those `r nrow(both)` pathways,
+`r sum(both$leading_genes > 0 & both$leading_compounds > 0)` have leading-edge
+members from both modalities. All leading-edge members in the five displayed
+pathways are RNA identities.
 
-Positive NES indicates enrichment towards higher expression in the archived
-`Oligo` group; negative NES indicates the opposite direction. Leading-edge
-counts identify which modality supports the ranked enrichment. RMS scaling
-equalizes rank magnitude; measured membership and leading-edge counts still
-reveal unequal modality contributions. Interpretation is conditional on this
-single section, targeted RNA panel and putative compound assignments.
+Positive normalized enrichment score (NES) indicates enrichment towards higher expression in the archived
+`Oligo` group; negative NES indicates the opposite direction. Measured-member
+and leading-edge counts show each modality's contribution after RMS rank
+scaling. These exploratory rankings describe this single section's targeted
+RNA panel and putative compound assignments.
 
 # Session information
 

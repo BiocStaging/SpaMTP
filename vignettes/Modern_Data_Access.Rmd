@@ -21,26 +21,27 @@ knitr::opts_chunk$set(
 )
 ```
 
-# One container, public accessors
+# Native containers and public accessors
 
 SpaMTP keeps raw, unaligned spectra in Cardinal and feature-by-pixel matrices
 in `SpatialExperiment`. Public accessors read, modify and subset these
-containers. This guide uses real mouse-brain measurements to demonstrate the native API;
-historical Seurat tutorials use different interfaces.
+containers. This guide uses real mouse-brain mass spectrometry imaging (MSI)
+and paired RNA to demonstrate the native API; historical Seurat tutorials use
+different interfaces.
 
 ## Migrating existing scripts {#migrating-existing-scripts}
 
 The native API uses lower-camel-case names and Bioconductor containers. These
 common calls replace their historical Seurat-oriented counterparts:
 
-| Historical call | Current interface | Input or behavior to review |
+| Historical call | Current interface | Input or behaviour to review |
 |:--|:--|:--|
 | `NormalizeSMData()` | `normalizeSMData()` | Select the native modality with `assay` and input layer with `slot` |
 | `RunMetabolicPCA()` | `runMetabolicPCA()` | Scores are stored in `reducedDim()` |
 | `FindAllDEMs()` | `findAllDEMs()` | Choose descriptive markers or a biological-replicate model explicitly |
 | `AnnotateSM()` | `annotateSM()` | Indexed, scored candidates are stored with reference provenance |
 | `FindRegionalPathways()` | `findRegionalPathways()` | Supply reconciled identities and complete regional rankings |
-| `MultiOmicIntegration()` | `multiOmicIntegration()` | Combines selected embeddings with explicit modality weights |
+| `MultiOmicIntegration()` | `multiOmicIntegration()` | Concatenates scaled PCA embeddings with equal modality weights |
 | Seurat `GetAssayData()` | `SummarizedExperiment::assay()` | Read a named matrix from the main or `altExp()` experiment |
 
 Convert a historical object with `seuratToSpatialExperiment()` before these
@@ -62,7 +63,6 @@ embedding concatenation defines the current integration method.
 | Analysis provenance | `metadata()` |
 
 Replacement forms modify data, for example `colData(spe)$region <- values`.
-In SpaMTP functions, `slot = "counts"` selects the expression assay named `counts`.
 
 ## Modality and expression layer
 
@@ -134,25 +134,36 @@ SummarizedExperiment::rowData(imported)$mz
 
 # Pixel and feature metadata
 
-Rows identify measured mass features; columns identify paired locations.
+Rows identify measured MSI features; columns identify paired locations.
 `colLabels()` sets the default grouping to the archived anatomy without
-changing `RegionLoupe`. The table shows each region's coverage on both sides.
+changing `RegionLoupe`. The first table shows each region's coverage on both
+sides; the second summarizes per-location quality control (QC) measurements.
 
 ```{r metadata-access}
 SingleCellExperiment::colLabels(spe) <- factor(spe$RegionLoupe)
 SummarizedExperiment::colData(spe)$total_intensity <- Matrix::colSums(intensity)
 SummarizedExperiment::colData(spe)$detected_features <- Matrix::colSums(intensity > 0)
 table(region = spe$RegionLoupe, side = spe$lesion)
+qc <- list(total_intensity = spe$total_intensity,
+    detected_features = spe$detected_features)
+qc_summary <- data.frame(
+    metric = names(qc),
+    minimum = vapply(qc, min, numeric(1)),
+    median = vapply(qc, stats::median, numeric(1)),
+    maximum = vapply(qc, max, numeric(1)))
+knitr::kable(qc_summary, digits = 1, row.names = FALSE)
 ```
 
-These QC values summarize MSI intensity and the number of detected mass
-features. `rowData(spe)$mz` stores their measured m/z values.
+`total_intensity` sums the measured MSI intensities at each location;
+`detected_features` counts MSI features with intensity above zero.
+The feature-level accessor `rowData(spe)$mz` stores one measured m/z per row.
 
 ## Normalized expression
 
 `normalizeSMData(..., "LogNormalize")` adds `logcounts` while retaining raw
 `counts`. For locations with positive total intensity, the default transformation is
-`log1p(10000 * intensity / total_intensity)`, using the supplied MSI features.
+`log1p(10000 * intensity / total_intensity)`, using the supplied MSI features
+and natural logarithms.
 `metadata(spe)$spamtp_normalization` records the method, source assay and scale
 factor.
 
@@ -221,8 +232,7 @@ stopifnot(inherits(raster, "raster"))
 # Paired modalities and standard subsetting
 
 `altExp(spe, "SPT")` contains the measured RNA at the same locations as MSI.
-For SpaMTP functions, `assay = "SPT"` selects this modality and `slot = "counts"`
-selects its matrix. RNA and mass features have independent row sets.
+RNA and MSI features have independent row sets.
 
 The existing pairing is checked before selecting the ACB locations. Column
 subsetting keeps RNA and coordinates aligned; row subsetting affects only
@@ -271,9 +281,10 @@ APIs: `LayerData()` for expression, double brackets for metadata, and
 `GetTissueCoordinates()` for image/FOV coordinates. Update incompatible older
 objects with `SeuratObject::UpdateSeuratObject()` in the Seurat workflow.
 
-`seurat` exports `spe`; `values`, `pixel_metadata`, `feature_metadata` and
-`centres` read its counts and metadata. `converted` imports `counts` and
-`fov` coordinates. `full = FALSE` returns one centroid per pixel; checks
+`seurat` is `spe` exported to Seurat; `values`, `pixel_metadata`,
+`feature_metadata` and `centres` read its counts and metadata.
+`converted` imports `counts` and `fov` coordinates.
+`full = FALSE` returns one centroid per pixel; checks
 verify pixel order and counts after the round trip.
 
 ```{r optional-conversion}

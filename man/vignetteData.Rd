@@ -32,8 +32,8 @@ substituting the desired filename below.
 }
 \details{
 \describe{
-\item{\code{bladder_demo.rds}}{2,210 mouse urinary bladder locations on a
-four-pixel x/y grid. All 79 features from the archived annotated panel,
+\item{\code{bladder_demo.rds}}{2,210 mouse urinary bladder locations,
+sampling every fourth pixel along x and y. All 79 features from the archived annotated panel,
 their processed intensities, coordinates and \code{ssc} labels are retained.
 \code{archived_lipid_candidates} preserves historical candidate names.
 The source workflow applies TIC normalization before peak integration.}
@@ -43,11 +43,15 @@ centred at m/z 187.36, 537.08 and 840.43 with a 0.5 m/z half-width, sum
 original profile-bin intensities. These windows support ion-image display;
 compound identification requires additional chemical evidence.}
 \item{\code{human_demo.rds}}{240 paired locations nearest the coordinate-wise
-median of one aligned low-grade glioma section. All 574 processed MS
+median of one aligned low-grade glioma section. All 574 processed MSI
 features and 339 targeted Xenium genes are retained. Archived
 \code{cout_labels} comprise Astro, Mesenchymal, Neuronal, Oligo and
 Progenitor groups; the exact assignment procedure is unavailable in
-the resource. \code{sample_id} identifies the archived section.}
+the resource. \code{sample_id} identifies the archived section.
+Locations retain Xenium cell positions and cell-level RNA counts.
+The source study averages registered MSI intensities within 20 micrometres
+of each cell; the archive does not retain the averaging weights.
+The subset does not pool RNA across cells.}
 }
 
 All files contain a \code{counts} assay; the human file also contains
@@ -57,7 +61,7 @@ original profile bins for the stored \code{total_ion_current}. Bladder
 \code{counts} preserves the upstream processed peak intensities. The
 vignette displays their \code{log1p} values and evaluates additional
 panel normalization separately. Full-spectrum totals are absent from
-the bundled bladder object. Human MS values preserve the processed,
+the bundled bladder object. Human MSI values preserve the processed,
 spatially aligned source abundances; the RNA assay retains integer counts.
 
 Bladder \code{metadata(x)$archived_compartments} records the earlier SpaMTP

@@ -14,7 +14,7 @@ adductRules(
 \code{"neutral"}.}
 
 \item{include_complex}{Include multimers, solvent clusters, metal-exchange,
-and multiply charged ions.}
+multiply charged ions, and neutral losses.}
 }
 \value{
 A data frame containing validated adduct rules.
@@ -24,6 +24,14 @@ The rules use neutral monoisotopic mass and explicit ion masses. Each row
 stores the molecular multiplier, total numerator mass shift, charge, number
 of protons removed from the analyte, and the charge contributed by added
 species. This allows rules to be checked before candidate generation.
+}
+\details{
+Positive \verb{[M+H-H2O]+} and \verb{[M+H-2H2O]+} rules require
+structure-derived dehydration capacity. Alcohol OH groups and adjacent
+carbon-bound hydrogens must support distinct, valence-compatible losses.
+Their priors (0.55 and 0.35) are heuristics, not calibrated probabilities.
+Structural compatibility does not predict fragment abundance or establish
+identity; acquisition conditions and MS/MS evidence remain relevant.
 }
 \examples{
 utils::str(formals(adductRules))

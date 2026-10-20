@@ -41,7 +41,8 @@
                               added_charge = charge + loss_h,
                               complexity = "simple", base_adduct = name,
                               contains_halogen = FALSE,
-                              contains_metal = FALSE, prior = 1) {
+                              contains_metal = FALSE, prior = 1,
+                              water_loss = 0L) {
   data.frame(
     name = name,
     notation = paste0(
@@ -54,6 +55,7 @@
     charge = as.integer(charge),
     mass_shift = as.numeric(mass_shift),
     loss_h = as.integer(loss_h),
+    water_loss = as.integer(water_loss),
     added_charge = as.integer(added_charge),
     complexity = complexity,
     base_adduct = base_adduct,
@@ -74,7 +76,14 @@
 #' @param polarity One of `"both"`, `"positive"`, `"negative"`, or
 #'   `"neutral"`.
 #' @param include_complex Include multimers, solvent clusters, metal-exchange,
-#'   and multiply charged ions.
+#'   multiply charged ions, and neutral losses.
+#'
+#' @details Positive `[M+H-H2O]+` and `[M+H-2H2O]+` rules require
+#'   structure-derived dehydration capacity. Alcohol OH groups and adjacent
+#'   carbon-bound hydrogens must support distinct, valence-compatible losses.
+#'   Their priors (0.55 and 0.35) are heuristics, not calibrated probabilities.
+#'   Structural compatibility does not predict fragment abundance or establish
+#'   identity; acquisition conditions and MS/MS evidence remain relevant.
 #'
 #' @return A data frame containing validated adduct rules.
 #' @examples
@@ -87,6 +96,12 @@ adductRules <- function(polarity = c("both", "positive", "negative", "neutral"),
 
   rules <- do.call(rbind, list(
     .make_adduct_rule("M+H", "positive", 1, 1, m$proton),
+    .make_adduct_rule("M+H-H2O", "positive", 1, 1, m$proton - m$water,
+                      complexity = "neutral_loss", base_adduct = "M+H",
+                      prior = 0.55, water_loss = 1L),
+    .make_adduct_rule("M+H-2H2O", "positive", 1, 1, m$proton - 2 * m$water,
+                      complexity = "neutral_loss", base_adduct = "M+H",
+                      prior = 0.35, water_loss = 2L),
     .make_adduct_rule("M+NH4", "positive", 1, 1, m$ammonium,
                       complexity = "salt", base_adduct = "M+H", prior = 0.9),
     .make_adduct_rule("M+Na", "positive", 1, 1, m$sodium_ion,
@@ -506,6 +521,10 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
 }
 
 .validate_adduct_rules <- function(rules) {
+  canonical_loss <- match(.normalise_adduct_name(rules$name),
+                          c("M+H-H2O", "M+H-2H2O"))
+  canonical_loss[is.na(canonical_loss)] <- 0L
+  if (!"water_loss" %in% names(rules)) rules$water_loss <- canonical_loss
   required <- c(
     "name", "polarity", "n_molecules", "charge", "mass_shift",
     "loss_h", "added_charge", "complexity", "base_adduct",
@@ -516,6 +535,7 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
     stop("Adduct rule table is missing: ", paste(missing_columns, collapse = ", "))
   }
   optional_defaults <- list(
+    water_loss = 0L,
     maldi_matrix = "unspecified",
     rule_class = "custom_adduct",
     rule_source = "user-supplied rule",
@@ -544,6 +564,22 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
   if (any(!is.finite(rules$mass_shift)) || any(!is.finite(rules$prior))) {
     stop("Adduct mass shifts and priors must be finite.")
   }
+  if (any(!is.finite(rules$water_loss) | !rules$water_loss %in% 0:2)) {
+    stop("water_loss must contain integers from zero to two.")
+  }
+  if (any(canonical_loss > 0L & rules$water_loss != canonical_loss)) {
+    stop("Canonical water-loss names must agree with water_loss.")
+  }
+  water <- rules$water_loss > 0L
+  m <- .spamtp_mass_constants()
+  if (any(water & (rules$polarity != "positive" |
+      rules$n_molecules != 1L | rules$charge != 1L | rules$loss_h != 0L |
+      abs(rules$mass_shift - (m$proton - rules$water_loss * m$water)) > 1e-8))) {
+    stop("Water-loss rules require a singly protonated monomer and neutral water masses.")
+  }
+  rules$water_loss <- as.integer(rules$water_loss)
+  rules$rule_class[water] <- "structure_constrained_neutral_loss"
+  rules$reactive_group[water] <- "alcohol_OH_and_adjacent_carbon_H"
   rules$min_reactive_sites <- suppressWarnings(
     as.integer(rules$min_reactive_sites)
   )
@@ -575,7 +611,8 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
                                      structure_backend = c("auto", "native"),
                                      structure_workers = getOption(
                                        "SpaMTP.smiles_workers", 1L
-                                     )) {
+                                     ),
+                                     retain_structure_records = FALSE) {
   if (!is.data.frame(db)) {
     stop("db must be a data.frame or data.table.")
   }
@@ -700,7 +737,8 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
     "weak_acidic_sites", "basic_sites", "proton_acceptor_sites",
     "alkali_binding_sites", "alkali_chelation_motifs",
     "positive_mode_score", "negative_mode_score",
-    "alkali_affinity_score", "neutral_mass_score"
+    "alkali_affinity_score", "neutral_mass_score",
+    "dehydration_sites", "max_water_losses"
   )
 
   n <- nrow(db)
@@ -763,8 +801,15 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
   keep <- is.finite(compounds$exactmass) & compounds$exactmass > 0 &
     !is.na(compounds$formula) & nzchar(compounds$formula)
   compounds <- compounds[keep, , drop = FALSE]
+  structure_records <- if (retain_structure_records) compounds else NULL
+  structure_record_rows <- if (retain_structure_records) {
+    as.list(seq_len(nrow(compounds)))
+  } else NULL
 
   if (isTRUE(collapse_isomers) && nrow(compounds)) {
+    # Keep existing adduct groups stable; water losses resolve original records.
+    grouping_columns <- setdiff(site_columns,
+                                c("dehydration_sites", "max_water_losses"))
     group_key <- paste(
       compounds$formula,
       format(compounds$exactmass, digits = 17, scientific = FALSE, trim = TRUE),
@@ -774,7 +819,7 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
       do.call(
         paste,
         c(
-          lapply(compounds[site_columns], function(x) {
+          lapply(compounds[grouping_columns], function(x) {
             ifelse(is.na(x), "NA", format(x, trim = TRUE))
           }),
           sep = ":"
@@ -784,6 +829,7 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
     )
     if (anyDuplicated(group_key)) {
       grouped_rows <- split(seq_len(nrow(compounds)), group_key)
+      if (retain_structure_records) structure_record_rows <- unname(grouped_rows)
       first_row <- vapply(grouped_rows, function(i) i[[1]], integer(1))
       collapsed_site_values <- lapply(
         compounds[site_columns], function(x) x[first_row]
@@ -816,7 +862,78 @@ maldiMatrixRules <- function(maldi_matrix, polarity = NULL,
     }
   }
   rownames(compounds) <- NULL
+  attr(compounds, "structure_records") <- structure_records
+  attr(compounds, "structure_record_rows") <- structure_record_rows
   compounds
+}
+
+# Resolve only mass-matched original records, so an eligible isomer cannot
+# confer dehydration eligibility on other members of a collapsed group.
+.resolve_dehydration <- function(compounds, rules, infer_structure, cache) {
+  n <- nrow(compounds)
+  for (column in c("dehydration_sites", "max_water_losses")) {
+    if (!column %in% names(compounds)) compounds[[column]] <- rep(NA_real_, n)
+  }
+  status <- rep("not_required", n)
+  keep <- rep(TRUE, n)
+  for (j in which(rules$water_loss > 0L)) {
+    smiles <- compounds$smiles[[j]]
+    missing_prior <- !"positive_mode_score" %in% names(compounds) ||
+      !is.finite(compounds$positive_mode_score[[j]])
+    if (infer_structure != "never" &&
+        (!isTRUE(compounds$structure_valid[[j]]) || missing_prior) &&
+        !is.na(smiles) && nzchar(smiles)) {
+      full_key <- paste0("full\n", smiles)
+      if (!exists(full_key, envir = cache, inherits = FALSE)) {
+        assign(full_key, .deconvolve_smiles_one(smiles), envir = cache)
+      }
+      features <- get(full_key, envir = cache, inherits = FALSE)
+      for (column in intersect(names(features), names(compounds))) {
+        if (is.na(compounds[[column]][[j]]) || column == "structure_valid") {
+          compounds[[column]][[j]] <- features[[column]]
+        }
+      }
+      assign(smiles, features[c("dehydration_sites", "max_water_losses")],
+             envir = cache)
+    }
+    capacity <- compounds$max_water_losses[[j]]
+    if (!is.finite(capacity) &&
+        isTRUE(compounds$structure_valid[[j]]) &&
+        "alcohol_hydroxyl_sites" %in% names(compounds) &&
+        isTRUE(compounds$alcohol_hydroxyl_sites[[j]] == 0)) {
+      capacity <- 0L
+      compounds$max_water_losses[[j]] <- 0L
+      compounds$dehydration_sites[[j]] <- 0L
+    }
+    if (!is.finite(capacity) && infer_structure != "never") {
+      if (!is.na(smiles) && nzchar(smiles)) {
+        if (!exists(smiles, envir = cache, inherits = FALSE)) {
+          assign(smiles, .smiles_dehydration_capacity(smiles), envir = cache)
+        }
+        details <- get(smiles, envir = cache, inherits = FALSE)
+        capacity <- details$max_water_losses
+        compounds$max_water_losses[[j]] <- capacity
+        compounds$dehydration_sites[[j]] <- details$dehydration_sites
+      }
+    }
+    required <- rules$water_loss[[j]]
+    atoms_available <- if ("formula" %in% names(compounds)) {
+      .element_count(compounds$formula[[j]], "O") >= required &&
+        .element_count(compounds$formula[[j]], "H") >= 2L * required
+    } else TRUE
+    keep[[j]] <- is.finite(capacity) && capacity >= required && atoms_available
+    status[[j]] <- if (!is.finite(capacity)) "unavailable" else if (keep[[j]]) {
+      "structure-compatible"
+    } else "insufficient"
+    # A successfully checked motif supplies structure evidence even when a
+    # large, unannotated library skipped full runtime decomposition.
+    if (keep[[j]] && !isTRUE(compounds$structure_valid[[j]])) {
+      compounds$structure_valid[[j]] <- TRUE
+      compounds$structure_evidence[[j]] <-
+        "Alcohol OH and adjacent carbon H support the requested water loss"
+    }
+  }
+  list(compounds = compounds, keep = keep, status = status)
 }
 
 .adduct_structure_prior <- function(compounds, rule) {
@@ -1039,6 +1156,10 @@ predictAdductsFromSMILES <- function(
       }
       retained <- prior$score[[1]] >= min_structure_score &&
         site_status != "insufficient" && proton_bound_status != "insufficient"
+      dehydration <- .resolve_dehydration(
+        compound, rule, "never", new.env(parent = emptyenv())
+      )
+      retained <- retained && dehydration$keep[[1]]
       parts[[k]] <- data.frame(
         smiles = compound$smiles,
         polarity = polarity,
@@ -1047,6 +1168,10 @@ predictAdductsFromSMILES <- function(
         notation = rule$notation,
         rule_class = rule$rule_class,
         rule_prior = rule$prior,
+        water_loss = rule$water_loss,
+        dehydration_sites = compound$dehydration_sites,
+        max_water_losses = compound$max_water_losses,
+        dehydration_status = dehydration$status,
         structure_score = prior$score[[1]],
         reactive_site_status = site_status,
         proton_bound_status = proton_bound_status,
@@ -1157,8 +1282,13 @@ buildMZAnnotationIndex <- function(db, polarity = NULL,
   compounds <- .normalise_metabolite_db(
     db, collapse_isomers = collapse_isomers,
     infer_structure = infer_structure, structure_backend = structure_backend,
-    structure_workers = structure_workers
+    structure_workers = structure_workers,
+    retain_structure_records = any(rules$water_loss > 0L)
   )
+  structure_records <- attr(compounds, "structure_records", exact = TRUE)
+  structure_record_rows <- attr(compounds, "structure_record_rows", exact = TRUE)
+  attr(compounds, "structure_records") <- NULL
+  attr(compounds, "structure_record_rows") <- NULL
   if (!nrow(compounds)) {
     stop("No valid formula/monoisotopic-mass records were found in db.")
   }
@@ -1229,6 +1359,8 @@ buildMZAnnotationIndex <- function(db, polarity = NULL,
       compound_idx = compound_idx[ord],
       rule_idx = rule_idx[ord],
       compounds = compounds,
+      structure_records = structure_records,
+      structure_record_rows = structure_record_rows,
       rules = rules,
       family_rules = family_rules,
       polarity = polarity,
@@ -1398,6 +1530,8 @@ print.spamtp_mz_index <- function(x, ...) {
   data.frame(
     observed_mz = numeric(), expected_mz = numeric(), ppm_error = numeric(),
     score = numeric(), mass_score = numeric(), rule_prior = numeric(),
+    water_loss = integer(), dehydration_sites = numeric(),
+    max_water_losses = numeric(), dehydration_status = character(),
     chemical_score = numeric(), structure_score = numeric(),
     structure_status = character(), structure_rule_evidence = character(),
     structure_evidence = character(), reactive_site_score = numeric(),
@@ -1420,7 +1554,11 @@ print.spamtp_mz_index <- function(x, ...) {
 #'
 #' Candidates are pruned by ppm tolerance and proton/charge validity during
 #' index construction, then ranked using mass error, rule prior, mass-defect,
-#' isotope, and contextual adduct-family evidence.
+#' isotope, and contextual adduct-family evidence. Positive water-loss
+#' candidates additionally require compatible alcohol OH and neighbouring
+#' carbon H sites. Older structure tables are checked lazily for mass-matched
+#' records; `infer_structure = "never"` requires precomputed dehydration
+#' capacity. Isomer identities are resolved separately for these losses.
 #'
 #' @param observed_mz Numeric vector of observed m/z values.
 #' @param index A `spamtp_mz_index` from [buildMZAnnotationIndex()].
@@ -1435,7 +1573,12 @@ print.spamtp_mz_index <- function(x, ...) {
 #'   family is absent from `ms1_spectrum`.
 #' @param min_score Minimum final score to retain.
 #'
-#' @return A ranked candidate data frame.
+#' @return A ranked candidate data frame. `water_loss` is the required number
+#'   of neutral water losses; `dehydration_sites` and `max_water_losses` record
+#'   the checked structure's site count and capacity. `dehydration_status` is
+#'   `"structure-compatible"` for retained positive water losses and
+#'   `"not_required"` for other rules. Missing capacities for other rules are
+#'   left as `NA`. These fields describe eligibility, not confirmed identity.
 #' @examples
 #' utils::str(formals(queryMZAnnotationIndex))
 #' @export
@@ -1458,6 +1601,7 @@ queryMZAnnotationIndex <- function(observed_mz, index, ppm = 5,
   spectrum <- .normalise_ms1_spectrum(ms1_spectrum)
   tolerance <- ppm / 1e6
   results <- vector("list", length(observed_mz))
+  dehydration_cache <- new.env(parent = emptyenv())
 
   for (i in seq_along(observed_mz)) {
     obs <- observed_mz[[i]]
@@ -1477,6 +1621,34 @@ queryMZAnnotationIndex <- function(observed_mz, index, ppm = 5,
     error <- error[keep]
     compounds <- index$compounds[index$compound_idx[hit], , drop = FALSE]
     rules <- index$rules[index$rule_idx[hit], , drop = FALSE]
+    if (is.null(rules$water_loss)) rules$water_loss <- rep(0L, nrow(rules))
+    if (any(rules$water_loss > 0L) && !is.null(index$structure_records)) {
+      members <- lapply(seq_along(hit), function(j) {
+        if (rules$water_loss[[j]] > 0L) {
+          index$structure_record_rows[[index$compound_idx[hit[[j]]]]]
+        } else NA_integer_
+      })
+      source_rows <- rep(seq_along(hit), lengths(members))
+      record_rows <- unlist(members, use.names = FALSE)
+      compounds <- compounds[source_rows, , drop = FALSE]
+      original <- !is.na(record_rows)
+      compounds[original, ] <- index$structure_records[
+        record_rows[original], names(compounds), drop = FALSE
+      ]
+      rules <- rules[source_rows, , drop = FALSE]
+      expected <- expected[source_rows]
+      error <- error[source_rows]
+    }
+    dehydration <- .resolve_dehydration(
+      compounds, rules, index$infer_structure %||% "auto", dehydration_cache
+    )
+    keep <- dehydration$keep
+    if (!any(keep)) next
+    compounds <- dehydration$compounds[keep, , drop = FALSE]
+    dehydration_status <- dehydration$status[keep]
+    rules <- rules[keep, , drop = FALSE]
+    expected <- expected[keep]
+    error <- error[keep]
     structure_prior <- lapply(seq_along(error), function(j) {
       .adduct_structure_prior(
         compounds[j, , drop = FALSE], rules[j, , drop = FALSE]
@@ -1541,6 +1713,10 @@ queryMZAnnotationIndex <- function(observed_mz, index, ppm = 5,
       score = final_score,
       mass_score = mass_score,
       rule_prior = rules$prior,
+      water_loss = rules$water_loss,
+      dehydration_sites = compounds$dehydration_sites,
+      max_water_losses = compounds$max_water_losses,
+      dehydration_status = dehydration_status,
       chemical_score = chemical_score,
       structure_score = structure_score,
       structure_status = structure_status,
@@ -1571,7 +1747,14 @@ queryMZAnnotationIndex <- function(observed_mz, index, ppm = 5,
       ramp_ids = compounds$ramp_ids,
       stringsAsFactors = FALSE
     )
-    results[[i]] <- out[out$score >= min_score, , drop = FALSE]
+    allowed <- out$score >= min_score
+    # Apply the threshold again after lazy structure resolution.
+    water <- out$water_loss > 0L
+    allowed[water] <- allowed[water] &
+      out$structure_score[water] >= (index$min_structure_score %||% 0.05)
+    out <- out[allowed, , drop = FALSE]
+    duplicate_loss <- out$water_loss > 0L & duplicated(out)
+    results[[i]] <- out[!duplicate_loss, , drop = FALSE]
   }
 
   result <- do.call(rbind, results)

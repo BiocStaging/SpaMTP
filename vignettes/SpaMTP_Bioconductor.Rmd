@@ -23,16 +23,15 @@ knitr::opts_chunk$set(
 
 # Overview
 
-`SpaMTP` analyses spatial metabolomics and paired multi-omics data in native
-Bioconductor containers. `SpaMTPdb` supplies annotation resources;
+`SpaMTP` analyses mass spectrometry imaging (MSI) and paired multi-omics data
+in native Bioconductor containers. `SpaMTPdb` supplies annotation resources;
 `SpaMTPData` supplies versioned experiments.
 
 ## Installation
 
 Install a published Bioconductor version with `BiocManager::install("SpaMTP")`.
-For a submission build, install the supplied source package and the companion
-versions recorded in its `DESCRIPTION`. This article uses the installed package
-and its bundled examples.
+For source installation, use the companion versions required by `DESCRIPTION`.
+This article uses the installed package and its bundled examples.
 
 ## Real tissue examples
 
@@ -61,11 +60,13 @@ library(SpaMTP)
 
 `bladder_demo.rds` derives from the public
 [SpaMTPData bladder archive](https://zenodo.org/records/22733262).
-A four-pixel grid retains 2,210 of 34,840 source locations and all 79 features
-in its previously selected panel. The source is MALDI imaging of a mouse
+Sampling every fourth pixel along x and y retains 2,210 of 34,840 source
+locations and all 79 features in its previously selected panel. The source is
+matrix-assisted laser desorption/ionization (MALDI) imaging of a mouse
 urinary-bladder section, also used in the
 [Cardinal case study](https://github.com/Vitek-Lab/Cardinal3-vignettes/blob/main/Vignettes/Vignette1/case-study1-vignette.rmd).
-That source workflow applies TIC normalization before integrating peaks.
+That source workflow applies total ion current (TIC) normalization before
+integrating peaks.
 The archived `counts` assay contains processed panel intensities. Its original
 full-spectrum totals are unavailable in this object; the separate
 [raw-spectrum archive](https://zenodo.org/records/17246684) covers a subset
@@ -113,10 +114,12 @@ ggplot2::ggplot(bladder_xy, ggplot2::aes(x, y, colour = compartment)) +
 
 ## Preserve the source scale and select ions
 
-Remove zero-total locations and apply `log1p` to the archived processed
-intensities. This preserves the upstream normalization for the spatial maps.
-The next section checks how an additional **79-feature panel normalization**
-changes the compartment comparison.
+Remove zero-total locations and apply the natural-log transformation
+`log1p(x) = ln(1 + x)` to the archived processed intensities. This preserves the
+upstream normalization for the spatial maps. The later
+[panel-composition sensitivity analysis](#panel-composition-sensitivity)
+checks how an additional **79-feature panel normalization** changes the
+compartment comparison.
 
 The two displayed masses were selected for their compartment-associated
 patterns in the source tutorial. `which.min()` locates each nearest measured
@@ -178,7 +181,7 @@ regional_summary <- do.call(rbind, lapply(unname(compartment_names), function(gr
 knitr::kable(regional_summary, digits = 2, row.names = FALSE)
 ```
 
-## Panel-composition sensitivity
+## Panel-composition sensitivity {#panel-composition-sensitivity}
 
 An abundant ion contributes to the denominator of panel normalization.
 Here, the two additional scales divide each intensity by either the complete
@@ -228,8 +231,9 @@ ions against a versioned RaMP database and retains candidate ambiguity.
 ## Prespecified windows across the complete source section
 
 `pig_demo.rds` derives from the public
-[pig fetal DESI dataset](https://zenodo.org/records/17246555), acquired on a
-Thermo LTQ instrument. It retains all 4,959 source tissue locations.
+[pig fetal dataset](https://zenodo.org/records/17246555), acquired by
+desorption electrospray ionization (DESI) on a Thermo LTQ instrument.
+It retains all 4,959 source tissue locations.
 The [Cardinal segmentation tutorial](https://bioconductor.org/packages/release/data/experiment/vignettes/CardinalWorkflows/inst/doc/MSI-segmentation.html)
 associates m/z 187.36 with heart, 537.08 with liver, and 840.43 with brain and
 spinal cord. These associations describe source-reported ion-localization
@@ -283,7 +287,8 @@ version = "1.1.0")`.
 # Mouse brain: paired MSI and RNA
 
 The [end-to-end workflow](End_to_End_Workflow.html) uses all 876 locations in
-the archived striatal selection from a 6-OHDA mouse specimen
+the archived striatal selection from a mouse specimen in a
+6-hydroxydopamine (6-OHDA) lesion model
 ([GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
 It relates measured m/z 400.14659 and the genes `Penk` and `Tac1` to anatomy
 and the recorded intact/lesioned sides, then demonstrates regional summaries
