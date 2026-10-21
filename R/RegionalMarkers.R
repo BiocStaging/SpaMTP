@@ -88,7 +88,8 @@
     stop("Marker analysis requires unique feature IDs and finite values.", call. = FALSE)
   labels <- as.character(SummarizedExperiment::colData(data)[[ident]])
   valid <- !is.na(labels) & nzchar(trimws(labels))
-  counts <- table(labels[valid])
+  # Region order sets the DEM and marker-table order; keep it locale-independent.
+  counts <- table(factor(labels[valid], levels = .sortLabels(labels[valid])))
   groups <- names(counts)[counts >= min_region_size]
   valid <- valid & labels %in% groups
   eligibility <- data.frame(region = names(counts), observations = as.integer(counts),

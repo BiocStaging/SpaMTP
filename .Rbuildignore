@@ -5,3 +5,5 @@
 .*\.Rcheck$
 .*\.BiocCheck$
 .*\.tar\.gz$
+^man/figures/SpaMTP_Fig\.png$
+^man/figures/GML_invert\.png$

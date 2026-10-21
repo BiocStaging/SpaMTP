@@ -5,6 +5,8 @@ installerEnvironment <- function() {
     }
     env <- new.env(parent = globalenv())
     sys.source(path, envir = env)
+    # Installer logic is tested independently of the R running the tests.
+    env$.spaMTPRVersion <- function() numeric_version("4.6.0")
     env
 }
 
@@ -59,6 +61,12 @@ test_that("the installer can be sourced without installing or loading anything",
     if ("SpaMTP" %in% loadedNamespaces()) {
         expect_error(env$installSpaMTP(), "Restart R")
     }
+})
+
+test_that("the installer stops on R older than 4.6.0", {
+    env <- installerEnvironment()
+    env$.spaMTPRVersion <- function() numeric_version("4.5.3")
+    expect_error(env$installSpaMTP(), "requires R >= 4.6.0")
 })
 
 test_that("installation handles an empty library and a database still in staging", {

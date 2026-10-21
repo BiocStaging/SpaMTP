@@ -1,3 +1,15 @@
+# SpaMTP 0.99.15
+
+* Rendered vignette figures at 96 dpi (192 dpi on high-density displays) and
+  excluded the README overview figures from the source tarball, bringing the
+  built package under the Bioconductor 10 MB limit.
+* Installer tests no longer depend on the R version running them; a separate
+  test covers the R >= 4.6.0 guard.
+* Regional marker groups, workflow marker tables and association ties are now
+  ordered the same way in every locale. `R CMD build` sorts with
+  `LC_COLLATE=C`, which previously changed the workflow's association anchors
+  and failed the end-to-end vignette.
+
 # SpaMTP 0.99.14
 
 * Streamlined vignette interpretation while retaining observed metrics,

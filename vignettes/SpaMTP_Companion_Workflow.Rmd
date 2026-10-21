@@ -17,7 +17,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
   fig.align = "center", fig.width = 7, fig.height = 4.5,
-  out.width = "720px", dpi = 144
+  out.width = "720px", dpi = 96
 )
 seuratBefore <- intersect(c("Seurat", "SeuratObject"), loadedNamespaces())
 ```

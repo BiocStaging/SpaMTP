@@ -17,6 +17,25 @@ regionWorkflowFixture <- function() {
 regionWorkflowSpecs <- function() list(main = list(type = "metabolomics", layer = "counts"),
   arbitrary_RNA_name = list(type = "transcriptomics", layer = "counts", species = "Mus musculus"))
 
+test_that("region order and association anchors do not depend on collation", {
+  expect_identical(withr::with_collate("C", .sortLabels(c("OT", "cc", "CP", "ACB", "cc"))),
+                   c("ACB", "cc", "CP", "OT"))
+  x <- regionWorkflowFixture()
+  x$anatomy <- rep(c("cc", "CP", "ACB", "OT"), 4)
+  r <- withr::with_collate("C", runSpaMTPWorkflow(x, regionWorkflowSpecs(),
+    group = "condition", regions = "anatomy", npcs = 2, association_features = 2,
+    native = list(moran = FALSE, graph_pca = FALSE)))
+  for (n in names(r$analysis)) {
+    expect_identical(names(r$region_analysis$modalities[[n]]$tables),
+                     c("ACB", "cc", "CP", "OT"))
+    expect_identical(unique(r$region_analysis$modalities[[n]]$markers$DEMs$cluster),
+                     c("ACB", "cc", "CP", "OT"))
+  }
+  tables <- r$region_analysis$modalities$main$tables
+  expect_identical(attr(r$associations[[1]], "association")$anchors,
+                   head(unique(vapply(tables, function(t) t$feature[1], "")), 2))
+})
+
 test_that("regional reference excludes unlabelled observations and never invents P values", {
   E <- rbind(first = c(2, 4, 0, 0, 100, 999, 6, 0), second = c(-2, 0, 3, 1, 55, 88, 0, 1))
   r <- .wf_region_summary(E, c("A", "A", "B", "B", "", NA, "C", "C"), 2)

@@ -9,6 +9,24 @@ verbose_message <- function(message_text, verbose) {
   }
 }
 
+#' Locale-independent order of character labels
+#'
+#' sort(), order(), table() and factor() follow the collation locale, and
+#' R CMD build and check run with LC_COLLATE=C, so the same labels can sort
+#' differently on different machines. Case-insensitive radix order is the same
+#' everywhere and matches English collation for plain ASCII labels.
+#'
+#' @param x Character vector of labels.
+#' @return .labelOrder returns an ordering permutation of x; .sortLabels
+#'   returns the unique labels in that order.
+#' @noRd
+.labelOrder <- function(x) order(tolower(x), x, method = "radix")
+
+.sortLabels <- function(x) {
+  x <- unique(x)
+  x[.labelOrder(x)]
+}
+
 
 
 

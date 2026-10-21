@@ -4,7 +4,7 @@
 installSpaMTP <- function(lib = NULL, buildVignettes = TRUE,
                          biocVersion = "devel", timeout = 600,
                          pandocDir = NULL, ref = "devel") {
-    if (getRversion() < "4.6.0") {
+    if (.spaMTPRVersion() < "4.6.0") {
         stop("SpaMTP requires R >= 4.6.0.", call. = FALSE)
     }
     if (!is.logical(buildVignettes) || length(buildVignettes) != 1L ||
@@ -110,6 +110,9 @@ installSpaMTP <- function(lib = NULL, buildVignettes = TRUE,
     message("SpaMTP installation and namespace checks completed.")
     invisible(lib)
 }
+
+# Separate from the guard so tests can exercise the installer on any R.
+.spaMTPRVersion <- function() getRversion()
 
 .spaMTPPersonalLibrary <- function() {
     personal <- Sys.getenv("R_LIBS_USER")

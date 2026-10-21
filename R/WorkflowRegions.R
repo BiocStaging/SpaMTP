@@ -183,9 +183,12 @@ analyzeSpaMTPRegions <- function(result, regions = NULL, min_region_size = 3, na
       summaries[[name]]$markers <- m
       if (identical(m$status, "completed")) {
         # Shared values feed ranking, spatial browsing and the native heatmap.
-        summaries[[name]]$tables <- lapply(split(m$DEMs, m$DEMs$cluster), function(t) {
+        # Keep the marker region order; split() would re-sort it by locale.
+        regions_found <- factor(m$DEMs$cluster, levels = unique(m$DEMs$cluster))
+        summaries[[name]]$tables <- lapply(split(m$DEMs, regions_found), function(t) {
           t$feature <- t$gene; t$effect <- t$logFC
-          t[order(-t$mean_auc, t$marker_rank, t$gene), , drop = FALSE]
+          t[order(-t$mean_auc, t$marker_rank, tolower(t$gene), t$gene,
+                  method = "radix"), , drop = FALSE]
         })
         summaries[[name]]$method <- m$method
       }

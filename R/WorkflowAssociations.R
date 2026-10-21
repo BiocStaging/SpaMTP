@@ -41,7 +41,8 @@
         modality1 = a, modality2 = b, observations = ncol(paired))
     })
     t <- do.call(rbind, query)
-    t <- t[order(-abs(t$correlation), t$feature1, t$feature2, na.last = TRUE), , drop = FALSE]
+    t <- t[order(-abs(t$correlation), tolower(t$feature1), t$feature1,
+                 tolower(t$feature2), t$feature2, na.last = TRUE, method = "radix"), , drop = FALSE]
     attr(t, "association") <- list(function_name = "findCorrelatedFeatures",
       covariates = fields, anchors = anchors, targets = targets,
       observations = colnames(object), excluded_observations = colnames(result$object)[!keep],
