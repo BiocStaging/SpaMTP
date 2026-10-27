@@ -1,335 +1,104 @@
+# SpaMTP <img src="man/figures/logo.png" align="right" height="100" alt="SpaMTP logo" />
 
-# SpaMTP <img src="man/figures/logo.png" align="right" height="100" alt="" />
+**SpaMTP** is an R package for analysing spatial metabolomics and integrating
+it with spatial transcriptomics. It connects mass spectrometry imaging (MSI)
+preprocessing, candidate metabolite annotation, spatial statistics, pathway
+analysis and interactive reports.
 
-<!-- badges: start -->
-
-
-## *R*-based User-Friendly Spatial Metabolomic, Transcriptomic, and Proteomic Data Analysis Tool
-
-<br>
-
-<!-- badges: end -->
-
-SpaMTP is an R package for integrative analysis of spatial metabolomics and
-spatial transcriptomics data. Raw and continuous MSI spectra remain in
-Cardinal's `MSImagingArrays` (unaligned mass axes) or matter-backed
-`MSImagingExperiment`; aligned or binned MSI uses
-`SpatialExperiment`, including `rowData()` annotations, `colData()` pixel
-metadata, `spatialCoords()`, `imgData()`, and paired transcriptomes in
-`altExp()`. Seurat is an optional interoperability target rather than the
-package's foundation.
-
-SpaMTP provides (1) mass-to-charge ratio (m/z) metabolite annotation, (2)
-downstream statistical analysis including differential metabolite expression
-and pathway analysis, and (3) integrative spatial-omics analysis. Explicit
-`asSpatialExperiment()`, `asCardinal()`, `seuratToSpatialExperiment()`, and
-`spatialExperimentToSeurat()` entry points connect these workflows.
-
-The analysis package does not require Seurat. Only explicit conversion
-functions use the optional SeuratObject package; loading, preprocessing,
-plotting and integration do not convert inputs automatically.
-
-## From modalities to a complete report
-
-SpaMTP 0.99.9 connects native data acquisition, QC, alignment and mapping
-to an analytical report: compare individual, spatial and joint representations;
-evaluate region markers; inspect replicate effects and conditional cross-omic
-associations; then trace pathway evidence to measured members.
-
-```r
-x <- SpaMTPData::spaMTPExampleData(paired = TRUE)
-result <- runSpaMTPWorkflow(x,
-  modalities = list(
-    main = list(type = "metabolomics", layer = "counts"),
-    transcriptome = list(type = "transcriptomics", layer = "counts")
-  ), group = "region", npcs = 2, clusters = 2,
-  structure = list(primary = "spatial", k_grid = c(2, 3),
-                   reference = "region", umap = FALSE),
-  observation_unit = "synthetic paired pixel", output_dir = "my_report")
-# Open my_report/report.html; full tables and workflow.rds accompany it.
-```
-
-Supply a third alternative experiment to include another modality, or a named
-list of independent SpatialExperiments with a reference and explicit alignment
-and mapping geometry. RDS paths and pinned SpaMTPData resource specifications
-also work. Raw-signal preprocessing and scientific design choices remain
-explicit. Reports embed images; inferred contrasts require biological
-replicates. See [the end-to-end tutorial](vignettes/End_to_End_Workflow.Rmd)
-for independent inputs, three modalities, companion database indexes, coverage
-audits and the current workflow's limits.
-
-The offline region/DE explorer links feature selection to effect/volcano plots,
-regional expression and spatial positions, with search, filters, zoom and CSV
-export. Set `regions = "anatomical_region"` independently of the comparison
-`group`; without biological replication, region effects remain descriptive.
-Native `findAllDEMs(method="markers")` supplies pairwise AUC, standardized
-effects, detection and spatial-block sensitivity. Native heatmaps and H&E
-maps display the same regional markers. PCA and graph PCA use matched features
-and all observations, and both feed joint representations. K sensitivity,
-external-reference ARI and raw versus region-adjusted correlation make the
-effects of analytical choices visible. Moran's I is an optional descriptive
-screen. Small serif descriptions keep methods separate from result figures.
-
-```r
-# Extend a saved result while preserving its original contrasts:
-result <- analyzeSpaMTPRegions(result, regions = "region", spatial_blocks = 6)
-renderSpaMTPReport(result, "interactive_report",
-  preview_points = 2000, preview_features = 180, table_rows = 1000)
-```
-
-The same entry points accept paired mouse brain MS/RNA resources, single-omic
-MS or Visium inputs, and three-modality experiments. The tutorial and installed
-`workflows/` recipes include
-`mouse_brain_dhb_striatum`, `mouse_brain_fmp10` and `mouse_brain_visium`
-configurations using pinned SpaMTPData resources; no cohort-specific logic is
-required. Pathways require a compatible species-specific index from the
-configured database; human HGNC identities are not assigned to mouse genes.
-
-## Moving a Seurat workflow to Bioconductor
-
-Convert once, then keep the result in a Bioconductor container:
-
-```r
-# xy has numeric x/y columns and row names matching Seurat pixel names.
-spe <- seuratToSpatialExperiment(
-    seuratObject, assay = "SPM", layer = "counts", coordinates = xy)
-spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
-spe <- scaleSMData(spe)
-spe <- runMetabolicPCA(spe, slot = "logcounts")
-
-# Non-spatial transcriptomics does not need invented coordinates.
-sce <- seuratToSingleCellExperiment(seuratObject, assay = "RNA")
-```
-
-| Operation in a Seurat workflow | Native alternative |
-|---|---|
-| NormalizeData | normalizeSMData: normcounts/logcounts assays |
-| ScaleData | scaleSMData: feature-wise centring/scaling in a scaled assay |
-| RunPCA | runMetabolicPCA / scater::runPCA: reducedDim |
-| VlnPlot | mzViolinPlot / scater::plotExpression |
-| Cell/feature metadata | colData / rowData |
-| Multiple modalities | Paired altExp entries |
-| Subsetting cells | Standard brackets, or subsetSPM with colData/colLabels |
-| FindMultiModalNeighbors | multiOmicIntegration supplies a **different**, equal-weight PCA embedding, not WNN |
-
-Conversion preserves the requested exact layer, metadata, identities and
-paired alternative experiments. It does not transfer optical rasters, graphs or
-reductions. Split Seurat v5 layers must be joined beforehand or selected
-explicitly. Other assays without the same pixels are skipped with a warning.
-The original layer name is retained: a converted data layer is still called
-data, so either select it explicitly or normalize counts to create logcounts.
-Scaling creates a dense matrix; it is not an out-of-memory operation.
-
-Optical images can be attached with addSpatialImage(). To return to an
-external Seurat workflow, explicitly call spatialExperimentToSeurat().
-Historical Seurat/WNN tutorials belong to the published-workflow branch.
-
-For runnable native examples, see [modern data access](vignettes/Modern_Data_Access.Rmd)
-and the [full annotation pipeline](vignettes/Metabolite_Annotation_Pipeline.Rmd).
-Function arguments distinguish the experiment (`assay = "main"` or an
-`altExp()` name) from its expression matrix (`slot = "counts"` or another
-exact character assay name). `slot` is retained for call compatibility and
-does not expose an internal S4 slot. See `?experimentAccess` for accessor
-examples and the storage convention.
-Spatial coordinates have one authoritative store: `spatialCoords()`.
-Seurat conversion reads a single image/FOV through `GetTissueCoordinates()`
-before considering historical metadata copies; multiple images require an
-explicit selection. Native matrix and METASPACE imports no longer duplicate
-coordinates in pixel metadata.
-
-Please head to the [**SpaMTP website**](https://genomicsmachinelearning.github.io/SpaMTP/) for tutorials and documentation, including the [**RaMP 3.0 indexed metabolite annotation pipeline**](https://genomicsmachinelearning.github.io/SpaMTP/developmental/articles/Metabolite_Annotation_Pipeline.html). Active development and website deployment remain in the [**project development repository**](https://github.com/GenomicsMachineLearning/SpaMTP/tree/developmental); this repository contains the streamlined Bioconductor package source.
-
-SpaMTP is now published in *Nature Methods*: [**SpaMTP: integrative statistical analysis and visualization of spatial metabolomics and transcriptomics data**](https://doi.org/10.1038/s41592-026-03140-8).
-
-<br>
-
-<img src="man/figures/SpaMTP_Fig.png" alt="" style="background-color: white;" />
-
-<br>
+The workflow uses Bioconductor containers: Cardinal for raw MSI spectra and
+`SpatialExperiment` for aligned or binned measurements, spatial coordinates
+and paired modalities. Seurat conversion is optional and explicit.
 
 ## Installation
 
-Use R >= 4.6.0 and Bioconductor devel. SpaMTPData is available from the
-official Bioconductor experiment-data repository. SpaMTP and SpaMTPdb are
-currently installed from their BiocStaging `devel` branches.
+SpaMTP and SpaMTPdb are under Bioconductor review. The source packages require
+**R >= 4.6.0**. The installation example uses **Bioconductor 3.24**; Pandoc
+(included with RStudio) is needed to build the vignettes.
 
-Save the [standalone installer](inst/workflows/install_spamtp.R) as
-`install_spamtp.R`, start a fresh R session, and run:
-
-```r
-source("install_spamtp.R")
-installSpaMTP()
-```
-
-The installer builds all vignettes by default, rebuilding SpaMTP even if the
-same commit was previously installed without articles. It raises the download timeout
-to at least 600 seconds, installs BiocManager and remotes when missing, checks
-Pandoc, installs the companion packages, and checks that their namespaces load
-before installing SpaMTP. It prefers a sufficient SpaMTPdb version from the
-configured repositories when one becomes available, otherwise using staging.
-It preserves a longer existing timeout and restores session settings on exit.
-Child R processes use the selected library first, including when an existing
-`R_LIBS` setting would otherwise give an older library precedence.
-Use `timeout = 1800` for slower connections, `biocVersion = "3.24"` to select
-the tested Bioconductor version, or `ref = "<commit SHA>"` for a fixed SpaMTP
-commit. The default library is the first directory in `R_LIBS_USER`, which is
-created if needed. A different writable directory can be supplied with `lib =`;
-add it to `.libPaths()` when using the installed packages in another session.
-
-For Windows command-line R, the installer also searches common user and
-system RStudio locations for its bundled Pandoc. A custom installation can be
-specified explicitly:
+Start a fresh R session and run:
 
 ```r
-installSpaMTP(pandocDir = "C:/Program Files/Pandoc")
+source("https://raw.githubusercontent.com/BiocStaging/SpaMTP/devel/inst/workflows/install_spamtp.R")
+installSpaMTP(biocVersion = "3.24")
 ```
 
-This argument names the directory containing `pandoc.exe`. It does not modify
-the system PATH or require an administrator. Pandoc is required for local
-R Markdown articles; `buildVignettes = FALSE` explicitly installs without
-building them. Sourcing the installer alone does not install anything.
+The installer raises the download timeout, installs the companion packages
+before SpaMTP, and builds all seven vignettes. It uses a personal R library
+and restores session settings afterwards. For an installation without local
+vignettes, use `buildVignettes = FALSE`.
 
-The equivalent manual setup, while SpaMTPdb remains in staging, is:
+| Package | Role | Installation source during review |
+|---|---|---|
+| [SpaMTPdb](https://github.com/BCRL-tylu/SpaMTPdb) >= 0.99.4 | Versioned RaMP annotation resources and a human HGNC reference | BiocStaging `devel`, or Bioconductor when available |
+| [SpaMTPData](https://bioconductor.org/packages/SpaMTPData/) >= 0.99.5 | Experimental datasets and example data | Bioconductor |
+| SpaMTP | Analysis, annotation, visualisation and integration | BiocStaging `devel` |
+
+See the [installation and workflow guide](inst/workflows/README.md) for
+manual installation, local checkouts, Windows/Pandoc setup and installer
+options. SpaMTPdb must be installed explicitly before a manual staging
+installation of SpaMTP.
+
+## Quick start
+
+This example uses a compact measured mouse-bladder MSI panel bundled with
+SpaMTP, so it needs no data download after installation. The 79 features and
+2,210 retained locations preserve the source panel and a regular tissue grid.
 
 ```r
-options(timeout = max(600, getOption("timeout")))
-Sys.setenv(R_DEFAULT_INTERNET_TIMEOUT = as.character(getOption("timeout")))
-install.packages(c("BiocManager", "remotes", "rmarkdown"),
-                 repos = "https://cloud.r-project.org")
-BiocManager::install(version = "devel", ask = FALSE, update = FALSE)
+library(SpaMTP)
 
-# Run in RStudio, or make a separately installed Pandoc visible to R first.
-stopifnot(rmarkdown::pandoc_available())
-BiocManager::install("BiocStaging/SpaMTPdb@devel", ask = FALSE, update = FALSE)
-BiocManager::install("SpaMTPData", ask = FALSE, update = FALSE)
-loadNamespace("SpaMTPData")
-BiocManager::install("BiocStaging/SpaMTP@devel", dependencies = TRUE,
-                     build_vignettes = TRUE, ask = FALSE, update = FALSE)
+bladder <- readRDS(system.file(
+    "extdata", "bladder_demo.rds", package = "SpaMTP"
+))
+dim(bladder)
+SummarizedExperiment::assayNames(bladder)
+
+# Display one measured ion using its archived, processed intensities.
+plotSpatialFeature(bladder, features = rownames(bladder)[1L],
+                   assayName = "counts")
 ```
 
-### Windows installation troubleshooting
+The [introductory vignette](vignettes/SpaMTP_Bioconductor.Rmd) explains the
+tissue compartments, ion selection and processing history. These are
+single-section examples: spatial differences describe the specimen, and
+accurate-mass matches are candidate identities that need further chemical
+evidence.
 
-* **`there is no package called 'magick'` during SpaMTPData installation:**
-  inspect the earlier download messages. A reproduced Windows installation
-  hit R's default 60-second timeout for `magick`, `stringi` and `BH` ZIP files;
-  setting `options(timeout = 600)` and retrying installed magick and SpaMTPData
-  successfully. This is a download timeout, not a ZIP size limit. The installer
-  sets the timeout before downloading dependencies; package startup code would
-  run too late. CRAN's magick Windows binary normally needs no separate system
-  ImageMagick installation. See the [magick installation guide](https://docs.ropensci.org/magick/#installation).
-* **`package 'remotes' not installed`:** BiocManager needs remotes to install
-  GitHub packages. The installer supplies it before requesting staging packages.
-* **`SpaMTPdb is not available for this version of R`:** while the package is
-  under review, it may be absent from official repository indexes. Install its
-  BiocStaging version first; this message alone does not establish an R version
-  incompatibility. SpaMTPData has already migrated to the official repository
-  and must not be installed from its removed staging repository.
-* **`Pandoc is required ... but not available`:** command-line R may not see
-  RStudio's Pandoc. Run the installer in RStudio, pass `pandocDir`, or set
-  `RSTUDIO_PANDOC` to the directory containing the executable before building.
-  The installer checks this before the full dependency installation.
-* Some Bioconductor data/workflow repositories have no Windows binary index.
-  An index HTTP 404 alone is not a package installation failure: pure R data
-  packages can install from source. Keep binary support for compiled
-  dependencies; forcing every package to `type = "source"` can introduce
-  unnecessary compiler requirements. Install matching Rtools if a dependency
-  actually needs compilation. Do not suppress warnings when diagnosing a failure.
+## Tutorials
 
-A Windows 11 / R 4.6.1 / Bioconductor 3.24 reproduction of SpaMTP 0.99.11
-completed installation and built all seven vignettes after the timeout,
-staging-dependency and Pandoc setup above. It used ordinary user permissions
-and required no separate ImageMagick or Rtools installation for that dependency
-set. Other source-package versions may have different build requirements.
+Read the vignettes in the numbered order, or start with the topic needed for
+your analysis. After installing with vignettes, use `browseVignettes("SpaMTP")`.
 
-### Local source checkouts
+| Order | Vignette | Covers |
+|---|---|---|
+| 1 | [Spatial metabolomics with native containers](vignettes/SpaMTP_Bioconductor.Rmd) | Small mouse-bladder and pig-tissue examples, with biological context |
+| 2 | [Data access and migration](vignettes/Modern_Data_Access.Rmd) | Imports, metadata, coordinates and optional Seurat conversion |
+| 3 | [Companion data and annotation resources](vignettes/SpaMTP_Companion_Workflow.Rmd) | SpaMTPData experiments and verified SpaMTPdb resources |
+| 4 | [Metabolite annotation and pathway follow-up](vignettes/Metabolite_Annotation_Pipeline.Rmd) | Accurate-mass candidates, structural evidence and pathway interpretation |
+| 5 | [Gene mapping and joint pathway analysis](vignettes/Gene_Identifier_Mapping.Rmd) | Human gene identifiers, measured backgrounds and shared pathways |
+| 6 | [Pathway resources and network provenance](vignettes/Pathway_Database_Integration.Rmd) | Membership, topology and resource provenance |
+| 7 | [Spatial multi-omics analysis and evaluation](vignettes/End_to_End_Workflow.Rmd) | Paired mouse-brain MSI/RNA, regional analysis and exported reports |
 
-Keep the coordinated source versions together: SpaMTP >= 0.99.11,
-SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5. Install the data packages before
-the software package:
+The companion-resource and extended workflows download versioned data on
+first use unless a verified local or cached copy is available. Package
+versions, RaMP snapshots, HGNC archives and experimental-data releases have
+separate version numbers.
 
-```sh
-R CMD INSTALL ../SpaMTPdb
-R CMD INSTALL ../SpaMTPData
-R CMD INSTALL .
-```
+## Documentation and support
 
-The [three-package workflow](vignettes/SpaMTP_Companion_Workflow.Rmd) runs
-without downloads using SpaMTPData's native synthetic SpatialExperiment,
-SpaMTPdb's registry and SpaMTP's analysis/annotation functions. Data packages
-remain independent of the software package; conversion logic stays in SpaMTP.
-The RaMP 3.0.7 snapshot and historical experiment-data 1.0.0 remain unchanged.
-SpaMTPData now defaults to resource release 1.1.0, with seven native
-SpatialExperiment RDS in [Zenodo record 22733262](https://zenodo.org/records/22733262)
-and eleven unchanged auxiliary/Cardinal resources. Use `spaMTPData()` to
-retrieve native datasets without Seurat. Installed mouse-brain recipes and the
-network demo use this native release directly. Preparation accepts optional
-independent optical images with explicit scale factors; FMP10/Visium mapping
-also requires an explicit spot radius in original image pixels. Historical
-archives are not loaded by these examples. See the
-[end-to-end workflow](vignettes/End_to_End_Workflow.Rmd) for the portable commands
-and spatial-configuration format. Historical resources remain available only
-through an explicit `version = "1.0.0"` request.
+This repository contains the Bioconductor submission. Its vignettes document
+the native workflow. The [project website](https://genomicsmachinelearning.github.io/SpaMTP/)
+also includes published and developmental tutorials; historical Seurat-based
+examples use a different API.
 
-For human gene mapping, see the [gene identifier workflow](vignettes/Gene_Identifier_Mapping.Rmd).
-SpaMTPdb supplies a separately versioned, checksum-verified HGNC archive;
-SpaMTPData supplies experiments with species provenance. SpaMTP's
-`buildGeneMappingIndex()`, `mapGeneIdentifiers()` and
-`annotateGeneIdentifiers()` resolve symbols and stable IDs with an input audit.
-Pathway analyses unite memberships of RaMP records belonging to one HGNC gene
-and count that gene once. Ambiguous aliases and conflicting gene records remain
-explicitly unresolved. Targeted-panel Fisher analysis requires the full measured
-panel as `universe`; all eligible pathways enter the BH correction.
-
-Use `buildPathwayIndex(database, gene_index = index)` and pass the resulting
-`pathway_index` to enrichment, `createPathwayAssay()`, `createPathwayObject()`
-and named pathway plots. Coverage audits report database and measured sizes,
-actual member IDs, coverage fractions and excluded identity conflicts.
-Different pathways with the same name remain distinct through pathwayRampId.
-Pathway scores describe measured expression and are not pathway activity tests.
-
-During Bioconductor review, install the companion annotation package and this
-submission source from GitHub:
-
-``` r
-if (!requireNamespace("remotes", quietly = TRUE))
-    install.packages("remotes")
-
-remotes::install_github("BCRL-tylu/SpaMTPdb")
-remotes::install_github("BCRL-tylu/SpaMTPData")
-remotes::install_github("SpaMTP-project/SpaMTP")
-```
-
-`SpaMTPdb` supplies versioned RaMP annotation and pathway resources.
-`SpaMTPData`, installed separately when demonstration data are required,
-provides ExperimentHub access to the larger objects used in tutorials.
-
-After Bioconductor acceptance, the supported installation command will be:
-
-``` r
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-BiocManager::install("SpaMTP")
-```
-
-For tutorials and more information please visit the [SpaMTP website](https://genomicsmachinelearning.github.io/SpaMTP/)
+Report package problems in the [issue tracker](https://github.com/SpaMTP-project/SpaMTP/issues).
+See [NEWS](NEWS.md) for changes and the
+[development repository](https://github.com/GenomicsMachineLearning/SpaMTP/tree/developmental)
+for website development.
 
 ## Citation
 
-If SpaMTP contributes to your work, please cite:
-
-> Causer, A., Lu, T., Kriel, J. *et al.* SpaMTP: integrative statistical analysis and visualization of spatial metabolomics and transcriptomics data. *Nature Methods* **23**, 1501–1506 (2026). https://doi.org/10.1038/s41592-026-03140-8
-
-The citation can also be retrieved directly in R:
-
-``` r
-citation("SpaMTP")
-```
-
-## Maintainer
-
-SpaMTP is currently maintained by **Tianyao Lu** ([GitHub](https://github.com/BCRL-tylu), [email](mailto:lu.t@wehi.edu.au)). **Andrew Causer** remains credited as an original author and former maintainer.
-
-Pathway membership, topology provenance, the interaction-code correction, and
-rebuild instructions are documented in
-[Pathway Database Integration](vignettes/Pathway_Database_Integration.Rmd).
+Causer, Lu, Kriel *et al.* (2026).
+[SpaMTP: integrative statistical analysis and visualization of spatial
+metabolomics and transcriptomics data](https://doi.org/10.1038/s41592-026-03140-8).
+*Nature Methods*, 23, 1501–1506. In R, use `citation("SpaMTP")`.

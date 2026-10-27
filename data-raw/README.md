@@ -1,41 +1,42 @@
-# Rebuilding the pruned RaMP snapshot
+# Maintainer data recipes
 
-SpaMTP does not distribute the full RaMP SQLite database. It stores only the
-columns used by its annotation, pathway, and visualisation code as compressed R
-data objects.
+SpaMTP loads annotation databases through SpaMTPdb. Large RaMP tables,
+pathway graphs and experimental resources are not bundled in this software
+package. SpaMTPdb owns annotation manifests and publication recipes;
+SpaMTPData owns experimental datasets.
 
-Download or obtain the official decompressed RaMP 3.x SQLite file, then run from
-the package root:
+## Current recipes
 
-```sh
-Rscript data-raw/update_ramp_data.R /path/to/RaMP_SQLite_v3.0.7.sqlite
-```
+The shipped `inst/workflows/prepare_vignette_data.R` recipe reproduces the
+compact real-tissue examples in `inst/extdata/`. See `help("vignetteData",
+package = "SpaMTP")` for their provenance and selection rules. The other
+installed workflows prepare mouse-brain inputs and run the analysis; see
+[the workflow guide](../inst/workflows/README.md).
 
-The script validates the upstream schema, preserves the existing SpaMTP object
-and column contracts, updates the five pruned objects, and writes
-`ramp_db_metadata.rda` with database/source versions and row counts. It retains
-the previous `source_df` in memory and uses stable source identifiers (HMDB,
-ChEBI, KEGG, LIPIDMAPS, gene symbols, UniProt, and related IDs) to migrate the
-stored pathway-graph node IDs to the new RaMP release.
+For annotation resource updates, follow
+[SpaMTPdb's maintainer guide](https://github.com/BCRL-tylu/SpaMTPdb/blob/main/CONTRIBUTING.md).
+New content needs a new resource version and verified external files.
 
-If the stored graph objects came from an older release than the currently
-bundled `source_df`, supply the graph-era source table explicitly:
+## Historical RaMP migration scripts
 
-```sh
-Rscript data-raw/update_ramp_data.R \
-  /path/to/RaMP_SQLite_v3.0.7.sqlite \
-  /path/to/graph-era/source_df.rda
-```
+`update_ramp_data.R`, `update_ramp_graph_data.R`, `audit_ramp_graph_data.R`
+and their helpers document the transition from older bundled RaMP objects.
+They expect a populated `data/` directory containing the historical tables
+and graph objects. Those inputs are absent from this submission checkout.
+Run them only in an archival or disposable working copy containing the
+required source objects.
 
-Graph harmonisation can also be run or previewed independently:
+The table updater reads an upstream RaMP SQLite database, retains the
+previous source-identifier mapping, and uses stable identifiers to migrate
+pathway graph nodes. An explicit graph-era `source_df.rda` is needed when
+the graph and table snapshots differ. Graph updates support `--dry-run`;
+the audit checks node membership and stable labels.
 
-```sh
-Rscript data-raw/update_ramp_graph_data.R /path/to/graph-era/source_df.rda --dry-run
-Rscript data-raw/update_ramp_graph_data.R /path/to/graph-era/source_df.rda
-Rscript data-raw/audit_ramp_graph_data.R
-```
+## Local output
 
-The audit exits with a non-zero status when a graph node is absent from the
-bundled `analyte` table or lacks both a current name and a stable source-ID
-label. The large SQLite file is a build input and must not be committed to
-SpaMTP.
+This directory is excluded from R package builds. Its maintained scripts
+remain in Git for provenance; generated `*-validation-*/` and
+`native-demo-check-*/` directories are ignored. Use the ignored `.local/`
+directory at the package root for other checks, rendered reports and scratch
+files. Do not add large SQLite databases, downloaded resources or generated
+reports to the package source.

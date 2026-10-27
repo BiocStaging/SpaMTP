@@ -37,8 +37,10 @@ and experiment-data releases have separate versions.
 
 ## Installation and example scope
 
-Use `BiocManager::install(c("SpaMTP", "SpaMTPdb", "SpaMTPData"))` for packages
-available in your Bioconductor release. The maintained
+During review, install SpaMTPdb from BiocStaging and SpaMTPData from
+Bioconductor before installing SpaMTP. Once all three are available in your
+Bioconductor release, use
+`BiocManager::install(c("SpaMTP", "SpaMTPdb", "SpaMTPData"))`. The maintained
 [installation guide](https://github.com/SpaMTP-project/SpaMTP#installation)
 documents source installation, download timeouts and Windows
 requirements. `citation("SpaMTP")` supplies the package reference.

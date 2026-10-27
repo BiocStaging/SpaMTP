@@ -1,3 +1,28 @@
+# SpaMTP 0.99.16
+
+* Shortened the README and clarified the introduction, staging installation,
+  companion package roles and reading order of the seven vignettes.
+* Moved detailed installation guidance into `inst/workflows/README.md` and
+  excluded local development artifacts from package builds.
+* Added opt-in annotation quality control. Defaults of `annotateSM()` and the
+  index functions are unchanged.
+  - `estimateAnnotationFDR()` scores decoy copies of a peak list moved by a
+    constant mass, which keeps isotope and adduct spacings exact, and reports
+    a decoy-to-target match ratio at each score cutoff;
+    `annotationScoreCutoff()` picks a cutoff for that diagnostic ratio.
+    These diagnostics do not establish calibrated false-discovery control.
+  - `flagIsotopePeaks()` marks 13C isotopologues by spacing, intensity ratio
+    and co-localisation, and `flagMatrixPeaks()` / `matrixIonTable()` mark
+    DHB, CHCA, 9-AA, DAN and norharmane monomer and cluster ions.
+  - `maldiAdductPreset()` returns a matrix rule set without multiply charged
+    and electrospray-solvent adducts.
+  - `groupAdductPeaks()` links co-localised peaks at exact adduct spacings
+    (and split peaks), optionally excluding flagged isotope and matrix peaks,
+    and `annotateAdductGroups()` gives each grouped peak the compounds that
+    explain the most of its group's ions through at least two adducts.
+  - `annotationDatabaseScope()` restricts a RaMP chemical table to compounds
+    in selected pathway sources.
+
 # SpaMTP 0.99.15
 
 * Rendered vignette figures at 96 dpi (192 dpi on high-density displays) and

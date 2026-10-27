@@ -23,15 +23,26 @@ knitr::opts_chunk$set(
 
 # Overview
 
-`SpaMTP` analyses mass spectrometry imaging (MSI) and paired multi-omics data
-in native Bioconductor containers. `SpaMTPdb` supplies annotation resources;
-`SpaMTPData` supplies versioned experiments.
+`SpaMTP` analyses mass spectrometry imaging (MSI) and integrates it with
+spatial transcriptomics. The workflow connects measured ion distributions,
+candidate metabolite annotation, spatial statistics and pathway analysis.
+Cardinal holds raw spectra; `SpatialExperiment` holds aligned measurements,
+coordinates and paired modalities. `SpaMTPdb` supplies versioned annotation
+resources, and `SpaMTPData` supplies experimental datasets.
+
+This first vignette starts with compact measured tissue examples and explains
+what their spatial patterns can support. The later vignettes cover data
+access, annotation, gene mapping, pathways and a complete paired analysis.
 
 ## Installation
 
-Install a published Bioconductor version with `BiocManager::install("SpaMTP")`.
-For source installation, use the companion versions required by `DESCRIPTION`.
-This article uses the installed package and its bundled examples.
+During Bioconductor review, install SpaMTPdb from BiocStaging and SpaMTPData
+from Bioconductor before installing SpaMTP. The
+[installation guide](https://github.com/SpaMTP-project/SpaMTP#installation)
+provides a standalone installer, manual commands and Windows/Pandoc guidance.
+After acceptance, use `BiocManager::install("SpaMTP")` when the package is
+available in your Bioconductor release. This article starts with examples
+bundled in the installed package.
 
 ## Real tissue examples
 
