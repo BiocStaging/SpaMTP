@@ -344,10 +344,8 @@ visualisePathways <- function(
             position = "right"
         ) +
         ggplot2::labs(
-            x = "Jacard distance",
-            y = "",
-            colour = "",
-            size = ""
+            x = "Jaccard distance",
+            y = ""
         ) +
         ggplot2::theme_bw() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank())

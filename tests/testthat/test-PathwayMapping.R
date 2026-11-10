@@ -158,7 +158,9 @@ test_that("GESECA receives canonical expression and pathway IDs instead of displ
     )
     f$index <- buildPathwayIndex(f$database)
     seen <- NULL
-    local_mocked_bindings(geseca = function(pathways, E, ...) {
+    local_mocked_bindings(geseca = function(pathways, E, BPPARAM, ...) {
+        expect_s4_class(BPPARAM, "SerialParam")
+        expect_false(BiocParallel::bpprogressbar(BPPARAM))
         seen <<- list(pathways = pathways, E = E)
         data.frame(pathway = names(pathways))
     }, .package = "fgsea")

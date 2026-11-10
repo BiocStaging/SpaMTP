@@ -111,6 +111,7 @@ test_that("normalization has the same log2 units in both interfaces", {
     summary <- summarizeFeatures(list(first = object, second = object), features = rownames(object)[1], groupBy = "region")
     expect_equal(summary$mean[1:2], summary$mean[3:4])
     expect_equal(sum(summary$n), ncol(object) * 2)
+    expect_error(summarizeFeatures(object, features = 1, groupBy = "region"), "features")
     expect_error(pathwayMapping(object), "No pathway mapping")
     expect_error(workflowMarkers(list()), "No regional markers")
 })

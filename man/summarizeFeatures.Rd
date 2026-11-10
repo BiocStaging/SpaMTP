@@ -15,7 +15,7 @@ summarizeFeatures(
 \arguments{
 \item{data}{A Bioconductor experiment or named list of experiments.}
 
-\item{features}{Feature IDs to summarize; NULL selects all rows.}
+\item{features}{Character feature IDs to summarize; NULL selects all rows.}
 
 \item{groupBy}{A colData column defining groups. Missing labels are excluded.}
 

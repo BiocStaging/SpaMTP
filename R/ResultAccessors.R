@@ -9,7 +9,8 @@
 #' data(spamtp_example)
 #' fit <- runSpaMTPWorkflow(spamtp_example$experiment,
 #'     modalities = list(main = list(type = "metabolomics", layer = "counts")),
-#'     group = "region", npcs = 2, clusters = 2, verbose = FALSE)
+#'     group = "region", npcs = 2, clusters = 2, association_features = 0,
+#'     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0))
 #' head(workflowMarkers(fit)$DEMs)
 workflowMarkers <- function(fit, modality = "main") {
     if (length(modality) != 1L || is.na(modality) || !is.list(fit)) {
@@ -48,7 +49,7 @@ pathwayMapping <- function(object, assay = "main") {
 #' datasets, such as alternative normalization panels.
 #'
 #' @param data A Bioconductor experiment or named list of experiments.
-#' @param features Feature IDs to summarize; NULL selects all rows.
+#' @param features Character feature IDs to summarize; NULL selects all rows.
 #' @param groupBy A colData column defining groups. Missing labels are excluded.
 #' @param assay Main or alternative experiment name.
 #' @param assayName Expression assay name. See [experimentAccess] for the
@@ -74,7 +75,7 @@ summarizeFeatures <- function(data, features = NULL, groupBy,
         }
         values <- .assayData(object, assay, assayName)
         selected <- features %||% rownames(values)
-        if (!length(selected) || anyNA(selected) || anyDuplicated(selected) ||
+        if (!is.character(selected) || !length(selected) || anyNA(selected) || anyDuplicated(selected) ||
             any(!selected %in% rownames(values))) {
             stop("features must name existing, unique rows in every dataset.", call. = FALSE)
         }

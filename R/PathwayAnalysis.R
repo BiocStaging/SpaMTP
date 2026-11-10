@@ -752,6 +752,7 @@ findRegionalPathways <- function(
 #' @param sampleSize sample size for conditional sampling (default = 101).
 #' @param eps This parameter sets the boundary for calculating P-values (default
 #'   = 1e-50).
+#' @param verbose Show progress with the default BPPARAM (default FALSE).
 #' @param BPPARAM BiocParallel execution parameters. The default runs serially
 #'   with progress controlled by `verbose`; explicit parameters control their
 #'   own progress display.
@@ -801,7 +802,9 @@ runRAMPGeseca <- function(
     gene_mapping = c("auto", "hgnc", "ramp"), gene_reference = NULL,
     gene_index = NULL, gene_reference_version = "latest",
     gene_reference_local_dir = NULL, organism = "Homo sapiens",
-    duplicate_genes = c("error", "mean", "sum")) {
+    duplicate_genes = c("error", "mean", "sum"),
+    verbose = FALSE
+) {
     database <- .pathway_database(database, pathway_index)
     if (is.null(pathway_index)) {
         pathway_index <- buildPathwayIndex(
