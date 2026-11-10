@@ -155,14 +155,14 @@ runPooling <- function(
 #' @examples
 #' data(spamtp_example)
 #' spe <- spamtp_example$experiment
-#' # Pseudo-pools illustrate the legacy interface, not biological replication.
+#' # Random pools are technical subdivisions of pixels.
 #' pooled <- runPooling(spe,
 #'     idents = "region", n = 3, assay = "main",
 #'     assayName = "counts", verbose = FALSE
 #' )
 #' result <- runDE(pooled, spe,
 #'     ident = "region", output_dir = NULL,
-#'     run_name = "example", n = 3, logFC_threshold = 1.2,
+#'     run_name = "example", logFC_threshold = 1.2,
 #'     annotation.column = "all_IsomerNames", assay = "main", verbose = FALSE
 #' )
 #' head(result$DEMs)
