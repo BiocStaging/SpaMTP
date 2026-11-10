@@ -41,7 +41,7 @@
             spec <- result$settings$modalities[[name]]
             result$object <- createPathwayAssay(result$object,
                 analyte_type = "genes",
-                assay = result$settings$assay_names[[name]], assayName = "workflow", new_assay = assay,
+                assay = result$settings$assay_names[[name]], assayName = "workflow", outputExperiment = assay,
                 pathway_index = index, organism = spec$species, duplicate_genes = cfg$duplicate_genes %||% "error", verbose = FALSE
             )
             result$analysis[[name]]$pathways$identity_assay <- assay
@@ -73,8 +73,7 @@
                 pathway_index = index,
                 organism = result$settings$modalities[[name]]$species %||% "custom",
                 minSize = cfg$min_size %||% 5, maxSize = cfg$max_size %||% 500,
-                nPermSimple = 1000, eps = 1e-10, verbose = FALSE
-            )
+                nPermSimple = 1000, eps = 1e-10)
         }
         ranking[[name]] <- r
         indices[[name]] <- index

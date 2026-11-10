@@ -7,7 +7,7 @@
 visualisePathways(
   SpaMTP,
   pathway_df,
-  assay = "SPM",
+  assay = "main",
   assayName = "counts",
   min_n = 3,
   p_val_threshold = 0.1,
@@ -27,7 +27,7 @@ visualisePathways(
 from SpaMTP::fishersPathwayAnalysis function).}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
-\code{"SPM"} is a compatibility alias for the primary experiment.}
+is \code{"main"} for the primary experiment.}
 
 \item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.

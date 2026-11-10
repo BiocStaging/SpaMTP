@@ -178,7 +178,7 @@ this audit alongside the annotated experiment.
 The foreground contains the 20 positive markers with the highest mean area
 under the receiver operating characteristic curve (AUC) for the archived
 `Oligo` group. `LogNormalize` divides each location by its total measured RNA
-count, multiplies by 10,000 and applies the natural-log transform `log1p`.
+count, multiplies by 10,000 and applies the base-2 transform `log2(1 + x)`.
 `mean_auc` ranks each gene's separation of this group from the remaining groups.
 The measured RNA panel supplies the background; `min_path_size = 5` requires
 five mapped members.
@@ -286,15 +286,15 @@ variation within its pathway.
 ```{r human-pathway-closure, fig.width=9, fig.height=4.6, out.width="860px", fig.cap="Prespecified Reactome Neuronal System and Axon guidance pathway scores at the same 240 aligned glioma locations. Scores use log-normalized RNA and retain the archived coordinates. A shared z-score colour scale (-3 to 3) shows relative spatial variation within each pathway; the titles identify the selected pathways."}
 spe <- createPathwayAssay(spe,
     analyte_type = "genes", assay = "SPT",
-    assayName = "logcounts", new_assay = "gene_ids",
+    assayName = "logcounts", outputExperiment = "gene_ids",
     pathway_index = pathway_index, verbose = FALSE
 )
 spe <- createPathwayObject(spe,
-    assay = "gene_ids", new.assay = "gene_pathways",
+    assay = "gene_ids", outputExperiment = "gene_pathways",
     pathway_index = pathway_index, min_path_size = 5, max_path_size = 500
 )
 pathways <- altExp(spe, "gene_pathways")
-coverage <- metadata(pathways)$pathway_mapping$coverage
+coverage <- pathwayMapping(pathways)$coverage
 head(coverage[, c(
     "pathwayRampId", "database_size", "database_raw_size",
     "measured_size", "coverage_fraction", "excluded_conflict_count"
@@ -339,7 +339,7 @@ validation; the chosen adduct set defines the scope of that uniqueness.
 
 The archived MS `counts` layer holds processed, spatially aligned abundances.
 For this comparison, `LogNormalize` uses the total of the retained MS panel
-at each location, with the same 10,000 scaling and `log1p` transform as RNA.
+at each location, with the same 10,000 scaling and `log2(1 + x)` transform as RNA.
 Each modality is normalized separately.
 
 The annotation summary reports reference formulae whose formula-based evidence
@@ -351,8 +351,8 @@ chem_index <- buildMZAnnotationIndex(database$chem_props,
     polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts
 )
 spe <- annotateSM(spe,
-    db = database$chem_props, index = chem_index,
-    assay = "main", raw.mz.column = "mz", ppm_error = 5,
+    index = chem_index,
+    assay = "main", raw.mz.column = "mz", ppm = 5,
     polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts,
     min_score = 0, return.only.annotated = FALSE,
     save.intermediate = TRUE, verbose = FALSE
@@ -360,12 +360,12 @@ spe <- annotateSM(spe,
 spe <- normalizeSMData(spe, "LogNormalize", assay = "main", verbose = FALSE)
 spe <- createPathwayAssay(spe,
     analyte_type = "metabolites",
-    assay = "main", assayName = "logcounts", new_assay = "compound_ids",
+    assay = "main", assayName = "logcounts", outputExperiment = "compound_ids",
     annotation_score_threshold = 0.05, metabolite_ambiguity = "exclude",
     database = database, pathway_index = pathway_index, verbose = FALSE
 )
 compounds <- altExp(spe, "compound_ids")
-compound_audit <- metadata(compounds)$pathway_mapping
+compound_audit <- pathwayMapping(compounds)
 retained_ms <- unique(unlist(compound_audit$original_features))
 gene_status <- rowData(rna)$spamtp_gene_status
 data.frame(
@@ -454,8 +454,7 @@ leaves the BH adjustment across the full tested family unchanged.
 ```{r human-regional-pathway-plot, fig.width=8.5, fig.height=7, out.width="860px", fig.cap="Joint RNA/MSI pathways for Oligo. Colour shows NES, point area shows tested members, and a dark outline marks BH-adjusted P <= 0.05."}
 both_reactome <- subset(both, type == "reactome")
 plotRegionalPathways(both_reactome,
-    num_display = 8, database = database, verbose = FALSE
-)
+    num_display = 8, database = database)
 ```
 
 ## Explore a joint pathway network {#pathway-network}
@@ -550,8 +549,7 @@ more. Pathways require 5–100 measured genes.
 gene_expression <- assay(altExp(spe, "gene_ids"), "logcounts")
 coregulation <- with_seed(1234, runRAMPGeseca(gene_expression,
     pathway_index = pathway_index, minSize = 5, maxSize = 100,
-    center = TRUE, scale = FALSE, eps = 0, verbose = FALSE
-))
+    center = TRUE, scale = FALSE, eps = 0))
 coregulation <- as.data.frame(coregulation)
 coregulation$pathwayName <- database$pathway$pathwayName[
     match(coregulation$pathway, database$pathway$pathwayRampId)

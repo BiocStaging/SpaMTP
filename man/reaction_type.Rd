@@ -17,7 +17,7 @@ A data frame with 18 rows and 5 variables:
 \source{
 SpaMTP-maintained display vocabulary. The source interaction labels
 are mapped to these stable style codes in
-\code{data-raw/pathway_interaction_utils.R} in the source repository.
+\code{data-raw/pathway_interaction_utils.R} in the SpaMTPdb source repository.
 This table defines visual styles rather than biological measurements.
 }
 \usage{

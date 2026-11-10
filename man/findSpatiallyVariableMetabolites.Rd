@@ -8,7 +8,6 @@ findSpatiallyVariableMetabolites(
   object,
   assay = "main",
   assayName = "counts",
-  image = NULL,
   nfeatures = 2000,
   max_spots = 5000,
   seed = 1,
@@ -23,8 +22,6 @@ findSpatiallyVariableMetabolites(
 
 \item{assayName}{Assay containing expression values.
 See \link{experimentAccess} for the experiment/matrix distinction.}
-
-\item{image}{Retained for compatibility; coordinates use spatialCoords.}
 
 \item{nfeatures}{Maximum variable features selected.}
 

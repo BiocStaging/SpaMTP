@@ -19,29 +19,10 @@ it does not define a function.
 Small support files are installed in \code{extdata}. They can be located with
 \code{system.file("extdata", filename, package = "SpaMTP")}.
 }
-\section{Pathway correction maps}{
-
-\code{ramp_kegg_interactions_v1.rds}, \code{ramp_reactome_interactions_v1.rds},
-\code{ramp_wikipathway_interactions_v1.rds} and \code{ramp_hmdb_interactions_v1.rds}
-are SpaMTP-generated corrections for the archived RaMP 3.0.7 collections.
-The historical \code{ramp_hmdb} name refers to SMPDB topology.
-Each file stores an input SHA-256 fingerprint, source provenance and,
-for each pathway edge table, row indices, direction, SpaMTP style codes
-and source interaction labels. Repeated row indices restore parallel edges.
-These maps contain no node identifiers or pathway graphs. A correction
-applies only when the input collection matches its recorded fingerprint.
-
-The recipe is \code{data-raw/rebuild_pathway_interactions.R}, with
-\code{data-raw/pathway_interaction_utils.R} and \code{data-raw/ramp_graph_utils.R},
-in the source repository. It uses graphite archive 19 (2022-11-01) and
-pinned SpaMTPdb resources. \code{pathway_interactions_provenance.csv} records
-each input filename, source URL and MD5 checksum;
-\code{pathway_interactions_audit.csv} records the numbers of pathways, edge
-tables and edges before and after correction for each collection.
-Source graphs retain the terms of their upstream databases; correction
-does not change those terms. See the installed \code{COPYRIGHTS} file.
+\details{
+Pathway interaction corrections and their provenance are distributed by
+SpaMTPdb; see \code{\link[SpaMTPdb:spaMTPdbResource]{SpaMTPdb::spaMTPdbResource()}}.
 }
-
 \section{Mouse-brain spatial calibration}{
 
 \code{mouse_brain_scalefactors.json} contains four Space Ranger factors for

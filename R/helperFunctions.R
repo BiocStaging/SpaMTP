@@ -5,6 +5,8 @@
 #'   message will be show, else the messsage will be suppressed (default =
 #'   TRUE).
 #' @noRd
+#' @noRd
+#' @noRd
 verbose_message <- function(message_text, verbose) {
     if (verbose) {
         message(message_text)
@@ -61,9 +63,6 @@ NULL
 #' @param cells A vector of cells to keep; if \code{NULL}, defaults to all cells
 #' @param idents A vector of identity classes to keep
 #' @param features A vector of feature names or indices to keep
-#' @param verbose Boolean indicating whether to show the message. If TRUE the
-#'   message will be show, else the message will be suppressed (default =
-#'   FALSE).
 #' @param ... Reserved; additional arguments are rejected.
 #'
 #' @return A subset of the same Bioconductor container class.
@@ -79,7 +78,6 @@ subsetSPM <- function(
     cells = NULL,
     idents = NULL,
     features = NULL,
-    verbose = FALSE,
     ...
 ) {
     .requireExperiment(object, "SummarizedExperiment")
@@ -134,6 +132,7 @@ subsetSPM <- function(
 #' Checks if the Cardinal Package installed is >= version 3.6.0
 #'
 #' @return Boolean indicating if the version of Cardinal is >= 3.6.0
+#' @noRd
 check_cardinal_version <- function() {
     if (numeric_version(utils::packageVersion("Cardinal")) >= numeric_version("3.6")) {
         return(TRUE)

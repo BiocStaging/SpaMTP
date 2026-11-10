@@ -115,9 +115,7 @@ test_that("normalization rejects invalid sparse and delayed intensities", {
             expect_error(normalizeSMData(object, verbose = FALSE),
                 "finite, non-negative"
             )
-            expect_error(tmmNormalize(object, ident = "group", refIdent = "A",
-                verbose = FALSE
-            ), "finite, non-negative")
+            expect_error(tmmNormalize(object, ident = "group", refIdent = "A"), "finite, non-negative")
         }
     }
 })

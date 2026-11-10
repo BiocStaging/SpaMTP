@@ -233,15 +233,13 @@ methods::setMethod(
 #'   names in `SingleCellExperiment::altExpNames(SpaMTP)`. Multiple aliases for
 #' the same primary experiment are not distinct modalities. See
 #'   [experimentAccess].
-#' @param new.assay Name of the output alternative experiment, not an expression
+#' @param outputExperiment Name of the output alternative experiment, not an expression
 #'   matrix (default = `"merged"`).
 #' @param return.original TRUE adds an altExp; FALSE returns only the merged
 #'   feature space.
-#' @param verbose Reserved compatibility argument; no progress messages are
-#'   emitted.
 #'
 #' @return If `return.original = TRUE`, the input SpatialExperiment with
-#'   `altExp(SpaMTP, new.assay)` containing a `scaled` assay. Otherwise a new
+#'   `altExp(SpaMTP, outputExperiment)` containing a `scaled` assay. Otherwise a new
 #'   SpatialExperiment with merged rows, the same pixels and a `scaled` assay.
 #' @export
 #'
@@ -276,10 +274,8 @@ methods::setMethod(
 createMergedModalityAssay <- function(
     SpaMTP,
     assays.to.merge,
-    new.assay = "merged",
-    return.original = TRUE,
-    verbose = FALSE
-) {
+    outputExperiment = "merged",
+    return.original = TRUE) {
     .requireExperiment(SpaMTP, "SpatialExperiment")
     modalityNames <- SingleCellExperiment::altExpNames(SpaMTP)
     if (!is.character(assays.to.merge) || length(assays.to.merge) < 2L ||
@@ -340,7 +336,7 @@ createMergedModalityAssay <- function(
         rowData = featureData
     )
     if (isTRUE(return.original)) {
-        SingleCellExperiment::altExp(SpaMTP, new.assay) <- mergedExperiment
+        SingleCellExperiment::altExp(SpaMTP, outputExperiment) <- mergedExperiment
         return(SpaMTP)
     }
     return(SpatialExperiment::SpatialExperiment(

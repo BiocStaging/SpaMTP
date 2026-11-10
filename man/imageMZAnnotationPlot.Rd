@@ -29,7 +29,6 @@ imageMZAnnotationPlot(
   column.name = "all_IsomerNames",
   plot.exact = TRUE,
   plot.pixel = FALSE,
-  verbose = TRUE,
   ...
 )
 }
@@ -81,8 +80,6 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 (case-insensitive).}
 
 \item{plot.pixel}{Draw square rather than circular point symbols.}
-
-\item{verbose}{Retained for call compatibility.}
 
 \item{...}{Former Seurat segmentation, molecule and blending arguments
 are unsupported and cause an error; convert and plot these separately.}

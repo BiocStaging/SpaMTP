@@ -27,7 +27,6 @@ imageMZPlot(
   assay = "main",
   assayName = "counts",
   plot.pixel = FALSE,
-  verbose = TRUE,
   ...
 )
 }
@@ -74,8 +73,6 @@ queries, or "none" separately for each panel.}
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{plot.pixel}{Draw square rather than circular point symbols.}
-
-\item{verbose}{Retained for call compatibility.}
 
 \item{...}{Former Seurat segmentation, molecule and blending arguments
 are unsupported and cause an error; convert and plot these separately.}

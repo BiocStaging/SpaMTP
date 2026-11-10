@@ -258,7 +258,7 @@ unique(negative_index$rules$name[negative_index$rule_idx])
 the same retention-time window, pixel or coherent region.
 
 `ppm = 5` sets the mass tolerance; `min_score = 0` retains all candidates
-within it for later filtering. The returned `ppm_error` is the absolute mass
+within it for later filtering. The returned `ppm` is the absolute mass
 difference divided by expected m/z, multiplied by one million.
 
 ```{r query-index}
@@ -309,14 +309,14 @@ Absent optional MS1 context receives a neutral scoring factor. When a
 contextual spectrum is supplied, missing expected isotope or base-adduct peaks
 can reduce the score.
 
-`use_mass_defect = TRUE` checks CHO formula/ion mass consistency. The formula's
+`check_formula_mass = TRUE` checks CHO formula/ion mass consistency. The formula's
 monoisotopic mass and the selected ion rule predict an m/z; a discrepancy beyond
 the query tolerance, with a minimum of 5 ppm to allow rounded reference masses,
 gives `chemical_score = 0.2`. Negative fractional mass defects alone are valid
 for oxygen-rich acids and large lipids and receive no penalty. Other parsed
 formulae receive a factor of 1. Unavailable formula evidence is recorded as
 `NA` and omitted from the score product. Setting
-`use_mass_defect = FALSE` disables this factor for sensitivity comparisons.
+`check_formula_mass = FALSE` disables this factor for sensitivity comparisons.
 
 ## Adduct-family support
 
@@ -424,7 +424,7 @@ ramp_positive_index <- buildMZAnnotationIndex(database$chem_props,
 object <- annotateSM(object,
     index = ramp_positive_index, assay = "main",
     raw.mz.column = "mz", polarity = "positive", maldi_matrix = "DHB",
-    ms1_spectrum = ms1, ppm_error = 5, min_score = 0,
+    ms1_spectrum = ms1, ppm = 5, min_score = 0,
     save.intermediate = TRUE, return.only.annotated = FALSE, verbose = FALSE
 )
 annotationInfo(object)
@@ -575,8 +575,8 @@ above. `metabolite_ambiguity = "exclude"` removes multi-identity peaks before
 computing regional `markers`. `findRegionalPathways()` ranks every retained
 compound by its regional log fold change (see `markerRanks()`); pathway tests
 require 3–100 ranked members.
-`LogNormalize` uses the natural logarithm, computing
-`log1p(10000 * intensity / location_total)` before compound aggregation. The
+`LogNormalize` uses the base-2 logarithm, computing
+`log2(1 + 10000 * intensity / location_total)` before compound aggregation. The
 recorded total uses all 2,075 input features, so feature selection does not
 change the normalization denominator. The MS1 context also uses the full panel.
 
@@ -598,7 +598,7 @@ object <- normalizeSMData(object, "LogNormalize",
 )
 object <- createPathwayAssay(object,
     assay = "main", assayName = "logcounts",
-    new_assay = "compound", pathway_index = pathway_index, database = database,
+    outputExperiment = "compound", pathway_index = pathway_index, database = database,
     organism = "Mus musculus", annotation_source = "current",
     annotation_score_threshold = 0.05, metabolite_ambiguity = "exclude",
     verbose = FALSE
@@ -638,7 +638,7 @@ mapping used by the pathway analysis.
 
 ```{r compound-mapping-summary}
 compound <- altExp(object, "compound")
-compound_mapping <- metadata(compound)$pathway_mapping
+compound_mapping <- pathwayMapping(compound)
 data.frame(
     retained_features = length(unique(unlist(compound_mapping$original_features))),
     excluded_ambiguous_features = length(compound_mapping$excluded_conflicts),

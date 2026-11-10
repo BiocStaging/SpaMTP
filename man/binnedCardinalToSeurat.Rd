@@ -4,20 +4,12 @@
 \alias{binnedCardinalToSeurat}
 \title{Convert a binned Cardinal matrix to an optional Seurat object}
 \usage{
-binnedCardinalToSeurat(
-  data,
-  mtx,
-  multi.run = FALSE,
-  assay = "Spatial",
-  verbose = TRUE
-)
+binnedCardinalToSeurat(data, mtx, assay = "Spatial", verbose = TRUE)
 }
 \arguments{
 \item{data}{Cardinal object supplying coordinates and metadata.}
 
 \item{mtx}{Binned feature-by-pixel matrix.}
-
-\item{multi.run}{Retained for compatibility.}
 
 \item{assay}{Name of the Seurat assay.}
 

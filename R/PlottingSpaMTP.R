@@ -146,7 +146,6 @@ pixelPlot <- function(plot) {
 #' @param assayName Expression assay name, e.g. "counts" or "logcounts".
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param plot.pixel Draw square rather than circular point symbols.
-#' @param verbose Retained for call compatibility.
 #' @param ... Former Seurat segmentation, molecule and blending arguments
 #'   are unsupported and cause an error; convert and plot these separately.
 #' @return A ggplot, or a list of panels when combine is FALSE.
@@ -166,7 +165,7 @@ imageMZPlot <- function(
     border.color = "white", border.size = 0, dark.background = TRUE,
     crop = FALSE, cells = NULL, scale = c("feature", "all", "none"),
     axes = FALSE, combine = TRUE, coord.fixed = TRUE,
-    assay = "main", assayName = "counts", plot.pixel = FALSE, verbose = TRUE, ...
+    assay = "main", assayName = "counts", plot.pixel = FALSE, ...
 ) {
     if (length(list(...))) stop(
         "Seurat-specific plotting arguments are unsupported.",
@@ -207,7 +206,7 @@ imageMZAnnotationPlot <- function(
     crop = FALSE, cells = NULL, scale = c("feature", "all", "none"),
     axes = FALSE, combine = TRUE, coord.fixed = TRUE,
     assay = "main", assayName = "counts", column.name = "all_IsomerNames",
-    plot.exact = TRUE, plot.pixel = FALSE, verbose = TRUE, ...
+    plot.exact = TRUE, plot.pixel = FALSE, ...
 ) {
     if (length(list(...))) stop(
         "Seurat-specific plotting arguments are unsupported.",
@@ -254,8 +253,7 @@ spatialMZPlot <- function(
     assay = "main", assayName = "counts", keep.scale = "feature",
     min.cutoff = NA, max.cutoff = NA, ncol = NULL, combine = TRUE,
     pt.size.factor = 1.6, alpha = c(1, 1), image.alpha = 1,
-    stroke = 0.25, interactive = FALSE, information = NULL, verbose = TRUE
-) {
+    stroke = 0.25, interactive = FALSE, information = NULL) {
     if (!is.null(information)) {
         stop(
             "information is a retired Seurat hover-data argument.",
@@ -290,8 +288,7 @@ spatialMZAnnotationPlot <- function(
     min.cutoff = NA, max.cutoff = NA, ncol = NULL, combine = TRUE,
     pt.size.factor = 1.6, alpha = c(1, 1), image.alpha = 1,
     stroke = 0.25, interactive = FALSE, information = NULL,
-    column.name = "all_IsomerNames", plot.exact = TRUE, verbose = TRUE
-) {
+    column.name = "all_IsomerNames", plot.exact = TRUE) {
     if (!is.null(information)) {
         stop(
             "information is a retired Seurat hover-data argument.",
@@ -474,8 +471,6 @@ massIntensityPlot <- function(
 #' @param show.x.ticks,show.y.ticks,show.z.ticks Show axis tick labels.
 #' @param show.image Optional image ID from imgData.
 #' @param plot.height,plot.width Widget dimensions.
-#' @param image.sf Retired Seurat scale-factor selector; must be NULL.
-#'   The selected imgData row supplies the scaleFactor.
 #' @param downscale.image Optional positive integer raster sampling stride.
 #' @param sampleId Sample ID; required when data contains multiple samples.
 #' @return A Plotly widget.
@@ -493,13 +488,9 @@ plot3DFeature <- function(
     x.axis.label = "x", y.axis.label = "y", z.axis.label = "z",
     show.x.ticks = FALSE, show.y.ticks = FALSE, show.z.ticks = FALSE,
     show.image = NULL, plot.height = 800, plot.width = 1500,
-    image.sf = NULL, downscale.image = NULL, sampleId = NULL
+    downscale.image = NULL, sampleId = NULL
 ) {
     data <- .nativeSingleSample(data, sampleId)
-    if (!is.null(image.sf)) stop(
-        "Use imgData scaleFactor instead of image.sf.",
-        call. = FALSE
-    )
     arguments <- list(features, assays, assayNames, col.palette)
     if (any(!lengths(arguments) %in% c(1L, 2L))) {
         stop(

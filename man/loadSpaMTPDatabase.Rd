@@ -51,7 +51,7 @@ supplied for offline, testing, or user-curated workflows.
 }
 \details{
 Exact affected RaMP 3.0.7 topology resources receive a checksum-guarded
-correction for historical interaction-code and direction recycling. Source
+SpaMTPdb correction for historical interaction-code and direction recycling. Source
 labels are retained in \code{source_reaction_type}; the resource attribute
 \code{spamtp_interaction_repair} records the correction separately from the
 original download metadata. Published files are unchanged. See

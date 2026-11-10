@@ -11,7 +11,7 @@ calculateAnnotationStatistics(
   mzAssayName = "counts",
   pathwayAssayName = "counts",
   return.top = TRUE,
-  corr_theshold = 0,
+  corr_threshold = 0,
   corr_weight = 1,
   n_weight = 1,
   database = NULL,
@@ -47,7 +47,7 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 returns a named list of all candidate tables. Features without a score
 remain as NA rows in top results and NULL entries when no table is possible.}
 
-\item{corr_theshold}{Minimum signed pathway correlation (legacy spelling).}
+\item{corr_threshold}{Minimum signed pathway correlation.}
 
 \item{corr_weight, n_weight}{Non-negative weights, not both zero.}
 

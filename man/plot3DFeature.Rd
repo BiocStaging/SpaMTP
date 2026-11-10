@@ -22,7 +22,6 @@ plot3DFeature(
   show.image = NULL,
   plot.height = 800,
   plot.width = 1500,
-  image.sf = NULL,
   downscale.image = NULL,
   sampleId = NULL
 )
@@ -53,9 +52,6 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 \item{show.image}{Optional image ID from imgData.}
 
 \item{plot.height, plot.width}{Widget dimensions.}
-
-\item{image.sf}{Retired Seurat scale-factor selector; must be NULL.
-The selected imgData row supplies the scaleFactor.}
 
 \item{downscale.image}{Optional positive integer raster sampling stride.}
 

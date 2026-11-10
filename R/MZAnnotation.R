@@ -40,6 +40,7 @@ subsetMZFeatures <- function(data, features, assay = "main") {
 #'
 #' @return Vector containing the first n number of annotations
 #'
+#' @noRd
 labels_to_show <- function(annotation_column, n = 3) {
     new_column <- vapply(strsplit(annotation_column, "; "), function(x) {
         # Filter out NA values and select the first three entries
@@ -70,8 +71,7 @@ labels_to_show <- function(annotation_column, n = 3) {
 #'   `cardinalToSpatialExperiment()` (default = "raw_mz"). If omitted, mass
 #'   metadata or numeric feature names are used as a fallback. An explicitly
 #'   named column must exist. Feature rownames must be unique and non-empty.
-#' @param ppm_error Mass tolerance in ppm. If `NULL`, a strict 5 ppm maximum
-#'   is used (or a smaller value inferred from `tof_resolution`). Set to zero
+#' @param ppm Mass tolerance in ppm (default 5). Set to zero
 #'   for exact numerical matches.
 #' @param adducts Optional adduct names/notations; see `adductRules()`. If
 #'   `NULL`, use the complete rule space selected from `maldi_matrix`, or all
@@ -79,8 +79,6 @@ labels_to_show <- function(annotation_column, n = 3) {
 #' @param polarity Character string defining the ion mode. When `NULL`, use the
 #'   MALDI matrix profile default, a supplied index's mode, or positive mode
 #'   when neither is available.
-#' @param tof_resolution Instrument resolving power retained for compatibility;
-#'   it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.
 #' @param filepath Optional output filename prefix, including its directory.
 #'   For example, `file.path("results", "sample")` writes
 #'   `results/sample_annotated_mz_peaks.csv`. NULL disables export.
@@ -122,7 +120,7 @@ labels_to_show <- function(annotation_column, n = 3) {
 #' spe <- spamtp_example$experiment
 #' index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
 #' annotated <- annotateSM(spe,
-#'     index = index, raw.mz.column = "mz", ppm_error = 5,
+#'     index = index, raw.mz.column = "mz", ppm = 5,
 #'     return.only.annotated = FALSE, verbose = FALSE
 #' )
 #' head(annotationCandidates(annotated))
@@ -131,10 +129,9 @@ annotateSM <- function(
     db = NULL,
     assay = "main",
     raw.mz.column = "raw_mz",
-    ppm_error = NULL,
+    ppm = 5,
     adducts = NULL,
     polarity = NULL,
-    tof_resolution = 30000,
     filepath = NULL,
     return.only.annotated = TRUE,
     save.intermediate = TRUE,
@@ -214,10 +211,9 @@ annotateSM <- function(
     db_3 <- annotateTable(
         mz_df = mz_df,
         db = db,
-        ppm_error = ppm_error,
+        ppm = ppm,
         adducts = adducts,
         polarity = polarity,
-        tof_resolution = tof_resolution,
         verbose = verbose,
         min_score = min_score,
         maldi_matrix = maldi_matrix,
@@ -237,16 +233,6 @@ annotateSM <- function(
             previous_key <- if (previous_assay %in% alternatives) previous_assay else "main"
             stores[[previous_key]] <- list(mz_annotation = previous, db_3 = previous_legacy)
         }
-        effective_ppm <- ppm_error
-        if (is.null(effective_ppm)) {
-            inferred_ppm <- if (is.null(tof_resolution)) {
-                Inf
-            } else {
-                1e6 / tof_resolution / sqrt(2 * log(2))
-            }
-            effective_ppm <- min(5, inferred_ppm)
-            if (!is.finite(effective_ppm)) effective_ppm <- 5
-        }
         data <- .setStoredData(data, "mz_annotation", .annotation_store(
             db_3,
             metadata = list(
@@ -254,7 +240,7 @@ annotateSM <- function(
                 raw_mz_column = raw.mz.column,
                 polarity = polarity,
                 maldi_matrix = resolved_matrix,
-                ppm = effective_ppm,
+                ppm = ppm,
                 min_score = min_score,
                 ramp_version = .annotation_ramp_version(supplied_index %||% db),
                 adducts = if (is.null(adducts)) {
@@ -336,71 +322,12 @@ annotateSM <- function(
 }
 
 
-#' Annotates m/z values stored in a data.frame based on reference metabolite
-#' dataset
-#'
-#' Helper function for `annotateSM()` and `fishersPathwayAnalysis()`.
-#'
-#' @param mz_df dataframe containing m/z values for annotation.
-#' @param db Reference metabolite dataset in the form of a data.frame. May be
-#'   `NULL` when `index` is supplied.
-#' @param ppm_error Mass tolerance in ppm. If `NULL`, a strict 5 ppm maximum
-#'   is used (or a smaller value inferred from `tof_resolution`). Set to zero
-#'   for exact numerical matches.
-#' @param adducts Optional adduct names/notations; see `adductRules()`. If
-#'   `NULL`, use the complete rule space selected from `maldi_matrix`, or all
-#'   validated general rules for the selected polarity when no matrix is given.
-#' @param polarity Character string defining the ion mode. When `NULL`, infer
-#'   it from a supplied index or MALDI matrix profile, otherwise use positive.
-#' @param tof_resolution Instrument resolving power retained for compatibility;
-#'   it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.
-#' @param verbose Boolean indicating whether to show the message. If TRUE the
-#'   message will be show, else the message will be suppressed (default = TRUE).
-#' @param index Optional reusable index created by `buildMZAnnotationIndex()`.
-#'   `adducts` may restrict its existing rules. Omit `db`, `rules` and `BPPARAM`;
-#'   conflicting structure settings require rebuilding the index.
-#' @param rules Optional custom adduct rule table; see `adductRules()`.
-#' @param ms1_spectrum Optional contextual MS1 spectrum with `mz` and
-#'   `intensity`
-#'   columns for isotope and adduct-family scoring.
-#' @param use_mass_defect Check CHO formula/ion mass consistency. A mismatch
-#'   beyond the query tolerance (at least 5 ppm for rounded reference masses)
-#'   receives a 0.2 chemical score. Negative fractional mass defects alone
-#'   are not penalized.
-#' @param check_isotopes Score carbon-13 and halogen isotope evidence when a
-#'   contextual spectrum is supplied.
-#' @param check_adduct_network Downweight complex ions whose base monomer
-#'   family is absent from the contextual spectrum.
-#' @param min_score Minimum final annotation score to retain.
-#' @param maldi_matrix Optional MALDI matrix/reagent profile used for automatic
-#'   rule selection. `adducts = NULL` keeps the complete selected rule space.
-#' @param database_version SpaMTPdb/RaMP version used when `db = NULL`.
-#' @param database_source Database source used when `db = NULL`; see
-#'   [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
-#' @param infer_structure `"auto"` joins precomputed SpaMTPdb structure
-#'   features when possible, `"never"` disables inference, and `"always"`
-#'   recomputes structural fields from SMILES at runtime. The latter two
-#'   choices do not fetch a precomputed structure table.
-#' @param structure_backend SMILES parser passed to `deconvolveSMILES()`.
-#' @param BPPARAM BiocParallel parameters for runtime SMILES parsing.
-#' @param min_structure_score Minimum rule-specific structural prior retained
-#'   during candidate-index construction.
-#'
-#' @returns An intermediate annotated m/z data frame. `FormulaStatus` records
-#'   whether formula-based evidence was parsed, unavailable, or not checked;
-#'   see [queryMZAnnotationIndex()].
-#'
-#' @importFrom rlang %||%
-#'
-#' @examples
-#'
-#' ### HelperFunction
+#' @noRd
 annotateTable <- function(
-    mz_df, db = NULL, ppm_error = NULL, adducts = NULL,
-    polarity = NULL, tof_resolution = 30000,
+    mz_df, db = NULL, ppm = 5, adducts = NULL,
+    polarity = NULL,
     verbose = TRUE, index = NULL, rules = NULL,
-    ms1_spectrum = NULL, use_mass_defect = TRUE,
+    ms1_spectrum = NULL, check_formula_mass = TRUE,
     check_isotopes = TRUE,
     check_adduct_network = TRUE, min_score = 0,
     maldi_matrix = NULL,
@@ -426,19 +353,6 @@ annotateTable <- function(
         index$polarity
     } else {
         .resolve_maldi_polarity(polarity, maldi_matrix)
-    }
-
-    # Resolving power is not the same as calibrated mass accuracy. Retain the
-    # legacy argument, but cap an inferred tolerance at the high-resolution
-    # default requested by the annotation engine.
-    if (is.null(ppm_error)) {
-        inferred_ppm <- if (is.null(tof_resolution)) {
-            Inf
-        } else {
-            1e6 / tof_resolution / sqrt(2 * log(2))
-        }
-        ppm_error <- min(5, inferred_ppm)
-        if (!is.finite(ppm_error)) ppm_error <- 5
     }
 
     if (is.null(index)) {
@@ -479,7 +393,7 @@ annotateTable <- function(
     verbose_message(
         message_text = paste0(
             "Searching candidate index at ",
-            ppm_error,
+            ppm,
             " ppm ... "
         ),
         verbose = verbose
@@ -487,9 +401,9 @@ annotateTable <- function(
     candidates <- if (!nrow(mz_df)) .empty_annotation_result() else queryMZAnnotationIndex(
         observed_mz = unique(mz_df$mz),
         index = index,
-        ppm = ppm_error,
+        ppm = ppm,
         ms1_spectrum = ms1_spectrum,
-        use_mass_defect = use_mass_defect,
+        check_formula_mass = check_formula_mass,
         check_isotopes = check_isotopes,
         check_adduct_network = check_adduct_network,
         min_score = min_score
@@ -678,6 +592,7 @@ getRefinedAnnotations <- function(obj, assay = "main", n = 1) {
 #'
 #' @return Character string containing double backslashes around special
 #'   features
+#' @noRd
 add_backslashes_to_specialfeatures <- function(input_string) {
     special <- c("\\", ".", "^", "$", "|", "(", ")", "[", "]", "{", "}", "*", "+", "?")
     vapply(as.character(input_string), function(value) {
@@ -883,6 +798,7 @@ getMZMetadata <- function(
 #' @examples
 #' # HMDB_db <- load("data/HMDB_1_names.rds")
 #' # check_and_truncate_adduct_vector(c("M+H"), HMDB_db)
+#' @noRd
 check_and_truncate_adduct_vector <- function(adduct, db, verbose = TRUE) {
     element_exists <- adduct %in% colnames(db)
     missing_elements <- adduct[!element_exists]
@@ -916,6 +832,7 @@ check_and_truncate_adduct_vector <- function(adduct, db, verbose = TRUE) {
 #' @examples
 #' # HMDB_db <- load("data/HMDB_1_names.rds")
 #' # db_adduct_filter(HMDB_db,c("M+H"), polarity = "pos")
+#' @noRd
 db_adduct_filter <- function(db, adduct, polarity = "neg", verbose = TRUE) {
     # only include adducts from either neg or pos polarity
     if (polarity == "neg") {
@@ -1009,9 +926,6 @@ db_adduct_filter <- function(db, adduct, polarity = "neg", verbose = TRUE) {
 #' @param allowed_elements Vector of character strings defining allowed elements
 #'
 #' @noRd
-#'
-#' @examples
-#' ### Helper function ###
 is_formula_valid <- function(formula, allowed_elements) {
     elements <-
         stringr::str_extract_all(formula, "[A-Z][a-z]*")[[1]] # defines an element as a Uppercase immediately followed by none or more lowercase letters.
@@ -1035,6 +949,7 @@ is_formula_valid <- function(formula, allowed_elements) {
 #'
 #' ## Refine to only include natural elements
 #' # db_2 <- formula_filter(db_1)
+#' @noRd
 formula_filter <- function(df, elements = NULL) {
     if (is.null(elements)) {
         elements <- c(
@@ -1059,19 +974,7 @@ formula_filter <- function(df, elements = NULL) {
 }
 
 
-#' Calculates the mz range of the observed_df
-#'
-#' @param input_df DataFrame of the observed dataframe being annotated
-#'
-#' @return A list containing the lower and upper mz range for the provided
-#'   sample
-#'
-#' @examples
-#' # mz_df$row_id <- seq(1, length(mz_df$mz))
-#'
-#' # mass_range <- calculate_bounds(mz_df)
-#' # lower_bound <- mass_range$lower_bound
-#' # upper_bound <- mass_range$upper_bound
+#' @noRd
 calculate_bounds <- function(input_df) {
     lower_bound <- min(input_df$mz, na.rm = TRUE)
     upper_bound <- max(input_df$mz, na.rm = TRUE)
@@ -1083,18 +986,7 @@ calculate_bounds <- function(input_df) {
 }
 
 
-#' Calculates the ppm error as a valve
-#'
-#' @param observed_mz Numeric value defining the observed mz value.
-#' @param reference_mz Numeric value defining the reference mz value.
-#' @param ppm Numeric value defining the maximum acceptable ppm_error/threshold
-#'   for searching.
-#'
-#' @return Numeric value defining the ppm_error between the observed and
-#'   reference mz value
-#'
-#' @examples
-#' ### Helper Function ###
+#' @noRd
 ppm_error <- function(observed_mz, reference_mz, ppm) {
     abs_diff_ppm <-
         abs(observed_mz - reference_mz) / abs(reference_mz) * 1e6
@@ -1106,20 +998,7 @@ ppm_error <- function(observed_mz, reference_mz, ppm) {
 }
 
 
-#' Check whether m/z values match within a ppm tolerance
-#'
-#' Calculates the absolute ppm difference between observed and reference m/z
-#' values and returns whether each comparison satisfies the tolerance.
-#'
-#' @param observed_mz Numeric value defining the observed mz value.
-#' @param reference_mz Numeric value defining the reference mz value.
-#' @param ppm Numeric value defining the maximum acceptable ppm_error/threshold
-#'   for searching.
-#'
-#' @return Boolean value indicating if a match is found (TRUE) or not (FALSE)
-#'
-#' @examples
-#' ### Helper Function ###
+#' @noRd
 ppm_range_match <- function(observed_mz, reference_mz, ppm) {
     abs_diff_ppm <-
         abs(observed_mz - reference_mz) / abs(reference_mz) * 1e6
@@ -1574,16 +1453,13 @@ addFMP10Annotations <- function(
 #'   loads versioned reference resources through SpaMTPdb when `db = NULL`.
 #'   Supply a data.frame for a custom reference, or a pre-built `index`
 #'   through `...`.
-#' @param ppm_error Mass tolerance in ppm. If `NULL`, a strict 5 ppm maximum
-#'   is used (or a smaller value inferred from `tof_resolution`). Set to zero
+#' @param ppm Mass tolerance in ppm (default 5). Set to zero
 #'   for exact numerical matches.
 #' @param adducts Optional adduct names/notations; see `adductRules()`. If
 #'   `NULL`, use the complete rule space selected from `maldi_matrix`, or all
 #'   validated general rules for the selected polarity when no matrix is given.
 #' @param polarity Character string defining the ion mode. When `NULL`, infer
 #'   it from a supplied index or MALDI matrix profile, otherwise use positive.
-#' @param tof_resolution Instrument resolving power retained for compatibility;
-#'   it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.
 #' @param verbose Boolean indicating whether to show the message. If TRUE the
 #'   message will be show, else the message will be suppressed (default = TRUE).
 #' @param maldi_matrix Optional MALDI matrix/reagent profile used for automatic
@@ -1603,11 +1479,11 @@ addFMP10Annotations <- function(
 #' data(spamtp_example)
 #' annotateBigData(c(149.04445, 181.07066),
 #'     db = spamtp_example$metabolites,
-#'     adducts = "M+H", ppm_error = 5, verbose = FALSE
+#'     adducts = "M+H", ppm = 5, verbose = FALSE
 #' )
 annotateBigData <- function(
-    mzs, db = NULL, ppm_error = NULL, adducts = NULL,
-    polarity = NULL, tof_resolution = 30000,
+    mzs, db = NULL, ppm = 5, adducts = NULL,
+    polarity = NULL,
     verbose = TRUE, maldi_matrix = NULL,
     database_version = "latest",
     database_source = c("auto", "spamtpdb"),
@@ -1619,8 +1495,8 @@ annotateBigData <- function(
 
     annotations <- annotateTable(
         mz_df,
-        db = db, ppm_error = ppm_error, adducts = adducts,
-        polarity = polarity, tof_resolution = tof_resolution, verbose = verbose,
+        db = db, ppm = ppm, adducts = adducts,
+        polarity = polarity, verbose = verbose,
         maldi_matrix = maldi_matrix, database_version = database_version,
         database_source = match.arg(database_source),
         database_local_dir = database_local_dir, ...

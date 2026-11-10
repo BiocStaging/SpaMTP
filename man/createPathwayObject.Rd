@@ -8,7 +8,7 @@ createPathwayObject(
   object,
   assay = NULL,
   assayName = "logcounts",
-  new.assay = "pathway",
+  outputExperiment = "pathway",
   remove.nans = TRUE,
   database = NULL,
   database_version = "latest",
@@ -37,7 +37,7 @@ features indexed by gene identifiers or RaMP IDs.}
 prefers logcounts, normcounts, then counts in the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{new.assay}{Name for the pathway-level \code{altExp()} (default =
+\item{outputExperiment}{Name for the pathway-level \code{altExp()} (default =
 \code{"pathway"}).
 Scores are stored in that experiment's \code{pathwayScores} expression assay.}
 
@@ -111,7 +111,7 @@ database_raw_size, measured_size, coverage_fraction, used_size,
 database_members, measured_members, used_members and
 excluded_conflict_records.
 The complete coverage table, including excluded and unmeasured pathways,
-is retained in metadata(altExp(x, new.assay))$pathway_mapping$coverage.
+is retained in metadata(altExp(x, outputExperiment))$pathway_mapping$coverage.
 Scores summarize observed expression; they are not pathway activity tests.
 }
 \examples{

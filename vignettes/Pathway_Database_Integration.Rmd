@@ -76,6 +76,25 @@ Choose the display for your question. The linked examples share the same
 `createPathwayAssay()` creates **identity-level** gene or compound rows;
 `createPathwayObject()` creates **pathway-level** scores.
 
+## A complete membership analysis
+
+This small included dataset needs no downloads. It demonstrates the measured
+universe, enrichment and display together; replace the resource bundle with a
+versioned SpaMTPdb bundle for an analysis of experimental data.
+
+```{r membership-workflow, message=FALSE, fig.cap="Pathway enrichment for the included three-compound example."}
+library(SpaMTP)
+data(spamtp_example)
+enrichment <- fishersPathwayAnalysis(
+    list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
+    universe = list(metabolites = paste0("RAMP_C_", 1:3)),
+    database = spamtp_example$database, min_path_size = 1,
+    pathway_all_info = TRUE, verbose = FALSE)
+visualisePathways(spamtp_example$experiment, enrichment,
+    assay = "main", min_n = 1, p_val_threshold = 1,
+    database = spamtp_example$database, verbose = FALSE)
+```
+
 # Pathway network example {#worked-pathway-network}
 
 The [human RNA/MSI example](Gene_Identifier_Mapping.html#pathway-network)
@@ -130,16 +149,14 @@ sort(table(edges$source_reaction_type), decreasing = TRUE)
 
 # Inspect resource provenance
 
-`help("bundledResourceFiles")` describes the installed correction maps,
-source manifests and their preparation recipes.
-
-The original graph conversion reused the first edge's interaction and direction
-codes across each table, losing per-edge labels and merging distinct parallel
-interactions. The loader restores these fields from the archived source.
-`spamtp_database` identifies the loaded source and checksum;
-`spamtp_interaction_repair` records the correction applied in memory.
-Corrections apply to exact fingerprint matches of the pinned snapshot.
-Save the returned collection with `saveRDS()` to retain both.
+SpaMTPdb owns the graph conversion, source manifests and preparation recipes.
+Its staging recipe stores the source interaction label and direction for every
+edge, including parallel interactions. For immutable RaMP 3.0.7 downloads,
+SpaMTPdb restores the same fields only when the complete snapshot fingerprint
+matches its pinned input. New resource builds store corrected tables directly.
+`spamtp_database` identifies the verified file and checksum;
+`spamtp_interaction_repair` records the conversion provenance. Saving the returned
+collection with `saveRDS()` retains both.
 
 ```{r inspect-provenance}
 attr(db$ramp_kegg, "spamtp_database")[c(
@@ -148,17 +165,17 @@ attr(db$ramp_kegg, "spamtp_database")[c(
 )]
 attr(db$ramp_kegg, "spamtp_interaction_repair")
 provenance_file <- system.file("extdata", "pathway_interactions_provenance.csv",
-    package = "SpaMTP"
+    package = "SpaMTPdb"
 )
 audit_file <- system.file("extdata", "pathway_interactions_audit.csv",
-    package = "SpaMTP"
+    package = "SpaMTPdb"
 )
 read.csv(audit_file)
 ```
 
 The audit summarizes all four collections. `edges_after` exceeds `edges_before`
 because the correction restores parallel edges that the original conversion
-merged. Published files retain their original checksums; SpaMTP records
+merged. Published files retain their original checksums; SpaMTPdb records
 corrections separately when loading verified snapshots. These edge corrections
 leave RaMP memberships and membership-based enrichment unchanged.
 
@@ -167,7 +184,7 @@ leave RaMP memberships and membership-based enrichment unchanged.
 <details>
 <summary>Rebuild the pinned interaction correction from a source checkout</summary>
 
-The [source-checkout recipe](https://github.com/SpaMTP-project/SpaMTP/blob/main/data-raw/rebuild_pathway_interactions.R)
+The [source-checkout recipe](https://github.com/BCRL-tylu/SpaMTPdb/blob/main/data-raw/rebuild_pathway_interactions.R)
 uses the identifier and interaction helpers in the same `data-raw` directory.
 These development scripts operate on a source checkout. Installed-package users
 can inspect the input URLs and checksums in `provenance_file` above.

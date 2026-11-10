@@ -37,7 +37,7 @@ mouseBrainNetworks <- function(object, database, outputDir,
     # Recompute scored annotations; do not reuse the archive's mass-only cache.
     object <- SpaMTP::annotateSM(object,
         db = database$chem_props,
-        assay = "main", raw.mz.column = "mz", ppm_error = 5,
+        assay = "main", raw.mz.column = "mz", ppm = 5,
         polarity = "positive", maldi_matrix = "DHB",
         ms1_spectrum = spectrum, min_score = 0,
         return.only.annotated = FALSE, save.intermediate = TRUE
@@ -55,7 +55,7 @@ mouseBrainNetworks <- function(object, database, outputDir,
     )
     object <- SpaMTP::createPathwayAssay(object,
         assay = "main",
-        assayName = "workflow", new_assay = "compound", database = database,
+        assayName = "workflow", outputExperiment = "compound", database = database,
         pathway_index = index, organism = "Mus musculus",
         annotation_source = "current", annotation_score_threshold = 0.05,
         metabolite_ambiguity = "exclude", verbose = FALSE

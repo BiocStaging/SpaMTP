@@ -14,21 +14,19 @@ spectralBinning(
 )
 }
 \arguments{
-\item{matrix}{matter matrix object containing the intensity values to be
-binned.}
+\item{matrix}{Numeric matrix of features by pixels.}
 
-\item{ref}{A vector of reference mass-to-charge (m/z) values for binning. If
-left unspecified, mass range will be used to generate reference peaks.}
+\item{ref}{Positive reference mass-to-charge (m/z) values for the output bins.}
 
-\item{index}{Character string specifying the column name for the m/z values
-(default = "mz").}
+\item{index}{Numeric m/z values, one per input matrix row.}
 
 \item{method}{A character vector specifying the binning method. Options
 include \code{"sum"}, \code{"mean"}, \code{"max"}, \code{"min"}. If not specified default
 method used is "sum".}
 
-\item{tolerance}{Numeric value specifying the tolerance for m/z matching
-(default = \code{NA}).}
+\item{tolerance}{Positive mass tolerance in Da. A value named \code{relative}
+is interpreted as a fraction of each reference mass (for example,
+\code{c(relative = 5e-6)} for 5 ppm).}
 }
 \value{
 Matrix object containing the binned intensity values matching the

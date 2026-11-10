@@ -122,7 +122,6 @@
         metadata = TRUE
     )
 
-    value <- .spamtp_repair_pathway_interactions(value, resource)
     attr(value, "spamtp_database") <- list(
         resource = resource,
         version = as.character(resource_metadata$version[[1L]]),
@@ -171,7 +170,7 @@
         }
         names(database) <- tolower(names(database))
         values <- lapply(resources, function(resource) {
-            .spamtp_repair_pathway_interactions(database[[resource]], resource)
+            database[[resource]]
         })
         return(stats::setNames(values, resources))
     }
@@ -199,7 +198,7 @@
 #'
 #' @details
 #' Exact affected RaMP 3.0.7 topology resources receive a checksum-guarded
-#' correction for historical interaction-code and direction recycling. Source
+#' SpaMTPdb correction for historical interaction-code and direction recycling. Source
 #' labels are retained in `source_reaction_type`; the resource attribute
 #' `spamtp_interaction_repair` records the correction separately from the
 #' original download metadata. Published files are unchanged. See

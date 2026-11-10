@@ -45,7 +45,7 @@ test_that("compound assays retain padded, renamed and subset features", {
     object <- fixture$object
     original <- createPathwayAssay(object, "metabolites",
         assayName = "counts", database = fixture$database,
-        new_assay = "compounds", verbose = FALSE
+        outputExperiment = "compounds", verbose = FALSE
     )
     expected <- SummarizedExperiment::assay(object, "counts")
     rownames(expected) <- fixture$ids
@@ -62,7 +62,7 @@ test_that("compound assays retain padded, renamed and subset features", {
     )
     mapped <- createPathwayAssay(renamed, "metabolites",
         assayName = "counts", database = fixture$database,
-        new_assay = "compounds", verbose = FALSE
+        outputExperiment = "compounds", verbose = FALSE
     )
     compounds <- SingleCellExperiment::altExp(mapped, "compounds")
     expect_equal(as.matrix(SummarizedExperiment::assay(compounds)), expected)
@@ -72,7 +72,7 @@ test_that("compound assays retain padded, renamed and subset features", {
     )
     retained <- createPathwayAssay(renamed[1, ], "metabolites",
         assayName = "counts", database = fixture$database,
-        new_assay = "compounds", verbose = FALSE
+        outputExperiment = "compounds", verbose = FALSE
     )
     expect_equal(as.matrix(SummarizedExperiment::assay(
         SingleCellExperiment::altExp(retained, "compounds")
@@ -87,7 +87,7 @@ test_that("compound identity follows equal-mass rows in an alternative assay", {
     SingleCellExperiment::altExp(object, "ions") <- reordered
     mapped <- createPathwayAssay(object, "metabolites", assay = "ions",
         assayName = "counts", database = fixture$database,
-        new_assay = "compounds", verbose = FALSE
+        outputExperiment = "compounds", verbose = FALSE
     )
     expected <- SummarizedExperiment::assay(fixture$object, "counts")
     rownames(expected) <- fixture$ids
@@ -116,7 +116,7 @@ test_that("older compound stores use unique masses and reject ambiguous ones", {
         } else {
             expect_silent(mapped <- createPathwayAssay(object, "metabolites",
                 assayName = "counts", database = fixture$database,
-                new_assay = "compounds", verbose = FALSE
+                outputExperiment = "compounds", verbose = FALSE
             ))
             expect_identical(rownames(SingleCellExperiment::altExp(
                 mapped, "compounds"

@@ -66,7 +66,7 @@ runMouseBrain <- function(inputDir, databaseDir = NULL, outputDir,
     ms <- list(
         type = "metabolomics", layer = "counts", species = "Mus musculus",
         annotation = list(
-            index = massIndex, ppm_error = 5, min_score = 0,
+            index = massIndex, ppm = 5, min_score = 0,
             verbose = FALSE
         ),
         pathways = list(

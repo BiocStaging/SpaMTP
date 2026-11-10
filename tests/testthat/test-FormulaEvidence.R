@@ -99,7 +99,7 @@ test_that("disabled formula checks are quiet and empty results retain the schema
         adducts = "M+H", infer_structure = "never"
     )
     expect_silent(result <- queryMZAnnotationIndex(index$expected_mz, index,
-        ppm = 0, use_mass_defect = FALSE, check_isotopes = FALSE
+        ppm = 0, check_formula_mass = FALSE, check_isotopes = FALSE
     ))
     expect_identical(result$formula_status, "not_checked")
     expect_silent(empty <- queryMZAnnotationIndex(1000, index, ppm = 0))
@@ -121,7 +121,7 @@ test_that("annotateSM stores inspectable formula status while keeping assay valu
         spatialCoords = cbind(x = 1:2, y = c(0, 0))
     )
     expect_warning(result <- annotateSM(object,
-        index = index, raw.mz.column = "mz", ppm_error = 0,
+        index = index, raw.mz.column = "mz", ppm = 0,
         return.only.annotated = FALSE, verbose = FALSE
     ), "1 distinct matched reference formula")
     candidates <- annotationCandidates(result)
@@ -129,7 +129,7 @@ test_that("annotateSM stores inspectable formula status while keeping assay valu
     expect_true(is.na(candidates$ChemicalScore))
     expect_identical(SummarizedExperiment::assay(result), counts)
     empty <- annotateTable(data.frame(row_id = 1L, mz = 1000),
-        index = index, ppm_error = 0, verbose = FALSE
+        index = index, ppm = 0, verbose = FALSE
     )
     expect_identical(empty$FormulaStatus, character())
 })
@@ -191,7 +191,7 @@ test_that("halogen evidence is applied only with complete formula counts", {
     expect_true(all(is.finite(result$score)))
 
     rule <- adductRules("positive")[1, , drop = FALSE]
-    expect_identical(.mass_defect_score(100.9, "C2H4[59Co]", rule), NA_real_)
+    expect_identical(.formula_mass_score(100.9, "C2H4[59Co]", rule), NA_real_)
 })
 
 test_that("formula status describes each row independently of query order", {
@@ -202,10 +202,10 @@ test_that("formula status describes each row independently of query order", {
         adducts = c("M+H", "M+H-H2O"), min_structure_score = 0
     )
     forward <- queryMZAnnotationIndex(index$expected_mz, index, ppm = 0,
-        use_mass_defect = FALSE, check_isotopes = FALSE
+        check_formula_mass = FALSE, check_isotopes = FALSE
     )
     reverse <- queryMZAnnotationIndex(rev(index$expected_mz), index, ppm = 0,
-        use_mass_defect = FALSE, check_isotopes = FALSE
+        check_formula_mass = FALSE, check_isotopes = FALSE
     )
     expect_identical(forward, reverse)
     expect_identical(forward$formula_status[forward$adduct == "M+H"],

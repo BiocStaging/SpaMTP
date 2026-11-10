@@ -64,7 +64,7 @@ MSImagingArrays/MSImagingExperiment.}
 
 \item{normalisation.type}{\code{"TIC"} (default) or \code{"RC"} divides each pixel's
 intensities by its total and multiplies by \code{scale.factor}, storing
-\code{normcounts}. \code{"LogNormalize"} additionally applies natural \code{log1p()}
+\code{normcounts}. \code{"LogNormalize"} additionally applies \code{log2(1 + x)}
 and stores \code{logcounts}. Cardinal input supports only \code{"TIC"}.}
 
 \item{scale.factor}{Positive target total before log transformation. When

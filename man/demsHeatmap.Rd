@@ -32,7 +32,7 @@ demsHeatmap(
 findAllDEMs()). This includes pseudo-bulked counts and DEMs.}
 
 \item{n}{A numeric integer that defines the number of UP and DOWN regulated
-peaks to plot (default = 25).}
+peaks to plot (default = 5).}
 
 \item{only.pos}{Boolean indicating if only positive markers should be
 returned (default = FALSE).}

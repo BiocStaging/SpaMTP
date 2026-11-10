@@ -13,12 +13,12 @@ findAllDEMs(
   DE_output_dir = NULL,
   run_name = "findAllDEMs",
   annotation.column = NULL,
-  assay = "Spatial",
+  assay = "main",
   assayName = "counts",
   return.individual = FALSE,
   verbose = TRUE,
   seed = 1234,
-  method = c("technical", "markers", "replicate"),
+  method = c("markers", "replicate", "technical"),
   replicate = NULL,
   contrasts = list(),
   min_region_size = 3,
@@ -51,7 +51,7 @@ that will be used when saving DEMs to .csv file (default = 'findAllDEMs').}
 \code{rowData()}, such as \code{"all_IsomerNames"} from \code{annotateSM()} (default NULL).}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
-\code{"Spatial"} is a compatibility alias for the primary experiment.}
+is \code{"main"} for the primary experiment.}
 
 \item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}). Choose the value scale for the analysis: technical
@@ -70,10 +70,9 @@ message will be show, else the message will be suppressed (default = TRUE).}
 
 \item{method}{\code{markers} uses scran effect-size summaries without pixel P
 values; \code{replicate} fits configured contrasts on biological-replicate means.
-The historical \code{technical} mode is retained for compatibility, but random
-pools are technical subdivisions and cannot establish biological replication.
-The compatibility default is \code{"technical"}; choose \code{"markers"} or
-\code{"replicate"} explicitly for the corresponding native analysis.}
+The default is \code{"markers"}. The opt-in \code{technical} mode fits limma to
+log2(1 + mean intensity per pixel) in random pools. These pools are
+technical subdivisions and cannot establish biological replication.}
 
 \item{replicate}{Complete colData field identifying biological replicates.}
 

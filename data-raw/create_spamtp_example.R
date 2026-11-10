@@ -19,7 +19,7 @@ counts <- outer(seq_len(8), seq_len(24), function(i, j)
 dimnames(counts) <- list(paste0("ion", seq_len(8)), paste0("pixel", seq_len(24)))
 counts[1:2, 1:12] <- counts[1:2, 1:12] + 20
 experiment <- SpatialExperiment::SpatialExperiment(
-    assays = list(counts = counts, logcounts = log1p(counts)),
+    assays = list(counts = counts, logcounts = log1p(counts) / log(2)),
     rowData = S4Vectors::DataFrame(mz = masses),
     colData = S4Vectors::DataFrame(region = rep(c("left", "right"), each = 12),
         replicate = rep(paste0("sample", 1:6), each = 4)),
@@ -31,7 +31,7 @@ SingleCellExperiment::altExp(experiment, "transcriptome") <- normalizeSMData(
     SingleCellExperiment::altExp(experiment, "transcriptome"),
     "LogNormalize", verbose = FALSE)
 index <- buildMZAnnotationIndex(metabolites, adducts = c("M+H", "M+Na"))
-experiment <- annotateSM(experiment, index = index, ppm_error = 5,
+experiment <- annotateSM(experiment, index = index, ppm = 5,
     min_score = 0, return.only.annotated = FALSE, save.intermediate = TRUE,
     verbose = FALSE)
 experiment <- withr::with_seed(1,

@@ -13,7 +13,7 @@ annotatedFixture <- function() {
         MetaboCoreUtils::mass2mz(c(148.037173366, 180.063388104), "[M+H]+")[, 1], 600
     )
     annotateSM(object,
-        index = index, ppm_error = 5, min_score = 0,
+        index = index, ppm = 5, min_score = 0,
         return.only.annotated = FALSE, save.intermediate = TRUE, verbose = FALSE
     )
 }
@@ -110,7 +110,7 @@ duplicateMassFixture <- function() {
             common_name = "compoundA", chem_data_source = "hmdb",
             mol_formula = "C5H8O5", monoisotop_mass = 148.037173366
         ),
-        raw.mz.column = "mz", adducts = "M+H", ppm_error = 5,
+        raw.mz.column = "mz", adducts = "M+H", ppm = 5,
         min_score = 0, return.only.annotated = FALSE, verbose = FALSE,
         infer_structure = "never"
     )
@@ -293,7 +293,7 @@ test_that("normalization accepts recorded totals and keeps dense results dense",
     object$tic <- totals
     result <- normalizeSMData(object, "LogNormalize", libSizes = "tic", verbose = FALSE)
     counts <- SummarizedExperiment::assay(object, "counts")
-    expected <- log1p(sweep(counts, 2, totals, "/") * 1e4)
+    expected <- log2(1 + sweep(counts, 2, totals, "/") * 1e4)
     expect_equal(as.matrix(SummarizedExperiment::assay(result, "logcounts")), expected,
         ignore_attr = TRUE
     )

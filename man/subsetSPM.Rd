@@ -10,7 +10,6 @@ subsetSPM(
   cells = NULL,
   idents = NULL,
   features = NULL,
-  verbose = FALSE,
   ...
 )
 }
@@ -25,10 +24,6 @@ SpatialExperiment.}
 \item{idents}{A vector of identity classes to keep}
 
 \item{features}{A vector of feature names or indices to keep}
-
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the
-message will be show, else the message will be suppressed (default =
-FALSE).}
 
 \item{...}{Reserved; additional arguments are rejected.}
 }

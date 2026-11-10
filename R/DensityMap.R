@@ -73,7 +73,7 @@ densityMap <- function(
     coordinates <- .nativeCoordinates(object)[, c("x", "y"), drop = FALSE]
     locations <- lapply(seq_len(nrow(expression)), function(i) {
         values <- as.numeric(expression[i, ])
-        if (any(!is.finite(values)) || any(values < 0)) {
+        if (!.allFiniteAssay(values) || any(values < 0)) {
             stop(
                 "Density export requires finite non-negative intensities.",
                 call. = FALSE

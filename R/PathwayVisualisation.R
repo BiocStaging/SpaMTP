@@ -7,7 +7,7 @@
 #' @param pathway_df Dataframe containing the pathway enrichment results (output
 #'   from SpaMTP::fishersPathwayAnalysis function).
 #' @param assay Primary (`"main"`) or alternative experiment name. The default
-#'   `"SPM"` is a compatibility alias for the primary experiment.
+#'   is `"main"` for the primary experiment.
 #' @param assayName Expression assay name within the selected experiment
 #'   (default = `"counts"`), read with `SummarizedExperiment::assay()`.
 #'   See [experimentAccess] for the experiment/matrix distinction.
@@ -44,7 +44,7 @@
 visualisePathways <- function(
     SpaMTP,
     pathway_df,
-    assay = "SPM",
+    assay = "main",
     assayName = "counts",
     min_n = 3,
     p_val_threshold = 0.1,
@@ -215,51 +215,24 @@ visualisePathways <- function(
     )
 
     # Get the raster illustration for each pathway
-    image_raster <- list()
+    image_raster <- vector("list", nrow(merged_pathways))
     verbose_message(
-        message_text = "Generating images for visualising pathway enrichment across the sample ... ",
-        verbose = verbose
+        message_text = "Generating spatial pathway images ... ", verbose = verbose
     )
     pb <- .progressBar(nrow(merged_pathways), verbose)
     mass_matrix <- Matrix::t(.assayData(SpaMTP, assay, assayName))
-
+    coords <- .nativeCoordinates(SpaMTP, requireNames = FALSE)
     for (z in seq_len(nrow(merged_pathways))) {
-        mzs <- paste0(
-            "mz-",
-            stringr::str_extract_all(
-                merged_pathways$adduct_info[z],
-                "\\d+\\.\\d+"
-            )[[1]]
-        )
-        if ("mz-" %in% mzs) {
-            image_raster[[z]] <- NULL
-        } else {
-            mat_ind <- which(rownames(.assayData(SpaMTP, assay, assayName)) %in% mzs)
-            pca_result <- prcomp(mass_matrix[, mat_ind])
-            nc <- 3
-            pca_re_df <- pca_result[["x"]][, seq_len(nc)]
-            pca_df_normalized <- as.data.frame(apply(
-                pca_re_df,
-                MARGIN = 2,
-                FUN = function(x) {
-                    (x - min(x)) / (max(x) - min(x))
-                }
+        mzs <- paste0("mz-", stringr::str_extract_all(
+            merged_pathways$adduct_info[z], "\\d+\\.\\d+"
+        )[[1]])
+        mat_ind <- which(colnames(mass_matrix) %in% mzs)
+        if (length(mat_ind)) {
+            image_raster[z] <- list(.pathwayFeatureRaster(
+                mass_matrix[, mat_ind, drop = FALSE], coords
             ))
-            coords <- as.data.frame(SpatialExperiment::spatialCoords(SpaMTP))[, c("x", "y")]
-            # Convert the normalized UMAP result to an image matrix
-            # 3 channels side by side
-
-            rgb_m <- array(dim = c(max(coords[, 1]), max(coords[, 2]), nc))
-            for (j in seq_len(nc)) {
-                rgb_m[, , j] <- matrix(pca_df_normalized[, j], nrow = max(coords[, 1]))
-            }
-            # Convert the image matrix to a raster object
-            image_raster[[z]] <- as.raster(rgb_m)
-            # # Plot the RGB image using ggplot2
-            # ggplot() + annotation_custom(rasterGrob(image_raster, width = unit(1, "npc"), height = unit(1, "npc"))) +
-            #   theme_void()
-            .progressTick(pb, z)
         }
+        .progressTick(pb, z)
     }
     .progressDone(pb)
     if (length(image_raster) > 0) {
@@ -319,7 +292,9 @@ visualisePathways <- function(
             pathway_id_j <- merged_pathways$pathway_id[j]
             pathway_content_j <- unique(analytehaspathway$rampId[which(analytehaspathway$pathwayRampId == pathway$pathwayRampId[which(pathway$sourceId == pathway_id_j)])])
 
-            jc_simi <- length(intersect(pathway_content_i, pathway_content_j)) / length(union(pathway_content_i, pathway_content_j))
+            jc_simi <- if (length(union(pathway_content_i, pathway_content_j))) {
+                length(intersect(pathway_content_i, pathway_content_j)) / length(union(pathway_content_i, pathway_content_j))
+            } else 0
             jaccard_matrix[i, j] <- jaccard_matrix[j, i] <- jc_simi
         }
     }
@@ -327,7 +302,7 @@ visualisePathways <- function(
 
 
     # Generate a dendrogram
-    hc <- as.dendrogram(hclust(as.dist(jaccard_matrix), method = method, ...))
+    hc <- as.dendrogram(hclust(as.dist(1 - jaccard_matrix), method = method, ...))
     segment_hc <- with(
         ggdendro::segment(ggdendro::dendro_data(hc)),
         data.frame(
@@ -413,8 +388,6 @@ visualisePathways <- function(
 #'   number of unique pathways provided in 'regpathway' (default = NULL).
 #' @param text_size Base text size in points. NULL uses 11 points. Pathway
 #'   labels and legend entries use a slightly smaller size.
-#' @param verbose Boolean indicating whether to show the message. If TRUE the
-#'   message will be show, else the message will be suppressed (default = TRUE).
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
 #' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
@@ -445,7 +418,6 @@ plotRegionalPathways <- function(
     sig_cutoff = NULL,
     num_display = NULL,
     text_size = NULL,
-    verbose = TRUE,
     database = NULL,
     database_version = "latest",
     database_source = c("auto", "spamtpdb"),
@@ -478,11 +450,13 @@ plotRegionalPathways <- function(
     if (!nrow(regpathway)) stop("No pathways to plot.", call. = FALSE)
     regpathway <- as.data.frame(regpathway)
     if (!is.null(selected_pathways)) {
-        regpathway <- regpathway[
-            regpathway$pathwayRampId %in% selected_pathways | regpathway$pathwayName %in% selected_pathways |
-                (!is.null(regpathway$sourceId) & regpathway$sourceId %in% selected_pathways), ,
-            drop = FALSE
-        ]
+        keep <- regpathway$pathwayRampId %in% selected_pathways |
+            regpathway$pathwayName %in% selected_pathways
+        if ("sourceId" %in% names(regpathway)) {
+            keep <- keep | regpathway$sourceId %in% selected_pathways
+        }
+        regpathway <- regpathway[keep, , drop = FALSE]
+        if (!nrow(regpathway)) stop("No selected pathways were found.", call. = FALSE)
     }
     importance <- tapply(
         abs(regpathway$NES),
@@ -586,4 +560,27 @@ plotRegionalPathways <- function(
     attr(p, "selected_pathways") <- ids
     attr(p, "significance_column") <- "padj"
     p
+}
+
+# Use up to three principal components; one feature produces a grayscale image.
+# Empty grid locations are transparent, so irregular samples retain their shape.
+.pathwayFeatureRaster <- function(values, coords) {
+    values <- as.matrix(values)
+    if (!ncol(values) || !nrow(values)) return(NULL)
+    if (!.allFiniteAssay(values)) stop("Pathway intensities must be finite.", call. = FALSE)
+    rank <- min(3L, ncol(values), max(1L, nrow(values) - 1L))
+    components <- if (nrow(values) > 1L) {
+        stats::prcomp(values, rank. = rank)$x[, seq_len(rank), drop = FALSE]
+    } else matrix(0, nrow = 1L, ncol = rank)
+    scaled <- apply(components, 2, function(x) {
+        span <- diff(range(x))
+        if (span == 0) rep(0.5, length(x)) else (x - min(x)) / span
+    })
+    scaled <- matrix(scaled, nrow = nrow(values), ncol = rank)
+    channels <- scaled[, rep(seq_len(rank), length.out = 3L), drop = FALSE]
+    x <- match(coords$x, sort(unique(coords$x)))
+    y <- match(coords$y, sort(unique(coords$y), decreasing = TRUE))
+    pixels <- matrix("transparent", nrow = max(y), ncol = max(x))
+    pixels[cbind(y, x)] <- grDevices::rgb(channels[, 1], channels[, 2], channels[, 3])
+    as.raster(pixels)
 }

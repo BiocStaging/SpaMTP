@@ -1,3 +1,28 @@
+# SpaMTP 0.99.18
+
+* Marker ranking is now the default in `findAllDEMs()`. Explicit technical
+  pooling divides sums by the number of pixels before the log2 transform;
+  unequal region sizes no longer appear as fold changes. Random pools remain
+  technical subdivisions, not independent biological replicates.
+* `normalizeSMData(..., "LogNormalize")` and TMM log output use log2 units,
+  matching `runSpaMTPWorkflow()`. Previously saved natural-log layers require
+  explicit conversion or recomputation before comparing effect sizes.
+* Pre-release interface cleanup: annotation tolerances use `ppm` (default 5),
+  `check_formula_mass` names the formula/ion consistency check, and
+  `corr_threshold` replaces the misspelling. Functions creating an alternative
+  experiment share `outputExperiment`; `outputAssay` denotes an expression
+  matrix. Removed unused compatibility arguments and private helper help pages.
+* `getKmeanClusters()` defaults to the `pca` reduction produced by
+  `runMetabolicPCA()`. Clustering and ion plots support unnamed observations by
+  position. Finite-value checks preserve sparse assays.
+* Fixed unnamed numeric bin tolerances, duplicate PDF extensions, pathway
+  selection without source IDs, order-sensitive named DE lists, Jaccard
+  distances, and pathway thumbnails with one or two features or irregular grids.
+* `workflowMarkers()`, `pathwayMapping()` and `summarizeFeatures()` expose
+  results and descriptive summaries used in the guides.
+* Pathway interaction preparation and historical snapshot corrections now
+  belong to SpaMTPdb (>= 0.99.6), including provenance and regression tests.
+
 # SpaMTP 0.99.17
 
 Changes in response to the Bioconductor review of 30 October 2026.

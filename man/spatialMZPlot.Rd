@@ -22,8 +22,7 @@ spatialMZPlot(
   image.alpha = 1,
   stroke = 0.25,
   interactive = FALSE,
-  information = NULL,
-  verbose = TRUE
+  information = NULL
 )
 }
 \arguments{
@@ -63,8 +62,6 @@ quantile strings such as "q10". NA uses the observed range.}
 \item{interactive}{Return Plotly widgets rather than static plots.}
 
 \item{information}{Deprecated Seurat hover data; non-NULL is unsupported.}
-
-\item{verbose}{Retained for call compatibility.}
 }
 \value{
 A ggplot or Plotly widget; a list when combine=FALSE.

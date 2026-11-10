@@ -10,7 +10,6 @@ runDE(
   ident,
   output_dir,
   run_name,
-  n,
   logFC_threshold,
   annotation.column,
   assay,
@@ -33,9 +32,6 @@ file output.}
 
 \item{run_name}{A character string defining the title of this DE analysis
 (will be used when saving DEMs to .csv file).}
-
-\item{n}{An integer that defines the number of pseudo-replicates per sample
-(default = 3).}
 
 \item{logFC_threshold}{Fold-change threshold passed as
 \code{log2(logFC_threshold)} to \code{limma::treat()} (default = 1.2).}
@@ -62,7 +58,7 @@ expressed m/z metabolites
 Worker function for calculating differentially abundant metabolites per
 pooling group.
 Used by the compatibility \code{method = "technical"} branch of \code{\link[=findAllDEMs]{findAllDEMs()}}.
-Fits limma to \code{log2(counts(pooled_data) + 1)} and uses \code{limma::treat()};
+Fits limma to \verb{log2(mean intensity per pixel + 1)} and uses \code{limma::treat()};
 an edgeR DGEList stores the values and results, but no edgeR count-model
 test or voom transformation is performed. Technical pools are not independent
 biological replicates.

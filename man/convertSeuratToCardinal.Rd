@@ -9,7 +9,6 @@ convertSeuratToCardinal(
   assay = "Spatial",
   layer = "counts",
   run_col = NULL,
-  feature.metadata = FALSE,
   verbose = TRUE
 )
 }
@@ -22,9 +21,6 @@ convertSeuratToCardinal(
 \code{SeuratObject::LayerData()}. See \code{\link[=seuratToSpatialExperiment]{seuratToSpatialExperiment()}}.}
 
 \item{run_col}{Optional cell-metadata column containing run identifiers.}
-
-\item{feature.metadata}{Retained for compatibility. Feature metadata are
-always preserved.}
 
 \item{verbose}{Show conversion messages.}
 }

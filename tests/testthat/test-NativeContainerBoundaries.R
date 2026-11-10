@@ -8,7 +8,7 @@ test_that("normalization targets the selected experiment and validates intensiti
     expect_equal(SummarizedExperiment::assays(result), original)
     transcriptome <- SingleCellExperiment::altExp(result, "transcriptome")
     counts <- SummarizedExperiment::assay(transcriptome, "counts")
-    expected <- log1p(sweep(counts, 2, colSums(counts), "/") * 100)
+    expected <- log2(1 + sweep(counts, 2, colSums(counts), "/") * 100)
     expect_equal(
         as.matrix(SummarizedExperiment::assay(transcriptome, "logcounts")),
         expected
@@ -195,8 +195,7 @@ test_that("technical pooling uses edgeR and limma treatment tables are valid", {
     )
     expect_equal(as.numeric(table(pooled$group)), c(3, 3))
     result <- runDE(pooled, object, "group",
-        output_dir = NULL, run_name = "test",
-        n = 3, logFC_threshold = 1.2, annotation.column = NULL,
+        output_dir = NULL, run_name = "test", logFC_threshold = 1.2, annotation.column = NULL,
         assay = "main", verbose = FALSE
     )
     expect_true(all(c("FDR", "regulate", "cluster") %in% colnames(result$DEMs)))
@@ -216,7 +215,7 @@ test_that("RaMP aggregation retains feature IDs and pixel ordering", {
     ))
     result <- createPathwayAssay(object,
         analyte_type = "genes", assay = "transcriptome",
-        new_assay = "ramp", database = database, verbose = FALSE
+        outputExperiment = "ramp", database = database, verbose = FALSE
     )
     ramp <- .assayData(result, "ramp")
     expect_setequal(rownames(ramp), c("RAMP_G_1", "RAMP_G_2"))

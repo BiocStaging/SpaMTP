@@ -3,17 +3,15 @@
 #' Spectral binning of intensity values stored in a Matrix object, converted
 #' from matter.
 #'
-#' @param matrix matter matrix object containing the intensity values to be
-#'   binned.
-#' @param ref A vector of reference mass-to-charge (m/z) values for binning. If
-#'   left unspecified, mass range will be used to generate reference peaks.
-#' @param index Character string specifying the column name for the m/z values
-#'   (default = "mz").
+#' @param matrix Numeric matrix of features by pixels.
+#' @param ref Positive reference mass-to-charge (m/z) values for the output bins.
+#' @param index Numeric m/z values, one per input matrix row.
 #' @param method A character vector specifying the binning method. Options
 #'   include `"sum"`, `"mean"`, `"max"`, `"min"`. If not specified default
 #'   method used is "sum".
-#' @param tolerance Numeric value specifying the tolerance for m/z matching
-#'   (default = `NA`).
+#' @param tolerance Positive mass tolerance in Da. A value named `relative`
+#'   is interpreted as a fraction of each reference mass (for example,
+#'   `c(relative = 5e-6)` for 5 ppm).
 #'
 #' @return Matrix object containing the binned intensity values matching the
 #'   provided reference list.
@@ -32,69 +30,35 @@ spectralBinning <- function(
     method = c("sum", "mean", "max", "min"),
     tolerance
 ) {
-    # Ensure method is valid
     method <- match.arg(method)
-
-    # Validate inputs
-    if (!is.matrix(matrix)) {
-        stop("'matrix' must be a numeric matrix")
+    if (!is.matrix(matrix) || !is.numeric(matrix)) {
+        stop("'matrix' must be a numeric matrix.", call. = FALSE)
     }
-    if (is.null(ref) || length(ref) == 0) {
-        stop("'ref' (reference bins) must be provided")
+    if (!is.numeric(ref) || !length(ref) || any(!is.finite(ref) | ref <= 0)) {
+        stop("'ref' must contain positive finite reference masses.", call. = FALSE)
     }
-    if (is.null(tolerance) || tolerance <= 0) {
-        stop("'tolerance' must be a positive number")
+    if (!is.numeric(index) || length(index) != nrow(matrix) ||
+        any(!is.finite(index) | index <= 0)) {
+        stop("'index' must contain one positive finite mass per matrix row.", call. = FALSE)
     }
-
-    # Initialize binned matrix
-    binned_matrix <- matrix(0, nrow = length(ref), ncol = ncol(matrix))
-    # return(binned_matrix)
-    # Perform binning
-
-    if (names(tolerance) == "relative") {
-        for (i in seq_along(ref)) {
-            # Calculate relative tolerance bounds
-            lower_bound <- ref[i] - (ref[i] * tolerance)
-            upper_bound <- ref[i] + (ref[i] * tolerance)
-
-            # Identify rows (spectral features) within the current bin
-            in_bin <- which(index >= lower_bound & index <= upper_bound)
-
-            if (length(in_bin) > 0) {
-                # Apply the chosen method to bin the data
-                binned_matrix[i, ] <- switch(method,
-                    sum = colSums(matrix[in_bin, , drop = FALSE]),
-                    mean = colMeans(matrix[in_bin, , drop = FALSE]),
-                    max = apply(matrix[in_bin, , drop = FALSE], 2, max),
-                    min = apply(matrix[in_bin, , drop = FALSE], 2, min)
-                )
-            }
-        }
-    } else {
-        for (i in seq_along(ref)) {
-            # Define the bin range for the current reference value
-            lower_bound <- ref[i] - tolerance
-            upper_bound <- ref[i] + tolerance
-
-            # Identify rows (spectral features) within the current bin
-            in_bin <- which(index >= lower_bound & index <= upper_bound)
-
-            if (length(in_bin) > 0) {
-                # Apply the chosen method to bin the data
-                binned_matrix[i, ] <- switch(method,
-                    sum = colSums(matrix[in_bin, , drop = FALSE]),
-                    mean = colMeans(matrix[in_bin, , drop = FALSE]),
-                    max = apply(matrix[in_bin, , drop = FALSE], 2, max),
-                    min = apply(matrix[in_bin, , drop = FALSE], 2, min)
-                )
-            }
+    if (!is.numeric(tolerance) || length(tolerance) != 1L ||
+        !is.finite(tolerance) || tolerance <= 0 ||
+        (!is.null(names(tolerance)) && !names(tolerance) %in% c("absolute", "relative"))) {
+        stop("'tolerance' must be one positive finite number, optionally named 'absolute' or 'relative'.", call. = FALSE)
+    }
+    widths <- if (identical(names(tolerance), "relative")) ref * tolerance else rep(tolerance, length(ref))
+    binned_matrix <- matrix(0, nrow = length(ref), ncol = ncol(matrix),
+        dimnames = list(as.character(ref), colnames(matrix)))
+    for (i in seq_along(ref)) {
+        in_bin <- which(abs(index - ref[i]) <= widths[i])
+        if (length(in_bin)) {
+            values <- matrix[in_bin, , drop = FALSE]
+            binned_matrix[i, ] <- switch(method,
+                sum = colSums(values), mean = colMeans(values),
+                max = apply(values, 2, max), min = apply(values, 2, min))
         }
     }
-
-    # Set row names to the reference values
-    rownames(binned_matrix) <- as.character(ref)
-
-    return(binned_matrix)
+    binned_matrix
 }
 
 

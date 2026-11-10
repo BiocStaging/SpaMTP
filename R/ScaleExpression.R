@@ -66,7 +66,7 @@ scaleSMData <- function(
         )
     }
     values <- DelayedArray::DelayedArray(.assayData(data, assay, assayName))
-    if (!nrow(values) || ncol(values) < 2L || any(!is.finite(values))) {
+    if (!nrow(values) || ncol(values) < 2L || !.allFiniteAssay(values)) {
         stop(
             "Scaling requires finite values and at least two pixels.",
             call. = FALSE

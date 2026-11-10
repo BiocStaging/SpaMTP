@@ -214,7 +214,7 @@ preparePigVignetteData <- function(outputFile, nativeDir = NULL,
     result <- SpatialExperiment::SpatialExperiment(
         assays = list(
             counts = intensity,
-            logcounts = log1p(sweep(intensity, 2, total_ion_current, "/") * 1e4)
+            logcounts = log2(1 + sweep(intensity, 2, total_ion_current, "/") * 1e4)
         ),
         rowData = S4Vectors::DataFrame(
             mz = targets, target_mz = targets,
@@ -263,7 +263,7 @@ preparePigVignetteData <- function(outputFile, nativeDir = NULL,
         source_mass_bins = lapply(windows, function(i) mz[i]),
         barcodes = colnames(result),
         normalization = paste(
-            "log1p(window intensity / total ion current * 10000);",
+            "log2(1 + window intensity / total ion current * 10000);",
             "total ion current uses all 10200 original mass bins"
         ),
         retained = "All 4959 original spatial positions and three profile-ion windows",

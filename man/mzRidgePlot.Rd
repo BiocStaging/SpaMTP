@@ -37,9 +37,9 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{title}{Character string of the plot title (default = "RidgePlot").}
 
-\item{x.lab}{Character string of the x-axis label (default = "var").}
+\item{x.lab}{Character string of the x-axis label (default = "intensity").}
 
-\item{y.lab}{Character string of the y-axis label (default = "intensity").}
+\item{y.lab}{Character string of the y-axis label (default = "var").}
 
 \item{bottom.cutoff}{Numeric value defining the percent of data to exclude
 for the lower end of the distribution. A bottom.cutoff = 0.05 will remove

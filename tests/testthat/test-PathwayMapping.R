@@ -44,7 +44,7 @@ test_that("shared membership and coverage are identical in Fisher and expression
     original <- f$object
     mapped <- createPathwayAssay(original,
         analyte_type = "genes", assay = "transcriptome",
-        assayName = "logcounts", new_assay = "gene_ids", pathway_index = idx
+        assayName = "logcounts", outputExperiment = "gene_ids", pathway_index = idx
     )
     E <- .assayData(mapped, "gene_ids", "logcounts")
     expect_identical(rownames(E), c("RAMP_G_1", "RAMP_G_3", "RAMP_G_4"))

@@ -38,15 +38,15 @@ test_that("equal-mass features receive one copy of each candidate", {
     index <- buildMZAnnotationIndex(review_db(), adducts = "M+H")
     mz <- index$expected_mz
     table <- annotateTable(data.frame(row_id = c(8, 2, 5), mz = rep(mz, 3)),
-        index = index, ppm_error = 0, verbose = FALSE)
+        index = index, ppm = 0, verbose = FALSE)
     expect_equal(nrow(table), 3L)
     expect_setequal(table$ID, c(8, 2, 5))
-    obj <- annotateSM(review_spe(rep(mz, 3)), index = index, ppm_error = 0,
+    obj <- annotateSM(review_spe(rep(mz, 3)), index = index, ppm = 0,
         return.only.annotated = FALSE, verbose = FALSE)
     expect_equal(nrow(annotationCandidates(obj)), 3L)
     expect_equal(annotationInfo(obj)$candidates, 3L)
     expect_identical(as.character(SummarizedExperiment::rowData(obj)$all_IsomerNames), rep("candidate 1", 3))
-    big <- annotateBigData(rep(mz, 3), index = index, ppm_error = 0, verbose = FALSE)
+    big <- annotateBigData(rep(mz, 3), index = index, ppm = 0, verbose = FALSE)
     expect_equal(nrow(big), 1L)
     expect_identical(big$all_IsomerNames, "candidate 1")
 })
@@ -58,7 +58,7 @@ test_that("index reuse honors restrictions and rejects conflicting construction 
     hit <- annotateMZ(mz, index = index, adducts = "M+Na", ppm = 0)
     expect_identical(hit$adduct, "M+Na")
     hit <- annotateTable(data.frame(row_id = 1:2, mz = mz), index = index,
-        adducts = "[M+Na]+", ppm_error = 0, verbose = FALSE)
+        adducts = "[M+Na]+", ppm = 0, verbose = FALSE)
     expect_identical(hit$Adduct, "M+Na")
     expect_error(annotateMZ(mz, index = index, adducts = "M+K"), "unavailable")
     expect_error(annotateMZ(mz, index = index, db = db), "omit db")
@@ -73,7 +73,7 @@ test_that("annotation storage and inspection never fetch database provenance", {
     local_mocked_bindings(.spamtp_db_resource = function(...) stop("unexpected resource fetch"))
     db <- review_db()
     index <- buildMZAnnotationIndex(db, adducts = "M+H", infer_structure = "never")
-    obj <- annotateSM(review_spe(index$expected_mz), index = index, ppm_error = 0,
+    obj <- annotateSM(review_spe(index$expected_mz), index = index, ppm = 0,
         verbose = FALSE, return.only.annotated = FALSE)
     expect_true(is.na(annotationInfo(obj)$ramp_version))
     S4Vectors::metadata(obj)$mz_annotation <- NULL

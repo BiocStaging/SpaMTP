@@ -7,9 +7,8 @@
 createMergedModalityAssay(
   SpaMTP,
   assays.to.merge,
-  new.assay = "merged",
-  return.original = TRUE,
-  verbose = FALSE
+  outputExperiment = "merged",
+  return.original = TRUE
 )
 }
 \arguments{
@@ -20,18 +19,15 @@ names in \code{SingleCellExperiment::altExpNames(SpaMTP)}. Multiple aliases for
 the same primary experiment are not distinct modalities. See
 \link{experimentAccess}.}
 
-\item{new.assay}{Name of the output alternative experiment, not an expression
+\item{outputExperiment}{Name of the output alternative experiment, not an expression
 matrix (default = \code{"merged"}).}
 
 \item{return.original}{TRUE adds an altExp; FALSE returns only the merged
 feature space.}
-
-\item{verbose}{Reserved compatibility argument; no progress messages are
-emitted.}
 }
 \value{
 If \code{return.original = TRUE}, the input SpatialExperiment with
-\code{altExp(SpaMTP, new.assay)} containing a \code{scaled} assay. Otherwise a new
+\code{altExp(SpaMTP, outputExperiment)} containing a \code{scaled} assay. Otherwise a new
 SpatialExperiment with merged rows, the same pixels and a \code{scaled} assay.
 }
 \description{

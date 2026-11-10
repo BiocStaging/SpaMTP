@@ -44,3 +44,7 @@
 .columnTotals <- function(x) {
     if (.isDelayed(x)) DelayedArray::colSums(x) else Matrix::colSums(x)
 }
+
+# Testing !is.finite(sparse) materializes implicit zeros as TRUE. Testing NA
+# and infinity separately keeps those zeros implicit (and delayed inputs lazy).
+.allFiniteAssay <- function(x) !anyNA(x) && !any(is.infinite(x))

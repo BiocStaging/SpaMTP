@@ -1538,7 +1538,7 @@ print.spamtp_mz_index <- function(x, ...) {
     )
 }
 
-.mass_defect_score <- function(observed_mz, formula, rule, cache = NULL, ppm = 5) {
+.formula_mass_score <- function(observed_mz, formula, rule, cache = NULL, ppm = 5) {
     counts <- .formula_counts(formula, cache)
     if (is.null(counts)) return(NA_real_)
     if (!all(names(counts) %in% c("C", "H", "O"))) return(1)
@@ -1658,7 +1658,7 @@ print.spamtp_mz_index <- function(x, ...) {
 #' Query an indexed metabolite annotation search space
 #'
 #' Candidates are pruned by ppm tolerance and proton/charge validity during
-#' index construction, then ranked using mass error, rule prior, mass-defect,
+#' index construction, then ranked using mass error, rule prior, formula/ion mass consistency,
 #' isotope, and contextual adduct-family evidence. Positive water-loss
 #' candidates additionally require compatible alcohol OH and neighbouring
 #' carbon H sites. Older structure tables are checked lazily for mass-matched
@@ -1671,7 +1671,7 @@ print.spamtp_mz_index <- function(x, ...) {
 #' @param ms1_spectrum Optional contextual spectrum with `mz` and `intensity`
 #'   columns. It should represent the same retention-time window or spatial
 #'   pixel/region as the queried peaks.
-#' @param use_mass_defect Check CHO formula/ion mass consistency. A mismatch
+#' @param check_formula_mass Check CHO formula/ion mass consistency. A mismatch
 #'   beyond the query tolerance (at least 5 ppm for rounded reference masses)
 #'   receives a 0.2 chemical score. Negative fractional mass defects alone
 #'   are not penalized.
@@ -1701,7 +1701,7 @@ print.spamtp_mz_index <- function(x, ...) {
 queryMZAnnotationIndex <- function(
     observed_mz, index, ppm = 5,
     ms1_spectrum = NULL,
-    use_mass_defect = TRUE,
+    check_formula_mass = TRUE,
     check_isotopes = TRUE,
     check_adduct_network = TRUE,
     min_score = 0
@@ -1797,9 +1797,9 @@ queryMZAnnotationIndex <- function(
         } else {
             exp(-0.5 * (error / (ppm / 3))^2)
         }
-        chemical_score <- if (isTRUE(use_mass_defect)) {
+        chemical_score <- if (isTRUE(check_formula_mass)) {
             vapply(seq_along(error), function(j) {
-                .mass_defect_score(
+                .formula_mass_score(
                     obs,
                     compounds$formula[[j]],
                     rules[j, , drop = FALSE], formula_cache, ppm = ppm
@@ -1846,7 +1846,7 @@ queryMZAnnotationIndex <- function(
         }
 
         formula_checked <- rules$water_loss > 0L |
-            isTRUE(use_mass_defect) |
+            isTRUE(check_formula_mass) |
             (isTRUE(check_isotopes) && !is.null(spectrum))
         formula_status <- vapply(seq_along(error), function(j) {
             if (!formula_checked[[j]]) {

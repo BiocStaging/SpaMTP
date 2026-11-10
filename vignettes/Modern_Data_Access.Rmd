@@ -29,34 +29,7 @@ SpaMTP keeps raw, unaligned spectra in Cardinal and feature-by-pixel matrices
 in `SpatialExperiment`. Public accessors read, modify and subset these
 containers. This guide follows a mouse-brain mass spectrometry imaging (MSI)
 and paired RNA experiment through import, metadata access, normalization and
-subsetting. Use the migration table below when updating a historical
-Seurat-based script.
-
-## Migrating existing scripts {#migrating-existing-scripts}
-
-The native API uses lower-camel-case names and Bioconductor containers. These
-common calls replace their historical Seurat-oriented counterparts:
-
-::: {.interface-reference}
-
-| Historical call | Current interface | Input or behaviour to review |
-|:--|:--|:--|
-| `NormalizeSMData()` | `normalizeSMData()` | Select the native modality with `assay` and input layer with `assayName` |
-| `RunMetabolicPCA()` | `runMetabolicPCA()` | Scores are stored in `reducedDim()` |
-| `FindAllDEMs()` | `findAllDEMs()` | Choose descriptive markers or a biological-replicate model explicitly |
-| `AnnotateSM()` | `annotateSM()` | Indexed, scored candidates are stored with reference provenance |
-| `FindRegionalPathways()` | `findRegionalPathways()` | Supply reconciled identities and complete regional rankings |
-| `MultiOmicIntegration()` | `multiOmicIntegration()` | Concatenates scaled PCA embeddings with equal modality weights |
-| Seurat `GetAssayData()` | `assay()` | Read a named matrix from the main or `altExp()` experiment |
-
-<p class="table-scroll-hint">Scroll horizontally to see the guidance column.</p>
-
-:::
-
-Convert a historical object with `seuratToSpatialExperiment()` before these
-calls, then check feature IDs, paired location names and matrix scales. Recompute
-reductions and pathway results using the selected native layers; equal-weight
-embedding concatenation defines the current integration method.
+subsetting. The final section covers migration from older Seurat scripts.
 
 ## Public accessors
 
@@ -159,8 +132,8 @@ The feature-level accessor `rowData(spe)$mz` stores one measured m/z per row.
 
 `normalizeSMData(..., "LogNormalize")` adds `logcounts` while retaining raw
 `counts`. For locations with positive total intensity, the default transformation is
-`log1p(10000 * intensity / total_intensity)`, using the supplied MSI features
-and natural logarithms.
+`log2(1 + 10000 * intensity / total_intensity)`, using the supplied MSI features
+and base-2 logarithms.
 `metadata(spe)$spamtp_normalization` records the method, source assay and scale
 factor.
 
@@ -341,6 +314,33 @@ after conversion.
 Continue with the [companion-resource guide](SpaMTP_Companion_Workflow.html)
 to retrieve pinned annotation references, or the
 [complete workflow](End_to_End_Workflow.html) to analyse these paired data.
+
+## Migrating existing scripts {#migrating-existing-scripts}
+
+The native API uses lower-camel-case names and Bioconductor containers. These
+common calls replace their historical Seurat-oriented counterparts:
+
+::: {.interface-reference}
+
+| Historical call | Current interface | Input or behaviour to review |
+|:--|:--|:--|
+| `NormalizeSMData()` | `normalizeSMData()` | Select the native modality with `assay` and input layer with `assayName` |
+| `RunMetabolicPCA()` | `runMetabolicPCA()` | Scores are stored in `reducedDim()` |
+| `FindAllDEMs()` | `findAllDEMs()` | Choose descriptive markers or a biological-replicate model explicitly |
+| `AnnotateSM()` | `annotateSM()` | Indexed, scored candidates are stored with reference provenance |
+| `FindRegionalPathways()` | `findRegionalPathways()` | Supply reconciled identities and complete regional rankings |
+| `MultiOmicIntegration()` | `multiOmicIntegration()` | Concatenates scaled PCA embeddings with equal modality weights |
+| Seurat `GetAssayData()` | `assay()` | Read a named matrix from the main or `altExp()` experiment |
+
+<p class="table-scroll-hint">Scroll horizontally to see the guidance column.</p>
+
+:::
+
+Convert a historical object with `seuratToSpatialExperiment()` before these
+calls, then check feature IDs, paired location names and matrix scales. Recompute
+reductions and pathway results using the selected native layers; equal-weight
+embedding concatenation defines the current integration method.
+
 
 # Session information
 

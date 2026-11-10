@@ -96,7 +96,14 @@
 
 .setCellMetadata <- function(object, value) {
     .requireExperiment(object)
-    value <- .alignMetadata(value, colnames(object), "Cell metadata")
+    if (is.null(colnames(object))) {
+        value <- S4Vectors::DataFrame(value)
+        if (nrow(value) != ncol(object)) {
+            stop("Cell metadata must contain one row per observation.", call. = FALSE)
+        }
+    } else {
+        value <- .alignMetadata(value, colnames(object), "Cell metadata")
+    }
     existing <- SummarizedExperiment::colData(object)
     for (column in colnames(value)) {
         existing[[column]] <- value[[column]]

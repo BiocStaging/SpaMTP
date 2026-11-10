@@ -12,7 +12,7 @@
 #'   resolution; raw spectral filtering should be performed in Cardinal.
 #' @param resolution Numeric value defining the the accuracy to which the m/z
 #'   values will be binned after reading. This value can be in either "ppm" or
-#'   "mz" depending on the units type specified (default = 10).
+#'   "mz" depending on the units type specified. Default `NA` preserves raw spectra.
 #' @param units Character string defining the resolution value unit type, either
 #'   c("ppm", "mz") (default = "ppm")
 #' @param verbose Boolean indicating whether to show informative processing
@@ -20,7 +20,6 @@
 #'   suppressed (default = TRUE)
 #' @param assay Label stored in mainExpName(); intensities are in the counts
 #'   assay.
-#' @param multi.run Retained for compatibility; Cardinal run IDs are preserved.
 #' @param returnType Output container. `"auto"` returns Cardinal for raw data
 #' and SpatialExperiment after binning. SpatialExperiment output requires
 #'   resolution.
@@ -48,7 +47,6 @@ loadSM <- function(
     units = "ppm",
     verbose = TRUE,
     assay = "Spatial",
-    multi.run = FALSE,
     returnType = c("auto", "Cardinal", "SpatialExperiment")
 ) {
     returnType <- match.arg(returnType)

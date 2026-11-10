@@ -464,8 +464,7 @@
         if (!is.null(regional) && nrow(regional)) {
             figure <- plotRegionalPathways(regional,
                 num_display = 10, text_size = 10,
-                database = result$resources[[name]]$pathway_index$raw_resources, verbose = FALSE
-            )
+                database = result$resources[[name]]$pathway_index$raw_resources)
             plots[[paste0("pathway_regional_", name)]] <- .wf_figure(figure,
                 width = 14, height = 7,
                 caption = paste(

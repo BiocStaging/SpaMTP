@@ -26,8 +26,7 @@ runRAMPGeseca(
   gene_reference_version = "latest",
   gene_reference_local_dir = NULL,
   organism = "Homo sapiens",
-  duplicate_genes = c("error", "mean", "sum"),
-  verbose = FALSE
+  duplicate_genes = c("error", "mean", "sum")
 )
 }
 \arguments{
@@ -104,8 +103,6 @@ requires a separately curated species-specific database.}
 The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}
-
-\item{verbose}{Whether to show progress (default = FALSE).}
 }
 \value{
 A table with GESECA results. Each row corresponds to a tested RAMP_DB

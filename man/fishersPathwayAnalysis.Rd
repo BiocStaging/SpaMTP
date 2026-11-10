@@ -106,7 +106,7 @@ its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
 \item{...}{Arguments passed to the indexed \code{annotateTable()} pipeline for
-m/z inputs, such as \code{ppm_error}, \code{adducts}, \code{db} or \code{index}.}
+m/z inputs, such as \code{ppm}, \code{adducts}, \code{db} or \code{index}.}
 }
 \value{
 A data frame sorted by \code{p_val}, retaining the columns \code{pathway_name},

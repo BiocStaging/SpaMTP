@@ -11,8 +11,7 @@ tmmNormalize(
   normalisation.type = "CPM",
   CPM.scale.factor = 1e+06,
   assay = "main",
-  assayName = "counts",
-  verbose = FALSE
+  assayName = "counts"
 )
 }
 \arguments{
@@ -38,10 +37,6 @@ value across each pixel will equal this value (default = 1e6).}
 
 \item{assayName}{Expression assay name within the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
-
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the
-message will be show, else the message will be suppressed (default =
-FALSE).}
 }
 \value{
 Bioconductor experiment with count values normalised and corrected

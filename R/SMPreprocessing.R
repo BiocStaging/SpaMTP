@@ -11,7 +11,7 @@
 #'   MSImagingArrays/MSImagingExperiment.
 #' @param normalisation.type `"TIC"` (default) or `"RC"` divides each pixel's
 #'   intensities by its total and multiplies by `scale.factor`, storing
-#'   `normcounts`. `"LogNormalize"` additionally applies natural `log1p()`
+#'   `normcounts`. `"LogNormalize"` additionally applies `log2(1 + x)`
 #'   and stores `logcounts`. Cardinal input supports only `"TIC"`.
 #' @param scale.factor Positive target total before log transformation. When
 #'   NULL, native TIC uses the number of features and RC/LogNormalize use
@@ -138,7 +138,7 @@ methods::setMethod(
         }
         normalized <- .divideColumns(counts, sizeFactors)
         if (identical(transform, "log")) {
-            normalized <- log1p(normalized)
+            normalized <- log1p(normalized) / log(2)
         }
         normalized <- .compactAssay(normalized)
         outputName <- if (identical(transform, "log")) "logcounts" else "normcounts"
@@ -152,6 +152,7 @@ methods::setMethod(
         }
         S4Vectors::metadata(experiment)$spamtp_normalization <- list(
             method = normalisation.type,
+            log_base = if (identical(transform, "log")) 2 else NA_real_,
             source_assay = assayName,
             output_assay = outputName,
             scale_factor = scale.factor,
@@ -269,9 +270,6 @@ methods::setMethod(
 #' @param assay Primary (`main`) or alternative experiment name.
 #' @param assayName Expression assay name within the selected experiment.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param verbose Boolean indicating whether to show the message. If TRUE the
-#'   message will be show, else the message will be suppressed (default =
-#'   FALSE).
 #'
 #' @return Bioconductor experiment with count values normalised and corrected
 #'   for between categories
@@ -289,9 +287,7 @@ tmmNormalize <- function(
     normalisation.type = "CPM",
     CPM.scale.factor = 1e6,
     assay = "main",
-    assayName = "counts",
-    verbose = FALSE
-) {
+    assayName = "counts") {
     .requireExperiment(combined.obj, "SummarizedExperiment")
     normalisation.type <- match.arg(
         normalisation.type,
@@ -355,7 +351,7 @@ tmmNormalize <- function(
     normalized <- counts %*% Matrix::Diagonal(x = multipliers)
     outputName <- if (identical(normalisation.type, "LogNormalize")) "logcounts" else "normcounts"
     if (identical(normalisation.type, "LogNormalize")) {
-        normalized <- log1p(normalized)
+        normalized <- log1p(normalized) / log(2)
     }
     dimnames(normalized) <- dimnames(counts)
     experiment <- .experimentForAssay(combined.obj, assay)
@@ -366,6 +362,7 @@ tmmNormalize <- function(
         )
     }
     S4Vectors::metadata(experiment)$tmm <- list(
+        log_base = if (identical(normalisation.type, "LogNormalize")) 2 else NA_real_,
         group = ident,
         reference = refIdent,
         factors = factors,
@@ -504,8 +501,8 @@ statPlot <- function(
 #' @param assayName Expression assay name within the selected experiment.
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param title Character string of the plot title (default = "RidgePlot").
-#' @param x.lab Character string of the x-axis label (default = "var").
-#' @param y.lab Character string of the y-axis label (default = "intensity").
+#' @param x.lab Character string of the x-axis label (default = "intensity").
+#' @param y.lab Character string of the y-axis label (default = "var").
 #' @param bottom.cutoff Numeric value defining the percent of data to exclude
 #'   for the lower end of the distribution. A bottom.cutoff = 0.05 will remove
 #'   the bottom 5% of data point (default = NULL).

@@ -71,7 +71,7 @@ runPooling <- function(
         cell_metadata[wo, "orig.ident2"] <- paste0("group", i, "_pool", pooled_ids)
     }
     expression <- .assayData(data.filt, assay, assayName)
-    if (!nrow(expression) || !ncol(expression) || any(!is.finite(expression)) ||
+    if (!nrow(expression) || !ncol(expression) || !.allFiniteAssay(expression) ||
         any(expression < 0)) {
         stop(
             "Pooling needs non-empty, finite, non-negative intensities.",
@@ -119,7 +119,7 @@ runPooling <- function(
 #' Worker function for calculating differentially abundant metabolites per
 #' pooling group.
 #' Used by the compatibility `method = "technical"` branch of [findAllDEMs()].
-#' Fits limma to `log2(counts(pooled_data) + 1)` and uses `limma::treat()`;
+#' Fits limma to `log2(mean intensity per pixel + 1)` and uses `limma::treat()`;
 #' an edgeR DGEList stores the values and results, but no edgeR count-model
 #' test or voom transformation is performed. Technical pools are not independent
 #' biological replicates.
@@ -134,8 +134,6 @@ runPooling <- function(
 #'   file output.
 #' @param run_name A character string defining the title of this DE analysis
 #'   (will be used when saving DEMs to .csv file).
-#' @param n An integer that defines the number of pseudo-replicates per sample
-#'   (default = 3).
 #' @param logFC_threshold Fold-change threshold passed as
 #'   `log2(logFC_threshold)` to `limma::treat()` (default = 1.2).
 #' @param annotation.column Column in the selected experiment's `rowData()`
@@ -174,7 +172,6 @@ runDE <- function(
     ident,
     output_dir,
     run_name,
-    n,
     logFC_threshold,
     annotation.column,
     assay,
@@ -213,11 +210,15 @@ runDE <- function(
         y$samples$ident <- as.character(SummarizedExperiment::colData(pooled_data)[[ident]])
 
 
-        # Optional: If your data is raw intensities, log-transform it here (add small offset if needed)
-        expression_data <- log2(expression_data + 1)
-
-        # keep <- rowMeans(expression_data) > some_threshold  # Define threshold based on your data
-        # expression_data <- expression_data[keep, ]
+        # Compare average intensity per pixel, not pool totals. Region sizes
+        # otherwise appear as fold changes even for identical distributions.
+        pool_sizes <- SummarizedExperiment::colData(pooled_data)$ncells
+        if (length(pool_sizes) != ncol(expression_data) ||
+            anyNA(pool_sizes) || any(!is.finite(pool_sizes) | pool_sizes <= 0)) {
+            stop("Pooled data require a positive ncells value for every pool.",
+                call. = FALSE)
+        }
+        expression_data <- log1p(.divideColumns(expression_data, pool_sizes)) / log(2)
 
         # Create design matrix
         design <- model.matrix(~groups)
@@ -346,7 +347,7 @@ runDE <- function(
 #' @param annotation.column Optional column in the selected experiment's
 #' `rowData()`, such as `"all_IsomerNames"` from `annotateSM()` (default NULL).
 #' @param assay Primary (`"main"`) or alternative experiment name. The default
-#'   `"Spatial"` is a compatibility alias for the primary experiment.
+#'   is `"main"` for the primary experiment.
 #' @param assayName Expression assay name within the selected experiment
 #'   (default = `"counts"`). Choose the value scale for the analysis: technical
 #'   pooling mode requires finite non-negative unlogged values; marker and
@@ -361,10 +362,9 @@ runDE <- function(
 #'
 #' @param method `markers` uses scran effect-size summaries without pixel P
 #' values; `replicate` fits configured contrasts on biological-replicate means.
-#'   The historical `technical` mode is retained for compatibility, but random
-#' pools are technical subdivisions and cannot establish biological replication.
-#'   The compatibility default is `"technical"`; choose `"markers"` or
-#'   `"replicate"` explicitly for the corresponding native analysis.
+#'   The default is `"markers"`. The opt-in `technical` mode fits limma to
+#'   log2(1 + mean intensity per pixel) in random pools. These pools are
+#'   technical subdivisions and cannot establish biological replication.
 #' @param replicate Complete colData field identifying biological replicates.
 #' @param contrasts Named list of numerator, denominator and paired settings,
 #'   required for replicate inference. At least three replicates per arm or
@@ -413,8 +413,8 @@ runDE <- function(
 #' )
 #' head(fit$tests$treated_vs_control$table)
 findAllDEMs <- function(
-    data, ident, n = 3, logFC_threshold = 1.2, DE_output_dir = NULL, run_name = "findAllDEMs", annotation.column = NULL, assay = "Spatial", assayName = "counts", return.individual = FALSE, verbose = TRUE, seed = 1234,
-    method = c("technical", "markers", "replicate"), replicate = NULL,
+    data, ident, n = 3, logFC_threshold = 1.2, DE_output_dir = NULL, run_name = "findAllDEMs", annotation.column = NULL, assay = "main", assayName = "counts", return.individual = FALSE, verbose = TRUE, seed = 1234,
+    method = c("markers", "replicate", "technical"), replicate = NULL,
     contrasts = list(), min_region_size = 3, spatial_blocks = 0
 ) {
     method <- match.arg(method)
@@ -476,7 +476,6 @@ findAllDEMs <- function(
         ident = ident,
         output_dir = DE_output_dir,
         run_name = run_name,
-        n = n,
         logFC_threshold = logFC_threshold,
         annotation.column = annotation.column,
         assay = assay,
@@ -498,7 +497,7 @@ findAllDEMs <- function(
 #' @param edgeR_output A list containing outputs from edgeR analysis (from
 #'   findAllDEMs()). This includes pseudo-bulked counts and DEMs.
 #' @param n A numeric integer that defines the number of UP and DOWN regulated
-#'   peaks to plot (default = 25).
+#'   peaks to plot (default = 5).
 #' @param only.pos Boolean indicating if only positive markers should be
 #'   returned (default = FALSE).
 #' @param FDR.threshold Numeric value that defines the FDR threshold to use for
@@ -699,11 +698,11 @@ demsHeatmap <- function(
 #'     unlink(output)
 #' }
 savePheatmapAsPDF <- function(pheatmap, filename, width = 20, height = 20) {
-    output_file <- paste0(filename, ".pdf")
-    pdf(output_file, width = width, height = height)
+    output_file <- if (grepl("[.]pdf$", filename, ignore.case = TRUE)) filename else paste0(filename, ".pdf")
+    grDevices::pdf(output_file, width = width, height = height)
+    on.exit(grDevices::dev.off(), add = TRUE)
     grid::grid.newpage()
     grid::grid.draw(pheatmap$gtable)
-    dev.off()
     invisible(output_file)
 }
 

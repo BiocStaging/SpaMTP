@@ -9,7 +9,7 @@ queryMZAnnotationIndex(
   index,
   ppm = 5,
   ms1_spectrum = NULL,
-  use_mass_defect = TRUE,
+  check_formula_mass = TRUE,
   check_isotopes = TRUE,
   check_adduct_network = TRUE,
   min_score = 0
@@ -26,7 +26,7 @@ queryMZAnnotationIndex(
 columns. It should represent the same retention-time window or spatial
 pixel/region as the queried peaks.}
 
-\item{use_mass_defect}{Check CHO formula/ion mass consistency. A mismatch
+\item{check_formula_mass}{Check CHO formula/ion mass consistency. A mismatch
 beyond the query tolerance (at least 5 ppm for rounded reference masses)
 receives a 0.2 chemical score. Negative fractional mass defects alone
 are not penalized.}
@@ -55,7 +55,7 @@ per query; its \code{formulas} field contains the affected reference strings.
 }
 \description{
 Candidates are pruned by ppm tolerance and proton/charge validity during
-index construction, then ranked using mass error, rule prior, mass-defect,
+index construction, then ranked using mass error, rule prior, formula/ion mass consistency,
 isotope, and contextual adduct-family evidence. Positive water-loss
 candidates additionally require compatible alcohol OH and neighbouring
 carbon H sites. Older structure tables are checked lazily for mass-matched

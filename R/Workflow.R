@@ -119,7 +119,7 @@
     # Check in blocks, including delayed matrices, without densifying the full input.
     for (i in split(seq_len(nrow(E)), ceiling(seq_len(nrow(E)) / 500))) {
         values <- as.matrix(E[i, , drop = FALSE])
-        if (any(!is.finite(values))) stop(
+        if (!.allFiniteAssay(values)) stop(
             "Input layer contains non-finite values.",
             call. = FALSE
         )
@@ -153,8 +153,7 @@
             normalisation.type = "LogNormalize",
             scale.factor = spec$scale_factor, verbose = FALSE
         )
-        # Native normalization uses natural logs; the workflow declares log2 units.
-        return(SummarizedExperiment::assay(e, "logcounts") / log(2))
+        return(SummarizedExperiment::assay(e, "logcounts"))
     }
     log1p(E) / log(2)
 }
@@ -737,7 +736,7 @@ runSpaMTPWorkflow <- function(
                 identity_assay <- paste0("workflow_ids_", name)
                 object <- capture(createPathwayAssay(object,
                     analyte_type = "metabolites", assay = assay,
-                    assayName = "workflow", new_assay = identity_assay, pathway_index = cfg$index, database = cfg$database,
+                    assayName = "workflow", outputExperiment = identity_assay, pathway_index = cfg$index, database = cfg$database,
                     annotation_source = cfg$annotation_source %||% "current",
                     metabolite_ambiguity = cfg$metabolite_ambiguity %||% "exclude", verbose = FALSE
                 ))
@@ -763,7 +762,7 @@ runSpaMTPWorkflow <- function(
                 }
                 object <- capture(createPathwayObject(object,
                     assay = identity_assay, assayName = "workflow",
-                    new.assay = target, pathway_index = cfg$index, organism = spec$species %||% "custom",
+                    outputExperiment = target, pathway_index = cfg$index, organism = spec$species %||% "custom",
                     min_path_size = cfg$min_size %||% 5, max_path_size = cfg$max_size %||% 500
                 ))
                 audit <- S4Vectors::metadata(SingleCellExperiment::altExp(object, target))$pathway_mapping
@@ -789,7 +788,7 @@ runSpaMTPWorkflow <- function(
             )
             target <- paste0("workflow_pathways_", name)
             scored <- capture(tryCatch(createPathwayObject(object,
-                assay = assay, assayName = "workflow", new.assay = target,
+                assay = assay, assayName = "workflow", outputExperiment = target,
                 pathway_index = cfg$index, organism = spec$species,
                 min_path_size = cfg$min_size %||% 5, max_path_size = cfg$max_size %||% 500,
                 duplicate_genes = cfg$duplicate_genes %||% "error"

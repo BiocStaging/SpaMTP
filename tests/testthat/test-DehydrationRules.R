@@ -170,7 +170,7 @@ test_that("annotation wrappers preserve gated water-loss candidates", {
     expect_equal(direct$adduct, "M+H-2H2O")
     batch <- annotateBigData(
         c(observed, 999),
-        index = index, ppm_error = 1e-6, verbose = FALSE
+        index = index, ppm = 1e-6, verbose = FALSE
     )
     expect_equal(nrow(batch), 1)
     expect_match(batch$all_Adducts, "M+H-2H2O", fixed = TRUE)
@@ -189,7 +189,7 @@ test_that("annotation wrappers preserve gated water-loss candidates", {
     )
     annotated <- annotateSM(
         experiment,
-        index = index, raw.mz.column = "mz", ppm_error = 1e-6,
+        index = index, raw.mz.column = "mz", ppm = 1e-6,
         return.only.annotated = FALSE, verbose = FALSE
     )
     expect_identical(SummarizedExperiment::assay(annotated, "counts"), counts)

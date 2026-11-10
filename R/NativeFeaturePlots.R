@@ -1,7 +1,7 @@
 # Strict access for migrated workflows: never substitute an unrelated assay.
 .nativeSingleSample <- function(object, sampleId = NULL) {
     object <- .nativeSpatialObject(object)
-    coordinates <- .nativeCoordinates(object)
+    coordinates <- .nativeCoordinates(object, requireNames = FALSE)
     samples <- unique(coordinates$sample_id)
     if (is.null(sampleId)) {
         if (length(samples) != 1L) {
@@ -33,13 +33,14 @@
     }
     result <- SummarizedExperiment::assay(experiment, assayName)
     if (is.null(rownames(result)) || anyNA(rownames(result)) ||
-        anyDuplicated(rownames(result)) || is.null(colnames(result)) ||
+        anyDuplicated(rownames(result)) ||
         anyNA(colnames(result)) || anyDuplicated(colnames(result)) ||
         !identical(colnames(result), colnames(object))) {
         stop("Expression requires unique feature IDs and aligned pixel IDs.",
             call. = FALSE
         )
     }
+    if (is.null(colnames(result))) colnames(result) <- as.character(seq_len(ncol(result)))
     result
 }
 
@@ -189,7 +190,7 @@
     dark = FALSE, coordFixed = TRUE, combine = TRUE, ncol = NULL,
     interactive = FALSE
 ) {
-    coordinates <- .nativeCoordinates(object)
+    coordinates <- .nativeCoordinates(object, requireNames = FALSE)
     if (!is.matrix(values) || !nrow(values) ||
         !identical(colnames(values), coordinates$cell) || any(!is.finite(values))) {
         stop(

@@ -34,7 +34,7 @@ test_that("2HG positive adduct masses use explicit ion masses", {
 
     result <- queryMZAnnotationIndex(unname(actual[names(expected)]), index, ppm = 0)
     expect_equal(nrow(result), 4)
-    expect_true(all(result$ppm_error == 0))
+    expect_true(all(result$ppm == 0))
 })
 
 test_that("exchangeable proton bounds prune impossible ion states", {
@@ -167,11 +167,11 @@ test_that("legacy wrappers reuse an index and return zero-row misses safely", {
 
     hit <- annotateBigData(
         index$expected_mz[[1]],
-        index = index, ppm_error = 0, verbose = FALSE
+        index = index, ppm = 0, verbose = FALSE
     )
     miss <- annotateBigData(
         999999,
-        index = index, ppm_error = 5, verbose = FALSE
+        index = index, ppm = 5, verbose = FALSE
     )
 
     expect_equal(nrow(hit), 1)
@@ -202,7 +202,7 @@ test_that("MALDI matrix aliases select rules without compulsory adduct input", {
 
     batch_hit <- annotateBigData(
         index$expected_mz[index$rules$name[index$rule_idx] == "M+2FMP10a"][[1]],
-        db = target, maldi_matrix = "FMP-10", ppm_error = 0, verbose = FALSE
+        db = target, maldi_matrix = "FMP-10", ppm = 0, verbose = FALSE
     )
     expect_match(batch_hit$all_Adducts, "M\\+2FMP10a")
 

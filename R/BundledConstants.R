@@ -15,7 +15,7 @@
 #' @return A data frame of pathway-network reaction styles.
 #' @source SpaMTP-maintained display vocabulary. The source interaction labels
 #'   are mapped to these stable style codes in
-#'   `data-raw/pathway_interaction_utils.R` in the source repository.
+#'   `data-raw/pathway_interaction_utils.R` in the SpaMTPdb source repository.
 #'   This table defines visual styles rather than biological measurements.
 #' @keywords datasets
 "reaction_type"

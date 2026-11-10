@@ -381,7 +381,7 @@ flagMatrixPeaks <- function(
         intensity <- rowMeans(profiles)
     }
     if (any(!is.finite(intensity)) ||
-        (!is.null(profiles) && any(!is.finite(profiles)))) {
+        (!is.null(profiles) && !.allFiniteAssay(profiles))) {
         stop("intensity must be finite.", call. = FALSE)
     }
     if (any(intensity < 0)) {

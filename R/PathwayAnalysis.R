@@ -51,7 +51,7 @@
 #'   its gene identities and memberships must match any explicit database or
 #'   gene_index. Fingerprints prevent incompatible reuse.
 #' @param ... Arguments passed to the indexed `annotateTable()` pipeline for
-#'   m/z inputs, such as `ppm_error`, `adducts`, `db` or `index`.
+#'   m/z inputs, such as `ppm`, `adducts`, `db` or `index`.
 #'
 #' @details
 #' With universe size U, foreground size K, pathway size M and overlap a, the
@@ -562,6 +562,14 @@ findRegionalPathways <- function(
         message_text = "Constructing DE dataframes.... ",
         verbose = verbose
     )
+    if (!is.null(names(DE.list))) {
+        if (anyDuplicated(names(DE.list)) || !setequal(names(DE.list), analyte_types)) {
+            stop("Named DE.list entries must match analyte_types exactly.", call. = FALSE)
+        }
+        DE.list <- DE.list[analyte_types]
+    }
+    source_de <- DE.list
+    DE.list <- stats::setNames(vector("list", length(analyte_types)), analyte_types)
     for (i in seq_along(analyte_types)) {
         verbose_message(
             message_text = paste0(
@@ -573,7 +581,7 @@ findRegionalPathways <- function(
             ),
             verbose = verbose
         )
-        DE <- .standardizeRegionalDE(DE.list[[i]], i)
+        DE <- .standardizeRegionalDE(source_de[[i]], i)
         if (analyte_types[i] == "metabolites") {
             DE <- DE %>% dplyr::rename(mz_name = "gene")
             db_3 <- merge(db_3, DE, by = "mz_name")
@@ -747,7 +755,6 @@ findRegionalPathways <- function(
 #' @param BPPARAM BiocParallel execution parameters. The default runs serially
 #'   with progress controlled by `verbose`; explicit parameters control their
 #'   own progress display.
-#' @param verbose Whether to show progress (default = FALSE).
 #' @param nPermSimple Number of permutations in the simple geseca implementation
 #'   for preliminary estimation of P-values (default = 1000).
 #' @param database Optional named list of database resources, normally created
@@ -794,9 +801,7 @@ runRAMPGeseca <- function(
     gene_mapping = c("auto", "hgnc", "ramp"), gene_reference = NULL,
     gene_index = NULL, gene_reference_version = "latest",
     gene_reference_local_dir = NULL, organism = "Homo sapiens",
-    duplicate_genes = c("error", "mean", "sum"),
-    verbose = FALSE
-) {
+    duplicate_genes = c("error", "mean", "sum")) {
     database <- .pathway_database(database, pathway_index)
     if (is.null(pathway_index)) {
         pathway_index <- buildPathwayIndex(
@@ -851,12 +856,12 @@ runRAMPGeseca <- function(
 #' @param analyte_type Character string specifying the type of analytes to
 #'   process.Must be either "genes" or "metabolites" (default = "metabolites").
 #' @param assay Primary (`"main"`) or alternative experiment name. The default
-#'   `"Spatial"` is a compatibility alias for the primary experiment.
+#'   is `"main"` for the primary experiment.
 #' @param assayName Expression assay name within the selected experiment
 #'   (default = `"counts"`), read with `SummarizedExperiment::assay()`.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param new_assay Name for the identity-level `altExp()` (default =
-#'   `"pathway"` for compatibility); this is not an expression assay name.
+#' @param outputExperiment Name for the identity-level `altExp()` (default =
+#'   `"pathway"`); this is not an expression assay name.
 #' @param annotation_score_threshold Minimum indexed annotation score used to
 #'   map m/z features to RaMP compounds (default = 0.05).
 #' @param annotation_source Metabolite annotation provenance. `"current"`
@@ -883,9 +888,9 @@ runRAMPGeseca <- function(
 #'   mode the historical default is mean. The selected expression assay name
 #'   is preserved for genes, including logcounts. Inputs, member coverage,
 #'   duplicate handling and index provenance are stored in
-#'   metadata(altExp(x, new_assay))$pathway_mapping.
+#'   metadata(altExp(x, outputExperiment))$pathway_mapping.
 #' @return The input container with a new
-#'   `SingleCellExperiment::altExp(SpaMTP, new_assay)`. Its expression assay
+#'   `SingleCellExperiment::altExp(SpaMTP, outputExperiment)`. Its expression assay
 #'   retains the name supplied in `assayName`, and its `rowData()` describes the
 #'   RaMP identities and original measured features.
 #' @export
@@ -900,18 +905,18 @@ runRAMPGeseca <- function(
 #' index <- buildPathwayIndex(spamtp_example$database)
 #' mapped <- createPathwayAssay(spe,
 #'     analyte_type = "genes", assay = "transcriptome",
-#'     new_assay = "gene_ids", pathway_index = index, verbose = FALSE
+#'     outputExperiment = "gene_ids", pathway_index = index, verbose = FALSE
 #' )
 #' rownames(SingleCellExperiment::altExp(mapped, "gene_ids"))
 #'
 #' ## Create a pathway assay from gene data with verbose output
-#' # spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", new_assay = "gene_pathway", verbose = TRUE)
+#' # spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", outputExperiment = "gene_pathway", verbose = TRUE)
 #' @param metabolite_ambiguity Expand a mass feature into candidate compounds
 #' (historical behavior), or exclude features mapping to more than one compound.
 #'   The workflow explicitly defaults to exclude. Candidate pairs, excluded
 #'   features and exact aggregation weights are retained in metadata.
 createPathwayAssay <- function(
-    SpaMTP, analyte_type = "metabolites", assay = "Spatial", assayName = "counts", new_assay = "pathway", annotation_score_threshold = 0.05, annotation_source = c("current", "auto", "legacy"), verbose = TRUE, database = NULL, database_version = "latest", database_source = c("auto", "spamtpdb"), database_local_dir = NULL,
+    SpaMTP, analyte_type = "metabolites", assay = "main", assayName = "counts", outputExperiment = "pathway", annotation_score_threshold = 0.05, annotation_source = c("current", "auto", "legacy"), verbose = TRUE, database = NULL, database_version = "latest", database_source = c("auto", "spamtpdb"), database_local_dir = NULL,
     gene_mapping = c("auto", "hgnc", "ramp"), gene_reference = NULL, gene_index = NULL,
     gene_reference_version = "latest", gene_reference_local_dir = NULL,
     organism = "Homo sapiens", pathway_index = NULL,
@@ -968,7 +973,7 @@ createPathwayAssay <- function(
             provenance = view$pathway_index$provenance, inputs = mapped$mapping,
             original_features = mapped$original_features, duplicate_genes = policy, coverage = coverage
         )
-        SingleCellExperiment::altExp(SpaMTP, new_assay) <- target
+        SingleCellExperiment::altExp(SpaMTP, outputExperiment) <- target
         return(SpaMTP)
     }
 
@@ -1041,7 +1046,7 @@ createPathwayAssay <- function(
         annotation = attr(annotations, "annotation_metadata"),
         provenance = if (is.null(pathway_index)) list(database_version = database_version) else pathway_index$provenance
     )
-    SingleCellExperiment::altExp(SpaMTP, new_assay) <- pathwayExperiment
+    SingleCellExperiment::altExp(SpaMTP, outputExperiment) <- pathwayExperiment
     SpaMTP
 }
 
@@ -1065,7 +1070,7 @@ createPathwayAssay <- function(
 #' @param assayName Expression assay. If omitted for a Bioconductor container,
 #'   prefers logcounts, normcounts, then counts in the selected experiment.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param new.assay Name for the pathway-level `altExp()` (default =
+#' @param outputExperiment Name for the pathway-level `altExp()` (default =
 #'   `"pathway"`).
 #'   Scores are stored in that experiment's `pathwayScores` expression assay.
 #' @param remove.nans Remove pathways without matched analytes (default TRUE).
@@ -1086,7 +1091,7 @@ createPathwayAssay <- function(
 #' database_members, measured_members, used_members and
 #'   excluded_conflict_records.
 #'   The complete coverage table, including excluded and unmeasured pathways,
-#'   is retained in metadata(altExp(x, new.assay))$pathway_mapping$coverage.
+#'   is retained in metadata(altExp(x, outputExperiment))$pathway_mapping$coverage.
 #'   Scores summarize observed expression; they are not pathway activity tests.
 #' @return The input with pathwayScores in a new alternative experiment.
 #'   Pathway identifiers are preserved.
@@ -1101,7 +1106,7 @@ createPathwayAssay <- function(
 #' SummarizedExperiment::assay(SingleCellExperiment::altExp(spe, "pathway"), "pathwayScores")[, 1:4]
 createPathwayObject <- function(
     object, assay = NULL, assayName = "logcounts",
-    new.assay = "pathway", remove.nans = TRUE, database = NULL,
+    outputExperiment = "pathway", remove.nans = TRUE, database = NULL,
     database_version = "latest", database_source = c("auto", "spamtpdb"),
     database_local_dir = NULL, gene_mapping = c("auto", "hgnc", "ramp"),
     gene_reference = NULL, gene_index = NULL, gene_reference_version = "latest",
@@ -1133,27 +1138,14 @@ createPathwayObject <- function(
         )
     )
     S4Vectors::metadata(target)$pathway_mapping <- context$audit
-    SingleCellExperiment::altExp(object, new.assay) <- target
+    SingleCellExperiment::altExp(object, outputExperiment) <- target
     object
 }
 
 
 ############################# PATHWAY HELPER FUNCTIONS ########################################
 
-#' Helper function for building a pathway db based on detected
-#'
-#' @param input_id Vector of characters defining the detected .
-#' @param analytehaspathway A dataframe containing RAMP_pathway ID's.
-#' @param chem_props A database containing the chemical properties and metadata
-#'   of each RAMP_DB analyte.
-#' @param pathway A dataframe containing RAMP_DB pathways and their relative
-#'   metadata
-#'
-#' @return A analyte database containing corresponding pathways associated with
-#'   each detected metabolite
-#'
-#' @examples
-#' # HELPER FUNCTION
+#' @noRd
 get_analytes_db <- function(input_id, analytehaspathway, chem_props, pathway) {
     rampid <- unique(chem_props$ramp_id[which(chem_props$chem_source_id %in% unique(input_id))])
     #

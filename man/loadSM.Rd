@@ -11,7 +11,6 @@ loadSM(
   units = "ppm",
   verbose = TRUE,
   assay = "Spatial",
-  multi.run = FALSE,
   returnType = c("auto", "Cardinal", "SpatialExperiment")
 )
 }
@@ -24,7 +23,7 @@ resolution; raw spectral filtering should be performed in Cardinal.}
 
 \item{resolution}{Numeric value defining the the accuracy to which the m/z
 values will be binned after reading. This value can be in either "ppm" or
-"mz" depending on the units type specified (default = 10).}
+"mz" depending on the units type specified. Default \code{NA} preserves raw spectra.}
 
 \item{units}{Character string defining the resolution value unit type, either
 c("ppm", "mz") (default = "ppm")}
@@ -35,8 +34,6 @@ suppressed (default = TRUE)}
 
 \item{assay}{Label stored in mainExpName(); intensities are in the counts
 assay.}
-
-\item{multi.run}{Retained for compatibility; Cardinal run IDs are preserved.}
 
 \item{returnType}{Output container. \code{"auto"} returns Cardinal for raw data
 and SpatialExperiment after binning. SpatialExperiment output requires

@@ -153,7 +153,7 @@
         stop("spatial_blocks must be a non-negative integer.", call. = FALSE)
     }
     E <- .assayData(data, assay, assayName)
-    if (is.null(rownames(E)) || anyDuplicated(rownames(E)) || any(!is.finite(E))) {
+    if (is.null(rownames(E)) || anyDuplicated(rownames(E)) || !.allFiniteAssay(E)) {
         stop(
             "Marker analysis requires unique feature IDs and finite values.",
             call. = FALSE

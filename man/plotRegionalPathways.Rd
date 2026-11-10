@@ -11,7 +11,6 @@ plotRegionalPathways(
   sig_cutoff = NULL,
   num_display = NULL,
   text_size = NULL,
-  verbose = TRUE,
   database = NULL,
   database_version = "latest",
   database_source = c("auto", "spamtpdb"),
@@ -41,9 +40,6 @@ number of unique pathways provided in 'regpathway' (default = NULL).}
 
 \item{text_size}{Base text size in points. NULL uses 11 points. Pathway
 labels and legend entries use a slightly smaller size.}
-
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the
-message will be show, else the message will be suppressed (default = TRUE).}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}

@@ -419,8 +419,6 @@ spatialExperimentToSeurat <- function(
 #' Convert a Cardinal object to an optional Seurat object
 #'
 #' @param data A Cardinal `MSImagingExperiment` with aligned spectra.
-#' @param multi.run Retained for compatibility; run identities are preserved
-#'   during the intermediate conversion.
 #' @param seurat.coord Optional replacement coordinates with `X_new` and
 #'   `Y_new` columns.
 #' @param assay Name of the Seurat assay.
@@ -438,7 +436,6 @@ spatialExperimentToSeurat <- function(
 #' }
 cardinalToSeurat <- function(
     data,
-    multi.run = FALSE,
     seurat.coord = NULL,
     assay = "Spatial",
     verbose = TRUE
@@ -461,7 +458,6 @@ cardinalToSeurat <- function(
 #'
 #' @param data Cardinal object supplying coordinates and metadata.
 #' @param mtx Binned feature-by-pixel matrix.
-#' @param multi.run Retained for compatibility.
 #' @param assay Name of the Seurat assay.
 #' @param verbose Show conversion messages.
 #'
@@ -482,7 +478,6 @@ cardinalToSeurat <- function(
 binnedCardinalToSeurat <- function(
     data,
     mtx,
-    multi.run = FALSE,
     assay = "Spatial",
     verbose = TRUE
 ) {
@@ -497,7 +492,6 @@ binnedCardinalToSeurat <- function(
     )
     cardinalToSeurat(
         binned,
-        multi.run = multi.run,
         assay = assay,
         verbose = verbose
     )
@@ -510,8 +504,6 @@ binnedCardinalToSeurat <- function(
 #' @param layer Exact Seurat expression layer name, read with
 #'   `SeuratObject::LayerData()`. See [seuratToSpatialExperiment()].
 #' @param run_col Optional cell-metadata column containing run identifiers.
-#' @param feature.metadata Retained for compatibility. Feature metadata are
-#'   always preserved.
 #' @param verbose Show conversion messages.
 #'
 #' @return A Cardinal `MSImagingExperiment`.
@@ -529,7 +521,6 @@ convertSeuratToCardinal <- function(
     assay = "Spatial",
     layer = "counts",
     run_col = NULL,
-    feature.metadata = FALSE,
     verbose = TRUE
 ) {
     verbose_message(

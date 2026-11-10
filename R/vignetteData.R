@@ -34,10 +34,10 @@
 #'
 #' All files contain a \code{counts} assay; the human file also contains
 #' paired RNA counts in \code{altExp(x, "SPT")}. Pig \code{logcounts} is
-#' \code{log1p(window intensity / total ion current * 10000)}, using all 10,200
+#' \code{log2(1 + window intensity / total ion current * 10000)}, using all 10,200
 #' original profile bins for the stored \code{total_ion_current}. Bladder
 #' \code{counts} preserves the upstream processed peak intensities. The
-#' vignette displays their \code{log1p} values and evaluates additional
+#' vignette displays their \code{log2(1 + x)} values and evaluates additional
 #' panel normalization separately. Full-spectrum totals are absent from
 #' the bundled bladder object. Human MSI values preserve the processed,
 #' spatially aligned source abundances; the RNA assay retains integer counts.

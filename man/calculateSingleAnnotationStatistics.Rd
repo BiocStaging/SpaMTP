@@ -11,7 +11,7 @@ calculateSingleAnnotationStatistics(
   pathway.assay = "pathway",
   mzAssayName = "counts",
   pathwayAssayName = "pathwayScores",
-  corr_theshold = 0,
+  corr_threshold = 0,
   corr_weight = 1,
   n_weight = 1,
   database = NULL,
@@ -36,7 +36,7 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 \item{pathwayAssayName}{Expression assay in the pathway experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{corr_theshold}{Minimum signed pathway correlation (legacy spelling).}
+\item{corr_threshold}{Minimum signed pathway correlation.}
 
 \item{corr_weight, n_weight}{Non-negative weights, not both zero.}
 
@@ -61,7 +61,7 @@ former temporary Seurat assay and synthetic-mass Cardinal conversion.
 \details{
 For each candidate, max_cor is the signed correlation of the
 pathway with largest absolute correlation; ties use pathway ID order.
-n_sig_path counts finite correlations strictly greater than corr_theshold
+n_sig_path counts finite correlations strictly greater than corr_threshold
 (zero therefore counts positive correlations, not every pathway).
 The score is corr_weight * scale(abs(max_cor)) +
 n_weight * scale(n_sig_path), across candidates for one feature.

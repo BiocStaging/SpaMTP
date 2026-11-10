@@ -409,7 +409,7 @@ buildPathwayIndex <- function(
         "No expression features have usable identities.",
         call. = FALSE
     )
-    if (any(!is.finite(values))) stop(
+    if (!.allFiniteAssay(values)) stop(
         "Pathway expression requires finite values.",
         call. = FALSE
     )

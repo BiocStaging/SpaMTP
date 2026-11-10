@@ -7,9 +7,9 @@
 createPathwayAssay(
   SpaMTP,
   analyte_type = "metabolites",
-  assay = "Spatial",
+  assay = "main",
   assayName = "counts",
-  new_assay = "pathway",
+  outputExperiment = "pathway",
   annotation_score_threshold = 0.05,
   annotation_source = c("current", "auto", "legacy"),
   verbose = TRUE,
@@ -37,14 +37,14 @@ metabolomic or transcriptomic expression.}
 process.Must be either "genes" or "metabolites" (default = "metabolites").}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
-\code{"Spatial"} is a compatibility alias for the primary experiment.}
+is \code{"main"} for the primary experiment.}
 
 \item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{new_assay}{Name for the identity-level \code{altExp()} (default =
-\code{"pathway"} for compatibility); this is not an expression assay name.}
+\item{outputExperiment}{Name for the identity-level \code{altExp()} (default =
+\code{"pathway"}); this is not an expression assay name.}
 
 \item{annotation_score_threshold}{Minimum indexed annotation score used to
 map m/z features to RaMP compounds (default = 0.05).}
@@ -110,7 +110,7 @@ features and exact aggregation weights are retained in metadata.}
 }
 \value{
 The input container with a new
-\code{SingleCellExperiment::altExp(SpaMTP, new_assay)}. Its expression assay
+\code{SingleCellExperiment::altExp(SpaMTP, outputExperiment)}. Its expression assay
 retains the name supplied in \code{assayName}, and its \code{rowData()} describes the
 RaMP identities and original measured features.
 }
@@ -127,7 +127,7 @@ require an explicit aggregation choice. In custom RaMP-only compatibility
 mode the historical default is mean. The selected expression assay name
 is preserved for genes, including logcounts. Inputs, member coverage,
 duplicate handling and index provenance are stored in
-metadata(altExp(x, new_assay))$pathway_mapping.
+metadata(altExp(x, outputExperiment))$pathway_mapping.
 }
 \examples{
 data(spamtp_example)
@@ -135,10 +135,10 @@ spe <- spamtp_example$experiment
 index <- buildPathwayIndex(spamtp_example$database)
 mapped <- createPathwayAssay(spe,
     analyte_type = "genes", assay = "transcriptome",
-    new_assay = "gene_ids", pathway_index = index, verbose = FALSE
+    outputExperiment = "gene_ids", pathway_index = index, verbose = FALSE
 )
 rownames(SingleCellExperiment::altExp(mapped, "gene_ids"))
 
 ## Create a pathway assay from gene data with verbose output
-# spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", new_assay = "gene_pathway", verbose = TRUE)
+# spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", outputExperiment = "gene_pathway", verbose = TRUE)
 }

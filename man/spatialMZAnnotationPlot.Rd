@@ -24,8 +24,7 @@ spatialMZAnnotationPlot(
   interactive = FALSE,
   information = NULL,
   column.name = "all_IsomerNames",
-  plot.exact = TRUE,
-  verbose = TRUE
+  plot.exact = TRUE
 )
 }
 \arguments{
@@ -70,8 +69,6 @@ quantile strings such as "q10". NA uses the observed range.}
 
 \item{plot.exact}{Match complete semicolon-delimited names
 (case-insensitive).}
-
-\item{verbose}{Retained for call compatibility.}
 }
 \value{
 A ggplot or Plotly widget; a list when combine=FALSE.

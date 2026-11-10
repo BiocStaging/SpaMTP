@@ -83,8 +83,8 @@ measurements require alignment and mapping before pairing.
 ## Normalization and spatial display
 
 First establish an expression scale and inspect a measured ion in tissue
-coordinates. `LogNormalize` adds `logcounts` using the natural-log
-transformation `log1p(10000 * intensity / total_intensity)`. The same layer
+coordinates. `LogNormalize` adds `logcounts` using the base-2
+transformation `log2(1 + 10000 * intensity / total_intensity)`. The same layer
 supplies the two principal components requested by `npcs = 2`.
 Figure 3.\@ref(fig:preprocess) displays the measured mass nearest m/z 400.14659,
 a focal feature in the original mouse-brain tutorial. Compare its distribution
@@ -156,7 +156,7 @@ index <- buildMZAnnotationIndex(database$chem_props,
 )
 annotated <- annotateSM(ions,
     index = index, adducts = "M+K",
-    polarity = "positive", ppm_error = 5, min_score = 0,
+    polarity = "positive", ppm = 5, min_score = 0,
     return.only.annotated = FALSE, save.intermediate = TRUE, verbose = FALSE
 )
 rowData(annotated)[, c("mz", "archived_lipid_candidates")]

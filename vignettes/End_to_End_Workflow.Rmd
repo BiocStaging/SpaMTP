@@ -109,12 +109,8 @@ plotSpatialLabels(x, "RegionLoupe",
 
 `runSpaMTPWorkflow()` preserves input layers. Its default MSI/RNA transform is
 `log2(1 + 10000 * value / column_sum)`; protein values use `log2(1 + value)`.
-The earlier guides and the
-[human pathway example](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
-use `normalizeSMData(..., "LogNormalize")`, which applies natural `log1p`.
-Values and mean differences across the two scales require
-conversion: divide natural-log values by `log(2)` to obtain log2 units. Use
-`normalization = "none"` for already transformed inputs. Complete spectral
+`normalizeSMData(..., "LogNormalize")` uses the same log2 transform.
+Use `normalization = "none"` for already transformed inputs. Complete spectral
 processing and RNA quality control beforehand.
 
 Lesion sides, pixels and spatial blocks belong to one section. We preserve the
@@ -260,7 +256,7 @@ and plots row-standardized means in Figure 7.\@ref(fig:markers).
 on the selected expression scale.
 
 ```{r markers, fig.width=7, fig.height=5.5, out.width="700px", fig.cap="Regional MSI markers across all 876 archived mouse-brain locations. Rows are selected mass features and columns are eligible archived regions. Up to two positive markers per region are selected by mean AUC; duplicate selections appear once. Colours show row-standardized mean expression (z-scores), and the top strip identifies the region."}
-markers <- fit$region_analysis$modalities$main$markers
+markers <- workflowMarkers(fit, "main")
 marker_order <- order(-markers$DEMs$mean_auc, -markers$DEMs$logFC,
     markers$DEMs$gene,
     na.last = TRUE

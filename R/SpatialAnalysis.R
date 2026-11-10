@@ -234,7 +234,6 @@ findCorrelatedFeatures <- function(
 #' @param assay Primary (`"main"`) or alternative experiment to analyse.
 #' @param assayName Assay containing expression values.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param image Retained for compatibility; coordinates use spatialCoords.
 #' @param nfeatures Maximum variable features selected.
 #' @param max_spots Maximum pixels for the dense distance matrix; NULL uses all.
 #' @param seed Random seed for sampling; caller RNG state is restored.
@@ -256,7 +255,7 @@ findCorrelatedFeatures <- function(
 #'     getSpatiallyVariableMetabolites(x)
 #' }
 findSpatiallyVariableMetabolites <- function(
-    object, assay = "main", assayName = "counts", image = NULL, nfeatures = 2000,
+    object, assay = "main", assayName = "counts", nfeatures = 2000,
     max_spots = 5000, seed = 1, verbose = TRUE, sampleId = NULL
 ) {
     if (!is.null(max_spots) &&

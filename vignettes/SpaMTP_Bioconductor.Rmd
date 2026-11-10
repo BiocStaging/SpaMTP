@@ -123,8 +123,8 @@ plotSpatialLabels(bladder, "compartment",
 
 ## Preserve the source scale and select ions
 
-Remove zero-total locations and apply the natural-log transformation
-`log1p(x) = ln(1 + x)` to the archived processed intensities. This preserves the
+Remove zero-total locations and apply the base-2 logarithmic transformation
+`log2(1 + x)` to the archived processed intensities. This preserves the
 upstream normalization for the spatial maps. The later
 [panel-composition sensitivity analysis](#panel-composition-sensitivity)
 checks how an additional **79-feature panel normalization** changes the
@@ -137,7 +137,7 @@ candidate identities reported in the source.
 
 ```{r bladder-normalization}
 bladder <- bladder[, colSums(counts(bladder)) > 0]
-logcounts(bladder) <- log1p(counts(bladder))
+logcounts(bladder) <- log2(1 + counts(bladder))
 ion_features <- findNearestMZ(bladder, c(741.53058, 798.54114))
 rowData(bladder)[ion_features, c("mz", "archived_lipid_candidates")]
 ```
@@ -150,31 +150,30 @@ and phosphatidylethanolamine.
 `plotSpatialFeature()` reads the selected features from `logcounts`. Each ion in
 Figure 1.\@ref(fig:bladder-spatial) has its own colour scale.
 
-```{r bladder-spatial, fig.width=9, fig.height=4.7, out.width="100%", fig.cap="Two measured bladder ions across the retained nonzero grid locations. Colour shows log1p of the archived processed intensity; each panel has an independent colour scale. The source workflow applied TIC normalization before peak integration. Positions and orientation match the compartment map."}
+```{r bladder-spatial, fig.width=9, fig.height=4.7, out.width="100%", fig.cap="Two measured bladder ions across the retained nonzero grid locations. Colour shows log2(1 + x) of the archived processed intensity; each panel has an independent colour scale. The source workflow applied TIC normalization before peak integration. Positions and orientation match the compartment map."}
 plotSpatialFeature(bladder, ion_features,
     assayName = "logcounts",
     labels = sprintf("m/z %.5f", rowData(bladder)[ion_features, "mz"]),
-    pointSize = 1.1, legendTitle = "Archived intensity (log1p)", ncol = 2
+    pointSize = 1.1, legendTitle = "Archived intensity (log2)", ncol = 2
 )
 ```
 
 The regional summary uses every retained nonzero location in each named
-compartment: the median of the displayed `log1p` signal and the proportion of
+compartment: the median of the displayed `log2(1 + x)` signal and the proportion of
 locations with intensity above zero.
 
 ```{r bladder-regional-summary}
 named <- bladder$compartment != "Other SSC classes"
 compartment <- droplevels(bladder$compartment[named])
-ion_values <- t(as.matrix(logcounts(bladder)[ion_features, named]))
-aggregate(ion_values, by = list(compartment = compartment), FUN = median)
-aggregate(ion_values > 0, by = list(compartment = compartment), FUN = mean)
+summarizeFeatures(bladder[, named], features = ion_features,
+    groupBy = "compartment", assayName = "logcounts")
 ```
 
 ## Panel-composition sensitivity {#panel-composition-sensitivity}
 
 An abundant ion contributes to the denominator of panel normalization.
 `normalizeSMData()` divides each location by its panel total, multiplies by
-10,000 and applies `log1p`. Normalizing the complete panel, and the panel
+10,000 and applies `log2(1 + x)`. Normalizing the complete panel, and the panel
 without m/z 741.53058, gives two additional scales on which to compare the
 compartment medians of m/z 798.54114.
 
@@ -186,28 +185,18 @@ scales <- list(
     `Panel excluding m/z 741.53058` =
         normalizeSMData(reduced_panel, "LogNormalize", verbose = FALSE)
 )
-sensitivity <- rbind(
-    `Archived input` = tapply(
-        logcounts(scales[[1]])[ion_features[2], named],
-        compartment, median
-    ),
-    `79-feature panel` = tapply(
-        logcounts(scales[[2]])[ion_features[2], named],
-        compartment, median
-    ),
-    `Panel excluding m/z 741.53058` = tapply(
-        logcounts(scales[[3]])[ion_features[2], named], compartment, median
-    )
-)
+panel_summary <- summarizeFeatures(scales,
+    features = ion_features[2], groupBy = "compartment", assayName = "logcounts")
+panel_summary <- panel_summary[panel_summary$group != "Other SSC classes", ]
+sensitivity <- xtabs(median ~ dataset + group, panel_summary)[names(scales), ]
 sensitivity <- cbind(sensitivity,
-    urothelium_minus_muscle = sensitivity[, "Urothelium"] - sensitivity[, "Muscle"]
-)
+    urothelium_minus_muscle = sensitivity[, "Urothelium"] - sensitivity[, "Muscle"])
 round(sensitivity, 3)
 ```
 
 The urothelium-minus-muscle difference is
 `r round(sensitivity[1, "urothelium_minus_muscle"], 3)` on the archived
-log1p scale, `r round(sensitivity[2, "urothelium_minus_muscle"], 3)` after
+log2 scale, `r round(sensitivity[2, "urothelium_minus_muscle"], 3)` after
 panel normalization and
 `r round(sensitivity[3, "urothelium_minus_muscle"], 3)` after excluding
 m/z 741.53058 from the panel total. The direction persists across these scales;
@@ -236,7 +225,7 @@ spinal cord. These associations describe source-reported ion-localization
 patterns; organ labels and chemical identities require independent validation.
 
 Each row sums original profile bins within **±0.5 m/z** of one target.
-The stored `logcounts` assay is `log1p(window intensity / TIC × 10,000)`, where
+The stored `logcounts` assay is `log2(1 + window intensity / TIC × 10,000)`, where
 `total_ion_current` was calculated from all 10,200 original mass bins before
 subsetting. Dividing by the three selected windows instead would change the
 biological comparison. `source_bins` reports how many original profile bins
@@ -256,7 +245,7 @@ All three panels in Figure 1.\@ref(fig:pig-spatial) use the same 4,959 source
 tissue coordinates. The source-selected
 signals occupy different anatomical areas across the complete section.
 
-```{r pig-spatial, fig.width=10, fig.height=5, out.width="100%", fig.cap="Pig fetal DESI section: three prespecified profile-ion windows at all 4,959 source tissue positions. Each window sums bins within ±0.5 m/z of the title mass. Colour shows log1p(window intensity / full-spectrum TIC × 10,000), with an independent scale per panel. Heart, liver and brain/spinal-cord associations are source interpretations from the Cardinal tutorial."}
+```{r pig-spatial, fig.width=10, fig.height=5, out.width="100%", fig.cap="Pig fetal DESI section: three prespecified profile-ion windows at all 4,959 source tissue positions. Each window sums bins within ±0.5 m/z of the title mass. Colour shows log2(1 + window intensity / full-spectrum TIC × 10,000), with an independent scale per panel. Heart, liver and brain/spinal-cord associations are source interpretations from the Cardinal tutorial."}
 pig_labels <- sprintf(
     "m/z %.2f (%s)", rowData(pig)$target_mz,
     sub("-enriched.*", "", rowData(pig)$source_context)
@@ -264,7 +253,7 @@ pig_labels <- sprintf(
 plotSpatialFeature(pig, rownames(pig),
     assayName = "logcounts",
     labels = pig_labels, pointSize = 0.6,
-    legendTitle = "TIC-normalized log1p", ncol = 3
+    legendTitle = "TIC-normalized log2", ncol = 3
 )
 ```
 

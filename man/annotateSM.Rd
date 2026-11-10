@@ -9,10 +9,9 @@ annotateSM(
   db = NULL,
   assay = "main",
   raw.mz.column = "raw_mz",
-  ppm_error = NULL,
+  ppm = 5,
   adducts = NULL,
   polarity = NULL,
-  tof_resolution = 30000,
   filepath = NULL,
   return.only.annotated = TRUE,
   save.intermediate = TRUE,
@@ -42,8 +41,7 @@ containing raw m/z values without the \verb{mz-} prefix. This is created by
 metadata or numeric feature names are used as a fallback. An explicitly
 named column must exist. Feature rownames must be unique and non-empty.}
 
-\item{ppm_error}{Mass tolerance in ppm. If \code{NULL}, a strict 5 ppm maximum
-is used (or a smaller value inferred from \code{tof_resolution}). Set to zero
+\item{ppm}{Mass tolerance in ppm (default 5). Set to zero
 for exact numerical matches.}
 
 \item{adducts}{Optional adduct names/notations; see \code{adductRules()}. If
@@ -53,9 +51,6 @@ validated general rules for the selected polarity when no matrix is given.}
 \item{polarity}{Character string defining the ion mode. When \code{NULL}, use the
 MALDI matrix profile default, a supplied index's mode, or positive mode
 when neither is available.}
-
-\item{tof_resolution}{Instrument resolving power retained for compatibility;
-it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.}
 
 \item{filepath}{Optional output filename prefix, including its directory.
 For example, \code{file.path("results", "sample")} writes
@@ -114,7 +109,7 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
 annotated <- annotateSM(spe,
-    index = index, raw.mz.column = "mz", ppm_error = 5,
+    index = index, raw.mz.column = "mz", ppm = 5,
     return.only.annotated = FALSE, verbose = FALSE
 )
 head(annotationCandidates(annotated))

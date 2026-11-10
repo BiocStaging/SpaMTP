@@ -75,7 +75,7 @@ test_that("constant, absent and duplicated candidates do not create invalid rank
         pathway.assay = "scores", database = fixture$database
     ), "Weights")
     expect_error(calculateSingleAnnotationStatistics("a", object,
-        corr_theshold = 2,
+        corr_threshold = 2,
         pathway.assay = "scores", database = fixture$database
     ), "between")
     fixture$database$analytehaspathway$pathwayRampId[] <- "pA"
@@ -111,7 +111,7 @@ test_that("batch ranking reuses pathway scores and preserves feature metadata", 
         SingleCellExperiment::SingleCellExperiment(assays = list(counts = analytes))
     scored <- createPathwayObject(object,
         assay = "analytes", assayName = "counts",
-        new.assay = "expected", database = fixture$database
+        outputExperiment = "expected", database = fixture$database
     )
     expected <- calculateAnnotationStatistics(scored,
         pathway.assay = "expected",

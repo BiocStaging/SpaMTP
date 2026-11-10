@@ -1,7 +1,7 @@
 Package: SpaMTP
 Type: Package
 Title: Spatial Metabolomics and Multi-Omics Analysis
-Version: 0.99.17
+Version: 0.99.18
 Authors@R: c(
     person("Andrew", "Causer",
             email = "a.causer@uq.edu.au", 
@@ -93,7 +93,7 @@ Imports:
     shiny,
     SingleCellExperiment,
     S4Vectors,
-    SpaMTPdb (>= 0.99.4),
+    SpaMTPdb (>= 0.99.6),
     SpatialExperiment,
     stats,
     stringr,

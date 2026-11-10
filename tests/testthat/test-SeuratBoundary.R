@@ -300,13 +300,13 @@ test_that("native annotation and feature subsetting do not use Seurat assay inde
     )
     index <- buildMZAnnotationIndex(target, adducts = "M+H")
     SummarizedExperiment::rowData(object)$mz <- c(index$expected_mz[1], 500, 600)
-    result <- annotateSM(object, index = index, ppm_error = 5, verbose = FALSE)
+    result <- annotateSM(object, index = index, ppm = 5, verbose = FALSE)
     expect_identical(rownames(result), "a")
     expect_equal(SummarizedExperiment::rowData(result)$mz, index$expected_mz[1])
     expect_equal(SingleCellExperiment::altExp(result, "transcriptome"), originalTranscriptome)
     expect_true(is.list(S4Vectors::metadata(result)$mz_annotation))
     result <- annotateSM(object,
-        index = index, ppm_error = 5,
+        index = index, ppm = 5,
         return.only.annotated = FALSE, verbose = FALSE
     )
     expect_identical(rownames(result), rownames(object))

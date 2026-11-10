@@ -6,7 +6,7 @@
 \usage{
 getKmeanClusters(
   data,
-  reduction = "SpatialPCA",
+  reduction = "pca",
   cluster.name = "spatial_clusters",
   clusters = 8,
   iter.max = 10,
@@ -18,10 +18,10 @@ getKmeanClusters(
 }
 \arguments{
 \item{data}{A SingleCellExperiment, including SpatialExperiment, containing
-an embedding such as the result of \code{runSpatialGraphPCA()}.}
+an embedding such as the result of \code{runMetabolicPCA()}.}
 
 \item{reduction}{Name in \code{SingleCellExperiment::reducedDimNames(data)}
-(default = \code{"SpatialPCA"}).}
+(default = \code{"pca"}).}
 
 \item{cluster.name}{Column name in \code{SummarizedExperiment::colData(data)}
 for cluster labels (default = \code{"spatial_clusters"}).}

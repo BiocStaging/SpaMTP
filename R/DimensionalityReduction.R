@@ -99,7 +99,7 @@ runMetabolicPCA <- function(
         values <- values[features, , drop = FALSE]
     }
     maximum <- min(dim(values)) - 1L
-    if (maximum < 1L || any(!is.finite(values))) {
+    if (maximum < 1L || !.allFiniteAssay(values)) {
         stop(
             "PCA requires finite values and at least two features and pixels.",
             call. = FALSE
@@ -198,7 +198,6 @@ runMetabolicPCA <- function(
 #' @param assayName Expression assay name within the selected experiment
 #'   (default = `"scaled"`), read with `SummarizedExperiment::assay()`.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param image Reserved; must be NULL. Subset pixels before running graph PCA.
 #' @param platform Character string matching either `"Visium"` or `"ST"` to
 #'   determine how the k-NN graph is constructed. If "Visium" k-nns will handle
 #'   the hexagon spot arrangement, including setting `n_neighbors` = 6, else
@@ -257,7 +256,6 @@ runSpatialGraphPCA <- function(
     n_components = 50,
     assay = "main",
     assayName = "scaled",
-    image = NULL,
     platform = "Visium",
     lambda = 0.5,
     n_neighbors = NULL,
@@ -269,10 +267,7 @@ runSpatialGraphPCA <- function(
     verbose = TRUE
 ) {
     data <- .nativeSpatialObject(data)
-    if (!is.null(image)) stop(
-        "Subset pixels first; image must be NULL.",
-        call. = FALSE
-    )
+
 
 
     if (!platform %in% c("Visium", "ST")) {
@@ -289,7 +284,7 @@ runSpatialGraphPCA <- function(
         # The graph-regularised eigenproblem uses dense products of this matrix.
         assayMatrix <- as.matrix(assayMatrix)
     }
-    if (min(dim(assayMatrix)) < 2L || any(!is.finite(assayMatrix))) {
+    if (min(dim(assayMatrix)) < 2L || !.allFiniteAssay(assayMatrix)) {
         stop("Graph PCA needs finite values and at least two features and pixels.",
             call. = FALSE
         )
@@ -509,9 +504,9 @@ kNeighborsGraph <- function(
 #' and writes pixel cluster labels to `SummarizedExperiment::colData()`.
 #'
 #' @param data A SingleCellExperiment, including SpatialExperiment, containing
-#'   an embedding such as the result of `runSpatialGraphPCA()`.
+#'   an embedding such as the result of `runMetabolicPCA()`.
 #' @param reduction Name in `SingleCellExperiment::reducedDimNames(data)`
-#'   (default = `"SpatialPCA"`).
+#'   (default = `"pca"`).
 #' @param cluster.name Column name in `SummarizedExperiment::colData(data)`
 #'   for cluster labels (default = `"spatial_clusters"`).
 #' @param clusters Integer defining the number of clusters to form (default =
@@ -539,7 +534,7 @@ kNeighborsGraph <- function(
 #' table(spe$spatial_clusters)
 getKmeanClusters <- function(
     data,
-    reduction = "SpatialPCA",
+    reduction = "pca",
     cluster.name = "spatial_clusters",
     clusters = 8,
     iter.max = 10,

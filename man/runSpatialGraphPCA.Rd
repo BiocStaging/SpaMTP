@@ -9,7 +9,6 @@ runSpatialGraphPCA(
   n_components = 50,
   assay = "main",
   assayName = "scaled",
-  image = NULL,
   platform = "Visium",
   lambda = 0.5,
   n_neighbors = NULL,
@@ -32,8 +31,6 @@ compute (default = 50).}
 \item{assayName}{Expression assay name within the selected experiment
 (default = \code{"scaled"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
-
-\item{image}{Reserved; must be NULL. Subset pixels before running graph PCA.}
 
 \item{platform}{Character string matching either \code{"Visium"} or \code{"ST"} to
 determine how the k-NN graph is constructed. If "Visium" k-nns will handle

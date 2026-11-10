@@ -245,7 +245,7 @@ test_that("m/z and metabolite universes use consistent current and legacy mappin
     out <- fishersPathwayAnalysis(
         list(mzs = c(mass[1], mass[1])),
         universe = list(mzs = mass),
-        database = db, index = index, ppm_error = 0.001, min_path_size = 1,
+        database = db, index = index, ppm = 0.001, min_path_size = 1,
         pathway_all_info = TRUE, verbose = FALSE
     )
     expect_equal(out$foreground_analytes_number, 1L)
@@ -255,7 +255,7 @@ test_that("m/z and metabolite universes use consistent current and legacy mappin
     mixed <- fishersPathwayAnalysis(
         list(mzs = paste0("mz-", mass[1]), metabolites = "hmdb:HMDB1"),
         universe = list(metabolites = paste0("hmdb:HMDB", 1:10)),
-        database = db, db = chemical, adducts = "M+H", ppm_error = 0.001,
+        database = db, db = chemical, adducts = "M+H", ppm = 0.001,
         infer_structure = "never", min_path_size = 1, verbose = FALSE
     )
     expect_equal(mixed$p_val, c(0.4, 1))
@@ -268,7 +268,7 @@ test_that("m/z and metabolite universes use consistent current and legacy mappin
     old <- fishersPathwayAnalysis(
         list(mzs = mass[1]),
         universe = list(metabolites = paste0("hmdb:HMDB", 1:10)),
-        database = db, db = legacy, adducts = "M+H", ppm_error = 0.001,
+        database = db, db = legacy, adducts = "M+H", ppm = 0.001,
         infer_structure = "never", min_path_size = 1, verbose = FALSE
     )
     expect_equal(old$p_val, mixed$p_val)

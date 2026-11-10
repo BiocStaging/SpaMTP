@@ -7,10 +7,9 @@
 annotateBigData(
   mzs,
   db = NULL,
-  ppm_error = NULL,
+  ppm = 5,
   adducts = NULL,
   polarity = NULL,
-  tof_resolution = 30000,
   verbose = TRUE,
   maldi_matrix = NULL,
   database_version = "latest",
@@ -27,8 +26,7 @@ loads versioned reference resources through SpaMTPdb when \code{db = NULL}.
 Supply a data.frame for a custom reference, or a pre-built \code{index}
 through \code{...}.}
 
-\item{ppm_error}{Mass tolerance in ppm. If \code{NULL}, a strict 5 ppm maximum
-is used (or a smaller value inferred from \code{tof_resolution}). Set to zero
+\item{ppm}{Mass tolerance in ppm (default 5). Set to zero
 for exact numerical matches.}
 
 \item{adducts}{Optional adduct names/notations; see \code{adductRules()}. If
@@ -37,9 +35,6 @@ validated general rules for the selected polarity when no matrix is given.}
 
 \item{polarity}{Character string defining the ion mode. When \code{NULL}, infer
 it from a supplied index or MALDI matrix profile, otherwise use positive.}
-
-\item{tof_resolution}{Instrument resolving power retained for compatibility;
-it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.}
 
 \item{verbose}{Boolean indicating whether to show the message. If TRUE the
 message will be show, else the message will be suppressed (default = TRUE).}
@@ -73,6 +68,6 @@ data accordinly before loading it into a Bioconductor experiment.
 data(spamtp_example)
 annotateBigData(c(149.04445, 181.07066),
     db = spamtp_example$metabolites,
-    adducts = "M+H", ppm_error = 5, verbose = FALSE
+    adducts = "M+H", ppm = 5, verbose = FALSE
 )
 }

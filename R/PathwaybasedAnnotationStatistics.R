@@ -9,7 +9,7 @@
         )
     }
     if (length(threshold) != 1L || !is.finite(threshold) || abs(threshold) > 1) {
-        stop("corr_theshold must be between -1 and 1.", call. = FALSE)
+        stop("corr_threshold must be between -1 and 1.", call. = FALSE)
     }
     if (length(corrWeight) != 1L || length(nWeight) != 1L ||
         any(!is.finite(c(corrWeight, nWeight))) || min(corrWeight, nWeight) < 0 ||
@@ -133,7 +133,7 @@
     # feature-by-pathway all-pairs matrix or a synthetic MSI object.
     correlations <- vapply(selected, function(pathway) {
         values <- as.numeric(input$pathways[pathway, ])
-        if (any(!is.finite(values))) {
+        if (!.allFiniteAssay(values)) {
             stop("Pathway expression must be finite.", call. = FALSE)
         }
         if (stats::sd(target) == 0 || stats::sd(values) == 0) {
@@ -179,7 +179,7 @@
 #'
 #' @details For each candidate, max_cor is the signed correlation of the
 #' pathway with largest absolute correlation; ties use pathway ID order.
-#' n_sig_path counts finite correlations strictly greater than corr_theshold
+#' n_sig_path counts finite correlations strictly greater than corr_threshold
 #' (zero therefore counts positive correlations, not every pathway).
 #' The score is corr_weight * scale(abs(max_cor)) +
 #' n_weight * scale(n_sig_path), across candidates for one feature.
@@ -208,7 +208,7 @@
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param pathwayAssayName Expression assay in the pathway experiment.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param corr_theshold Minimum signed pathway correlation (legacy spelling).
+#' @param corr_threshold Minimum signed pathway correlation.
 #' @param corr_weight,n_weight Non-negative weights, not both zero.
 #' @param database Optional named list from loadSpaMTPDatabase.
 #' @param database_version,database_source,database_local_dir Database
@@ -227,7 +227,7 @@
 #' )
 calculateSingleAnnotationStatistics <- function(
     mz, data, mz.assay = "main", pathway.assay = "pathway",
-    mzAssayName = "counts", pathwayAssayName = "pathwayScores", corr_theshold = 0,
+    mzAssayName = "counts", pathwayAssayName = "pathwayScores", corr_threshold = 0,
     corr_weight = 1, n_weight = 1, database = NULL,
     database_version = "latest", database_source = c("auto", "spamtpdb"),
     database_local_dir = NULL, mz.ppm = 5
@@ -238,7 +238,7 @@ calculateSingleAnnotationStatistics <- function(
     )
     input <- .annotationStatisticsInput(
         data, mz.assay, mzAssayName, pathway.assay,
-        pathwayAssayName, resources, corr_theshold, corr_weight, n_weight
+        pathwayAssayName, resources, corr_threshold, corr_weight, n_weight
     )
     if (length(mz) != 1L || is.na(mz)) stop("Supply one m/z query.", call. = FALSE)
     if (is.numeric(mz)) {
@@ -266,7 +266,7 @@ calculateSingleAnnotationStatistics <- function(
     result <- .scoreAnnotationFeature(
         mz,
         input,
-        corr_theshold,
+        corr_threshold,
         corr_weight,
         n_weight
     )
@@ -315,7 +315,7 @@ calculateSingleAnnotationStatistics <- function(
 calculateAnnotationStatistics <- function(
     data, mz.assay = "main", pathway.assay = "pathway",
     mzAssayName = "counts", pathwayAssayName = "counts", return.top = TRUE,
-    corr_theshold = 0, corr_weight = 1, n_weight = 1,
+    corr_threshold = 0, corr_weight = 1, n_weight = 1,
     database = NULL, database_version = "latest",
     database_source = c("auto", "spamtpdb"), database_local_dir = NULL,
     pathway.scores = FALSE, pathway_index = NULL,
@@ -347,7 +347,7 @@ calculateAnnotationStatistics <- function(
         )), 1L)
         data <- createPathwayObject(data,
             assay = pathway.assay, assayName = pathwayAssayName,
-            new.assay = newName, database = resources, database_version = database_version,
+            outputExperiment = newName, database = resources, database_version = database_version,
             database_source = source, database_local_dir = database_local_dir,
             pathway_index = pathway_index, gene_mapping = match.arg(gene_mapping),
             gene_reference = gene_reference %||% database$gene_reference, gene_index = gene_index,
@@ -359,12 +359,12 @@ calculateAnnotationStatistics <- function(
     }
     input <- .annotationStatisticsInput(
         data, mz.assay, mzAssayName, pathway.assay,
-        pathwayAssayName, resources, corr_theshold, corr_weight, n_weight
+        pathwayAssayName, resources, corr_threshold, corr_weight, n_weight
     )
     ids <- rownames(input$expression)
     result <- stats::setNames(lapply(ids, .scoreAnnotationFeature,
         input = input,
-        threshold = corr_theshold, corrWeight = corr_weight, nWeight = n_weight
+        threshold = corr_threshold, corrWeight = corr_weight, nWeight = n_weight
     ), ids)
     audit <- S4Vectors::metadata(.experimentForAssay(data, pathway.assay))$pathway_mapping
     if (!is.null(pathway_index) && !is.null(audit) && !identical(audit$provenance, pathway_index$provenance)) {
