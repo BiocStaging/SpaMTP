@@ -142,3 +142,27 @@ test_that("named differential tables are independent of list ordering", {
     expect_true(any(startsWith(names(seen[[1]]), "RAMP_C_")))
     expect_true(any(startsWith(names(seen[[1]]), "RAMP_G_")))
 })
+
+test_that("rendered pathway dendrograms retain all branches and align bar labels", {
+    data(spamtp_example)
+    result <- fishersPathwayAnalysis(list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
+        universe = list(metabolites = paste0("RAMP_C_", 1:3)),
+        database = spamtp_example$database, min_path_size = 1,
+        pathway_all_info = TRUE, verbose = FALSE)
+    plots <- NULL
+    testthat::local_mocked_bindings(plot_grid = function(...) {
+        plots <<- list(...)[1:2]
+        ggplot2::ggplot()
+    }, .package = "cowplot")
+    expect_no_warning(visualisePathways(spamtp_example$experiment, result,
+        min_n = 1, p_val_threshold = 1,
+        database = spamtp_example$database, verbose = FALSE))
+    tree <- ggplot2::ggplot_build(plots[[2]])
+    segments <- tree$data[[1]][, c("x", "xend", "y", "yend")]
+    expect_false(anyNA(segments))
+    expect_no_warning(ggplot2::ggplotGrob(plots[[2]]))
+    leaves <- plots[[2]]$scales$get_scales("y")$labels
+    bars <- plots[[1]]$scales$get_scales("x")$limits
+    expect_equal(length(bars), length(leaves))
+    expect_true(all(endsWith(bars, paste0("(", leaves, ")"))))
+})

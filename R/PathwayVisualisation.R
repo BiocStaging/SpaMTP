@@ -150,7 +150,47 @@ visualisePathways <- function(
         ))
     }
 
-    retain_ind <- seq_len(nrow(merged_pathways))
+    if (nrow(merged_pathways) > 1L) {
+        database_resources <- .spamtp_db_bundle(
+            c("analytehaspathway", "pathway"),
+            database = database,
+            version = database_version,
+            source = match.arg(database_source),
+            local_dir = database_local_dir
+        )
+        analytehaspathway <- database_resources$analytehaspathway
+        pathway <- database_resources$pathway
+
+        # Adding the dendrogram
+
+        # data(pathway, package = "SpaMTP")
+        # data(analytehaspathway, package = "SpaMTP")
+        jaccard_matrix <- matrix(
+            nrow = nrow(merged_pathways),
+            ncol = nrow(merged_pathways),
+            dimnames = list(merged_pathways$pathway_id, merged_pathways$pathway_id)
+        )
+
+        for (i in seq_len(max(0L, nrow(merged_pathways) - 1L))) {
+            pathway_id_i <- merged_pathways$pathway_id[i]
+            pathway_content_i <- unique(analytehaspathway$rampId[which(analytehaspathway$pathwayRampId == pathway$pathwayRampId[which(pathway$sourceId == pathway_id_i)])])
+            for (j in (i + 1):nrow(merged_pathways)) {
+                pathway_id_j <- merged_pathways$pathway_id[j]
+                pathway_content_j <- unique(analytehaspathway$rampId[which(analytehaspathway$pathwayRampId == pathway$pathwayRampId[which(pathway$sourceId == pathway_id_j)])])
+
+                jc_simi <- if (length(union(pathway_content_i, pathway_content_j))) {
+                    length(intersect(pathway_content_i, pathway_content_j)) / length(union(pathway_content_i, pathway_content_j))
+                } else 0
+                jaccard_matrix[i, j] <- jaccard_matrix[j, i] <- jc_simi
+            }
+        }
+        diag(jaccard_matrix) <- 1
+
+
+        # Generate a dendrogram
+        clustering <- hclust(as.dist(1 - jaccard_matrix), method = method, ...)
+        merged_pathways <- merged_pathways[clustering$order, , drop = FALSE]
+    }
 
     gg_bar1 <- with(
         merged_pathways,
@@ -214,6 +254,10 @@ visualisePathways <- function(
             )
     )
 
+    gg_bar1 <- gg_bar1 + ggplot2::scale_x_discrete(limits = paste0(
+        merged_pathways$pathway_name, "(", merged_pathways$pathway_id, ")"
+    ))
+
     # Get the raster illustration for each pathway
     image_raster <- vector("list", nrow(merged_pathways))
     verbose_message(
@@ -253,7 +297,7 @@ visualisePathways <- function(
         }
     }
     gg_bar1 <- gg_bar1 + ggplot2::ylim(
-        -2,
+        if (any(lengths(image_raster))) -3.5 else 0,
         max(merged_pathways$total_in_pathways) + 5
     )
     # gg_bar1
@@ -266,43 +310,7 @@ visualisePathways <- function(
         return(gg_bar1)
     }
 
-    database_resources <- .spamtp_db_bundle(
-        c("analytehaspathway", "pathway"),
-        database = database,
-        version = database_version,
-        source = match.arg(database_source),
-        local_dir = database_local_dir
-    )
-    analytehaspathway <- database_resources$analytehaspathway
-    pathway <- database_resources$pathway
-
-    # Adding the dendrogram
-
-    # data(pathway, package = "SpaMTP")
-    # data(analytehaspathway, package = "SpaMTP")
-    jaccard_matrix <- matrix(
-        nrow = nrow(merged_pathways),
-        ncol = nrow(merged_pathways)
-    )
-
-    for (i in seq_len(max(0L, nrow(merged_pathways) - 1L))) {
-        pathway_id_i <- merged_pathways$pathway_id[i]
-        pathway_content_i <- unique(analytehaspathway$rampId[which(analytehaspathway$pathwayRampId == pathway$pathwayRampId[which(pathway$sourceId == pathway_id_i)])])
-        for (j in (i + 1):nrow(merged_pathways)) {
-            pathway_id_j <- merged_pathways$pathway_id[j]
-            pathway_content_j <- unique(analytehaspathway$rampId[which(analytehaspathway$pathwayRampId == pathway$pathwayRampId[which(pathway$sourceId == pathway_id_j)])])
-
-            jc_simi <- if (length(union(pathway_content_i, pathway_content_j))) {
-                length(intersect(pathway_content_i, pathway_content_j)) / length(union(pathway_content_i, pathway_content_j))
-            } else 0
-            jaccard_matrix[i, j] <- jaccard_matrix[j, i] <- jc_simi
-        }
-    }
-    diag(jaccard_matrix) <- 1
-
-
-    # Generate a dendrogram
-    hc <- as.dendrogram(hclust(as.dist(1 - jaccard_matrix), method = method, ...))
+    hc <- as.dendrogram(clustering)
     segment_hc <- with(
         ggdendro::segment(ggdendro::dendro_data(hc)),
         data.frame(
@@ -327,14 +335,14 @@ visualisePathways <- function(
 
     plt_dendr <- ggplot2::ggplot(segment_hc) +
         ggplot2::geom_segment(ggplot2::aes(
-            x = sqrt(.data$x),
+            x = .data$x,
             y = .data$y,
-            xend = sqrt(.data$xend),
+            xend = .data$xend,
             yend = .data$yend
         )) +
         ggplot2::scale_x_continuous(
             expand = c(0, 0.5),
-            limits = c(0, max(segment_hc$xend))
+            limits = c(0, max(segment_hc$x, segment_hc$xend))
         ) +
         ggplot2::scale_y_continuous(
             expand = c(0, 0),
@@ -344,7 +352,7 @@ visualisePathways <- function(
             position = "right"
         ) +
         ggplot2::labs(
-            x = "Jaccard distance",
+            x = "Clustering height",
             y = ""
         ) +
         ggplot2::theme_bw() +

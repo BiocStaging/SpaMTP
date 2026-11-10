@@ -60,7 +60,6 @@ Imports:
     cowplot,
     data.table,
     DelayedArray,
-    digest,
     dplyr,
     edgeR,
     fgsea,
