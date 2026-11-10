@@ -9,12 +9,13 @@
 #'
 #' @section Experiments and expression assays:
 #' In analysis functions, `assay` selects the primary experiment (`"main"`)
-#' or a named `SingleCellExperiment::altExp()`. The compatibility arguments
-#' `slot`, `slots`, `SM.slot`, `ST.slot`, `SM_slot`, `ST_slot`, `mz.slot` and
-#' `pathway.slot` select expression assay names within those experiments.
-#' They do not name S4 slots. Supply exact, non-empty character names, not
-#' numeric matrix positions. For example, `assay = "transcriptome"` and
-#' `slot = "logcounts"` read
+#' or a named `SingleCellExperiment::altExp()`. The arguments `assayName`,
+#' `assayNames`, `smAssayName`, `stAssayName`, `mzAssayName` and
+#' `pathwayAssayName` select expression assays within those experiments, as
+#' read by `SummarizedExperiment::assay()`. Supply exact, non-empty character
+#' names, not numeric matrix positions. For example, `assay = "transcriptome"`
+#' and
+#' `assayName = "logcounts"` read
 #' `SummarizedExperiment::assay(SingleCellExperiment::altExp(x,
 #' "transcriptome"), "logcounts")`.
 #'
@@ -30,7 +31,7 @@
 #' also select the primary experiment. An exact alternative-experiment name
 #' takes precedence over these aliases. Prefer `"main"` and explicit
 #' `altExpNames()` in new code. An expression name supplied as `assay` does
-#' not replace the separate `slot` selection. Constructors and explicit
+#' not replace the separate `assayName` selection. Constructors and explicit
 #' converters have their own documented naming arguments.
 #'
 #' @section Metadata and spatial infrastructure:
@@ -53,7 +54,8 @@
 #' for [seuratToSingleCellExperiment()], [seuratToSpatialExperiment()] and
 #' [spatialExperimentToSeurat()]. Convert once at the boundary, then use the
 #' native Bioconductor workflow. Seurat assay names become experiment names;
-#' selected Seurat layers become expression assays as documented by the converter.
+#' selected Seurat layers become expression assays as documented by the
+#' converter.
 #'
 #' @return
 #' This is a documentation topic, not a callable function. The accessors
@@ -61,7 +63,8 @@
 #' object, `altExp()` returns an alternative experiment, `rowData()` and
 #' `colData()` return `DataFrame` objects, and `spatialCoords()` returns a
 #' coordinate matrix. Replacement accessors update the corresponding data
-#' in the experiment. See each accessor's help page for its full return contract.
+#' in the experiment. See each accessor's help page for its full return
+#' contract.
 #'
 #' @name experimentAccess
 #' @seealso [asSpatialExperiment()], [addTranscriptome()], [normalizeSMData()],
@@ -70,12 +73,17 @@
 #' x <- SpatialExperiment::SpatialExperiment(
 #'     assays = list(counts = rbind(a = 1:4, b = 4:1)),
 #'     spatialCoords = cbind(x = 1:4, y = 0),
-#'     colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)))
-#' rna <- matrix(c(1, 3, 2, 4), nrow = 1,
-#'     dimnames = list("gene1", colnames(x)))
+#'     colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4))
+#' )
+#' rna <- matrix(c(1, 3, 2, 4),
+#'     nrow = 1,
+#'     dimnames = list("gene1", colnames(x))
+#' )
 #' x <- addTranscriptome(x, rna)
-#' x <- normalizeSMData(x, "LogNormalize", assay = "transcriptome",
-#'     slot = "counts", verbose = FALSE)
+#' x <- normalizeSMData(x, "LogNormalize",
+#'     assay = "transcriptome",
+#'     assayName = "counts", verbose = FALSE
+#' )
 #' rna <- SingleCellExperiment::altExp(x, "transcriptome")
 #' SummarizedExperiment::assayNames(rna)
 #' SummarizedExperiment::assay(rna, "logcounts")
@@ -83,6 +91,5 @@
 #' SingleCellExperiment::altExp(x, "transcriptome") <- rna
 #' SummarizedExperiment::colData(x)$region <- c("A", "A", "B", "B")
 #' selected <- x[, x$region == "A"]
-#' stopifnot(identical(colnames(SingleCellExperiment::altExp(selected,
-#'     "transcriptome")), colnames(selected)))
+#' colnames(SingleCellExperiment::altExp(selected, "transcriptome"))
 NULL

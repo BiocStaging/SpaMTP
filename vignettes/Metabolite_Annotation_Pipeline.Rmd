@@ -6,6 +6,7 @@ output:
     toc: true
     toc_depth: 3
     number_sections: true
+    df_print: kable
     css: spamtp-vignettes.css
 vignette: >
   %\VignetteIndexEntry{4. SpaMTP: Metabolite annotation and pathway follow-up}
@@ -15,11 +16,11 @@ vignette: >
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
-  fig.align = "center", fig.width = 7, fig.height = 4.5,
-  out.width = "720px", dpi = 96
+    collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
+    fig.align = "center", fig.width = 7, fig.height = 4.5,
+    out.width = "100%", dpi = 120
 )
-options(width = 100)
+options(width = 88)
 ```
 
 # Overview
@@ -27,6 +28,13 @@ options(width = 100)
 SpaMTP annotates mass spectrometry imaging (MSI) features by matching observed
 m/z to plausible adducts within a mass tolerance. It ranks candidates using
 chemical priors and optional first-stage mass spectrometry (MS1) evidence.
+
+The guide starts with one compound and simulated masses so each scoring step
+can be inspected. It then searches the complete chemical reference for a
+declared subset of measured mouse-brain features, compares score thresholds
+and carries the retained identities into pathway analysis. The resulting
+scores prioritize chemical hypotheses; their interpretation depends on the
+acquisition context and the evidence available for each candidate.
 
 ## Annotation stages
 
@@ -37,12 +45,16 @@ chemical priors and optional first-stage mass spectrometry (MS1) evidence.
 4. Score mass, structure, isotope and adduct-family evidence.
 5. Store candidates and select a score threshold for analysis.
 
-See [pathway resources](Pathway_Database_Integration.html) and the
-[evaluated workflow](End_to_End_Workflow.html) for pathway analysis, and
-[modern data access](Modern_Data_Access.html) for accessors.
+The [data-access guide](Modern_Data_Access.html) introduces the containers used
+here. For downstream interpretation, the
+[pathway-resource guide](Pathway_Database_Integration.html) explains reference
+coverage and the [complete workflow](End_to_End_Workflow.html) relates candidate
+chemistry to spatial patterns.
 
 ```{r load-package, message=FALSE, warning=FALSE}
 library(SpaMTP)
+library(SpatialExperiment)
+library(SpaMTPData)
 ```
 
 # RaMP snapshot and identifiers
@@ -53,42 +65,11 @@ IDs. `source = "auto"` resolves these resources; a staged directory supports
 offline use. The registry below describes `chem_props` without downloading it.
 
 ```{r load-ramp-resources}
-ramp_registry <- spaMTPDatabaseInfo()
-chem_props_registry <- ramp_registry[
-  ramp_registry$resource == "chem_props",
-  ,
-  drop = FALSE
-]
+ramp_registry <- spaMTPDatabaseInfo(version = "3.0.7")
+chem_props_registry <- ramp_registry[ramp_registry$resource == "chem_props", ]
+chem_props_registry[, c("resource", "version", "rows", "columns", "bytes", "md5")]
 ```
 
-```{r ramp-summary}
-ramp_summary <- data.frame(
-  property = c(
-    "RaMP version",
-    "Chemical-property records",
-    "Serialized resource size",
-    "Resource checksum"
-  ),
-  value = c(
-    chem_props_registry$version,
-    format(chem_props_registry$rows, big.mark = ","),
-    format(chem_props_registry$bytes, big.mark = ","),
-    chem_props_registry$md5
-  )
-)
-knitr::kable(ramp_summary, align = c("l", "r"))
-```
-
-## Chemical table schema
-
-The registry reports the chemical table's schema and resource path:
-
-```{r chem-props-columns}
-chem_props_registry[, c(
-  "resource", "version", "rows", "columns", "rdata_path"
-)] |>
-  knitr::kable(align = c("l", "r", "r", "r", "l"))
-```
 
 # A worked 2-hydroxyglutarate example
 
@@ -96,32 +77,25 @@ A single RaMP record and simulated ion masses show how indexing and scoring
 work. The complete-database example below then applies the same steps to a
 mouse striatal section.
 
-`target_db` contains D-2-hydroxyglutaric acid (2HG; neutral mass 148.0372 Da).
+`loadSpaMTPDatabase()` retrieves the verified RaMP chemical table; `target_db`
+is its HMDB record of D-2-hydroxyglutaric acid (2HG; neutral mass 148.0372 Da).
 `annotateSMILESStructure()` adds functional groups and ionization-site counts
 from its `iso_smiles` structure.
 
 ```{r target-database}
-# One chemical record from the pinned SpaMTPdb 3.0.7 snapshot.
-target_db <- data.frame(
-  ramp_id = "RAMP_C_000219574",
-  chem_data_source = "hmdb",
-  chem_source_id = "hmdb:HMDB0000606",
-  inchi_key = "HWXBTNAVRSUOJR-GSVOUGTGSA-N",
-  monoisotop_mass = 148.037173366,
-  common_name = "D-2-Hydroxyglutaric acid",
-  mol_formula = "C5H8O5",
-  iso_smiles = "O[C@H](CCC(O)=O)C(O)=O",
-  stringsAsFactors = FALSE
-)
+database <- loadSpaMTPDatabase(c(
+    "chem_props", "source_df", "analytehaspathway",
+    "pathway", "ramp_db_metadata"
+), version = "3.0.7")
+target_db <- database$chem_props[
+    database$chem_props$chem_source_id == "hmdb:HMDB0000606",
+]
 target_db <- annotateSMILESStructure(target_db)
-
-target_view <- target_db[, c(
-  "ramp_id", "chem_source_id", "common_name", "mol_formula",
-  "monoisotop_mass", "iso_smiles", "carboxyl_sites",
-  "alcohol_hydroxyl_sites", "ketone_sites", "max_exchangeable_protons"
-)]
-target_view$iso_smiles <- paste0("`", target_view$iso_smiles, "`")
-knitr::kable(t(target_view), col.names = "Value", digits = 7, format = "html")
+t(target_db[, c(
+    "ramp_id", "chem_source_id", "common_name", "mol_formula",
+    "monoisotop_mass", "iso_smiles", "carboxyl_sites", "alcohol_hydroxyl_sites",
+    "ketone_sites", "max_exchangeable_protons"
+)])
 ```
 
 ## Functional-group interpretation
@@ -136,14 +110,13 @@ functional groups and mode-specific chemical-prior scores. These bounded
 heuristics express the structural support for each ion mode.
 
 ```{r structure-priors}
-structure_summary <- target_db[, c(
-  "carboxyl_sites", "hydroxyl_sites", "carbonyl_sites",
-  "acidic_sites", "basic_sites", "proton_acceptor_sites",
-  "alkali_binding_sites", "alkali_chelation_motifs",
-  "positive_mode_score", "negative_mode_score",
-  "alkali_affinity_score", "neutral_mass_score"
-)]
-knitr::kable(t(structure_summary), col.names = "Value", digits = 2)
+t(target_db[, c(
+    "carboxyl_sites", "hydroxyl_sites", "carbonyl_sites",
+    "acidic_sites", "basic_sites", "proton_acceptor_sites",
+    "alkali_binding_sites", "alkali_chelation_motifs",
+    "positive_mode_score", "negative_mode_score",
+    "alkali_affinity_score", "neutral_mass_score"
+)])
 ```
 
 ## Evidence by ion mode
@@ -162,8 +135,8 @@ alkali binding over simple protonation. `structure_evidence` records the sites:
 
 ```{r structure-evidence}
 target_db[, c(
-  "positive_site_atoms", "negative_site_atoms", "alkali_site_atoms",
-  "structure_evidence"
+    "positive_site_atoms", "negative_site_atoms", "alkali_site_atoms",
+    "structure_evidence"
 )]
 ```
 
@@ -172,26 +145,18 @@ Labels such as `O1` refer to positions in the supplied SMILES atom order.
 ## Predicted adduct families
 
 `predictAdductsFromSMILES()` lists plausible adducts before peak matching;
-no explicit `adducts` list is needed:
+no explicit `adducts` list is needed. The leading positive- and negative-mode
+families are:
 
 ```{r predict-adduct-space}
-predicted_spaces <- lapply(
-  c("positive", "negative", "neutral"),
-  function(mode) {
-    x <- predictAdductsFromSMILES(target_db$iso_smiles, polarity = mode)
-    x <- x[x$retained, ]
-    utils::head(x, 4L)
-  }
+adduct_columns <- c(
+    "polarity", "adduct", "structure_score",
+    "proton_bound_status", "combined_prior", "retained"
 )
-predicted_spaces <- do.call(rbind, predicted_spaces)
-knitr::kable(
-  predicted_spaces[, c(
-    "polarity", "adduct", "structure_score", "proton_bound_status",
-    "combined_prior", "retained"
-  )],
-  digits = 3,
-  row.names = FALSE
-)
+positive_space <- predictAdductsFromSMILES(target_db$iso_smiles, polarity = "positive")
+head(positive_space[positive_space$retained, adduct_columns], 4)
+negative_space <- predictAdductsFromSMILES(target_db$iso_smiles, polarity = "negative")
+head(negative_space[negative_space$retained, adduct_columns], 4)
 ```
 
 The following steps combine these structural predictions with observed mass
@@ -200,20 +165,19 @@ and optional isotope and adduct-family evidence.
 # Adduct rules and structural constraints
 
 `adductRules()` returns each rule's mass shift, molecular multiplier, charge,
-proton losses, class and prior. Both `[M+H]+` and `M+H` notation are accepted.
+proton losses, class and prior. Ion masses come from the adduct definitions
+of [MetaboCoreUtils](https://bioconductor.org/packages/MetaboCoreUtils)
+(`metabocoreutils_name`); SpaMTP adds the priors and structural constraints.
+Both `[M+H]+` and `M+H` notation are accepted.
 
 ```{r adduct-rules}
 selected_adducts <- c("M+H", "M+Na", "M+2Na-H", "2M+H")
 positive_rules <- adductRules("positive")
-rule_summary <- positive_rules[
-  positive_rules$name %in% selected_adducts,
-  c(
-    "name", "n_molecules", "mass_shift", "charge", "loss_h",
+positive_rules[match(selected_adducts, positive_rules$name), c(
+    "name",
+    "metabocoreutils_name", "n_molecules", "mass_shift", "charge", "loss_h",
     "complexity", "base_adduct", "prior"
-  )
-]
-rule_summary <- rule_summary[match(selected_adducts, rule_summary$name), ]
-knitr::kable(rule_summary, digits = 7, row.names = FALSE)
+)]
 ```
 
 Positive-mode rules also include `[M+H-H2O]+` and `[M+H-2H2O]+`.
@@ -244,18 +208,16 @@ then sorts retained ions for binary interval searches. Reuse `positive_index`
 for the same database, polarity and adduct set.
 
 ```{r build-index}
-positive_index <- buildMZAnnotationIndex(
-  target_db,
-  polarity = "positive",
-  adducts = selected_adducts
+positive_index <- buildMZAnnotationIndex(target_db,
+    polarity = "positive",
+    adducts = selected_adducts
 )
 positive_index
-
 ion_table <- data.frame(
-  adduct = positive_index$rules$name[positive_index$rule_idx],
-  expected_mz = positive_index$expected_mz
+    adduct = positive_index$rules$name[positive_index$rule_idx],
+    expected_mz = positive_index$expected_mz
 )
-knitr::kable(ion_table, digits = 9, row.names = FALSE)
+ion_table
 ```
 
 ## Index inspection and reuse
@@ -264,21 +226,15 @@ Querying exact expected masses with MS1 checks disabled isolates each
 hypothesis's structural contribution:
 
 ```{r inspect-structure-prior}
-structure_rank <- queryMZAnnotationIndex(
-  positive_index$expected_mz,
-  positive_index,
-  ppm = 0,
-  check_isotopes = FALSE,
-  check_adduct_network = FALSE
+structure_rank <- queryMZAnnotationIndex(positive_index$expected_mz,
+    positive_index,
+    ppm = 0, check_isotopes = FALSE,
+    check_adduct_network = FALSE
 )
-knitr::kable(
-  structure_rank[, c(
-    "adduct", "expected_mz", "structure_score", "structure_status",
-    "structure_rule_evidence"
-  )],
-  digits = 3,
-  row.names = FALSE
-)
+structure_rank[, c(
+    "adduct", "expected_mz", "structure_score",
+    "structure_status", "structure_rule_evidence"
+)]
 ```
 
 ## Chemical validity pruning
@@ -287,16 +243,11 @@ The 2HG record permits at most two proton losses, so structural pruning
 excludes `[M-3H]3-` from the indexed search space.
 
 ```{r proton-pruning}
-negative_index <- buildMZAnnotationIndex(
-  target_db,
-  polarity = "negative",
-  adducts = c("M-H", "M-2H", "M-3H")
+negative_index <- buildMZAnnotationIndex(target_db,
+    polarity = "negative",
+    adducts = c("M-H", "M-2H", "M-3H")
 )
-indexed_negative_rules <- unique(
-  negative_index$rules$name[negative_index$rule_idx]
-)
-data.frame(indexed_rule = indexed_negative_rules) |>
-  knitr::kable(align = "l")
+unique(negative_index$rules$name[negative_index$rule_idx])
 ```
 
 # Query and rank candidates
@@ -317,28 +268,22 @@ names(observed_mz) <- ion_table$adduct
 
 carbon13_spacing <- 1.00335483507
 ms1_spectrum <- data.frame(
-  mz = c(
-    observed_mz,
-    ion_table$expected_mz[ion_table$adduct == "M+H"] + carbon13_spacing
-  ),
-  intensity = c(1000, 700, 300, 200, 53.5)
+    mz = c(
+        observed_mz,
+        ion_table$expected_mz[ion_table$adduct == "M+H"] + carbon13_spacing
+    ),
+    intensity = c(1000, 700, 300, 200, 53.5)
 )
 
-candidates <- queryMZAnnotationIndex(
-  observed_mz,
-  positive_index,
-  ppm = 5,
-  ms1_spectrum = ms1_spectrum,
-  min_score = 0
+candidates <- queryMZAnnotationIndex(observed_mz, positive_index,
+    ppm = 5,
+    ms1_spectrum = ms1_spectrum, min_score = 0
 )
-
-candidate_view <- candidates[, c(
-  "observed_mz", "expected_mz", "adduct", "ppm_error", "mass_score",
-  "rule_prior", "chemical_score", "structure_score", "structure_status",
-  "isotope_score",
-  "adduct_network_score", "score", "ramp_ids"
+candidates[, c(
+    "adduct", "observed_mz", "ppm_error", "mass_score",
+    "rule_prior", "chemical_score", "structure_score", "isotope_score",
+    "adduct_network_score", "score"
 )]
-knitr::kable(t(candidate_view), col.names = candidate_view$adduct, digits = 4)
 ```
 
 ## Mass-tolerance boundary
@@ -346,18 +291,8 @@ knitr::kable(t(candidate_view), col.names = candidate_view$adduct, digits = 4)
 Candidates outside the requested tolerance are removed before scoring:
 
 ```{r ppm-boundary}
-outside_five_ppm <-
-  ion_table$expected_mz[ion_table$adduct == "M+H"] * (1 + 5.1e-6)
-
-data.frame(
-  query = "5.1 ppm outside expected m/z",
-  retained_candidates = nrow(queryMZAnnotationIndex(
-    outside_five_ppm,
-    positive_index,
-    ppm = 5
-  ))
-) |>
-  knitr::kable(row.names = FALSE)
+outside_five_ppm <- ion_table$expected_mz[ion_table$adduct == "M+H"] * (1 + 5.1e-6)
+nrow(queryMZAnnotationIndex(outside_five_ppm, positive_index, ppm = 5))
 ```
 
 ## Score components
@@ -374,10 +309,13 @@ Absent optional MS1 context receives a neutral scoring factor. When a
 contextual spectrum is supplied, missing expected isotope or base-adduct peaks
 can reduce the score.
 
-`use_mass_defect = TRUE` applies an additional chemical heuristic: for CHO-only
-formulae and adducts without metal or halogen, a signed mass defect
-(`observed_mz - round(observed_mz)`) from −0.15 to −0.01 gives
-`chemical_score = 0.2`. Other candidates receive a factor of 1. Setting
+`use_mass_defect = TRUE` checks CHO formula/ion mass consistency. The formula's
+monoisotopic mass and the selected ion rule predict an m/z; a discrepancy beyond
+the query tolerance, with a minimum of 5 ppm to allow rounded reference masses,
+gives `chemical_score = 0.2`. Negative fractional mass defects alone are valid
+for oxygen-rich acids and large lipids and receive no penalty. Other parsed
+formulae receive a factor of 1. Unavailable formula evidence is recorded as
+`NA` and omitted from the score product. Setting
 `use_mass_defect = FALSE` disables this factor for sensitivity comparisons.
 
 ## Adduct-family support
@@ -390,33 +328,28 @@ support changes.
 dimer_mz <- ion_table$expected_mz[ion_table$adduct == "2M+H"]
 monomer_mz <- ion_table$expected_mz[ion_table$adduct == "M+H"]
 
-isolated_dimer <- queryMZAnnotationIndex(
-  dimer_mz,
-  positive_index,
-  ppm = 5,
-  ms1_spectrum = data.frame(mz = dimer_mz, intensity = 100),
-  check_isotopes = FALSE
+isolated_dimer <- queryMZAnnotationIndex(dimer_mz, positive_index,
+    ppm = 5,
+    ms1_spectrum = data.frame(mz = dimer_mz, intensity = 100),
+    check_isotopes = FALSE
 )
-supported_dimer <- queryMZAnnotationIndex(
-  dimer_mz,
-  positive_index,
-  ppm = 5,
-  ms1_spectrum = data.frame(
-    mz = c(dimer_mz, monomer_mz),
-    intensity = c(100, 500)
-  ),
-  check_isotopes = FALSE
+supported_dimer <- queryMZAnnotationIndex(dimer_mz, positive_index,
+    ppm = 5,
+    ms1_spectrum = data.frame(
+        mz = c(dimer_mz, monomer_mz),
+        intensity = c(100, 500)
+    ),
+    check_isotopes = FALSE
 )
 
 data.frame(
-  context = c("isolated dimer", "base monomer present"),
-  adduct_network_score = c(
-    isolated_dimer$adduct_network_score,
-    supported_dimer$adduct_network_score
-  ),
-  final_score = c(isolated_dimer$score, supported_dimer$score)
-) |>
-  knitr::kable(digits = 3, row.names = FALSE)
+    context = c("isolated dimer", "base monomer present"),
+    adduct_network_score = c(
+        isolated_dimer$adduct_network_score,
+        supported_dimer$adduct_network_score
+    ),
+    final_score = c(isolated_dimer$score, supported_dimer$score)
+)
 ```
 
 # Annotate individual mass values
@@ -425,22 +358,14 @@ data.frame(
 observed values. Supply a pre-built index to avoid rebuilding it.
 
 ```{r annotate-mz}
-single_result <- annotateMZ(
-  observed_mz[["M+H"]],
-  index = positive_index,
-  polarity = "positive",
-  ppm = 5,
-  ms1_spectrum = ms1_spectrum,
-  min_score = 0
+single_result <- annotateMZ(observed_mz[["M+H"]],
+    index = positive_index,
+    polarity = "positive", ppm = 5, ms1_spectrum = ms1_spectrum, min_score = 0
 )
-knitr::kable(
-  single_result[, c(
+single_result[, c(
     "observed_mz", "metabolite_names", "ramp_ids", "adduct",
     "ppm_error", "score"
-  )],
-  digits = 4,
-  row.names = FALSE
-)
+)]
 ```
 
 # Production use with the complete RaMP table
@@ -453,17 +378,20 @@ families.
 
 ## Precomputed structural features
 
-`SpaMTPdb::spaMTPdbResource("smiles_features")` supplies precomputed features,
+SpaMTPdb's `spaMTPdbResource("smiles_features")` supplies precomputed features,
 joined to `chem_props` by `iso_smiles`. For custom databases,
 `infer_structure = "auto"` parses up to 5,000 unique structures. Larger inputs
 with missing structural features warn; precompute with `annotateSMILESStructure()`
 or explicitly choose
-`infer_structure = "always"` and `structure_workers`.
+`infer_structure = "always"` and a `BPPARAM` execution parameter.
 
-## Complete-database annotation on real data
+## Complete-reference annotation of selected measured features
 
-This example annotates all 2,075 MSI features across the 876 paired locations in
+This example searches the complete chemical reference for every fourth MSI
+feature, plus the two prespecified masses examined below. This deterministic
+subset keeps the tutorial fast; all 876 paired locations are retained from
 the archived 2,5-dihydroxybenzoic acid (DHB) MALDI/Visium striatal dataset.
+Use the unsliced object to annotate all 2,075 measured features.
 The source is a mouse section from a 6-hydroxydopamine (6-OHDA) lesion model
 (mouse 3, V11L12-038_B1;
 [GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
@@ -480,65 +408,75 @@ co-occurrence, supply spectra from matching locations.
 stores ranked candidates in `metadata()$mz_annotation`. `annotationInfo()`
 reports the annotation engine and reference provenance.
 
-```{r production-pattern, eval=TRUE}
-database <- loadSpaMTPDatabase(c("chem_props", "source_df", "analytehaspathway",
-  "pathway", "ramp_db_metadata", "ramp_wikipathway", "ramp_reactome",
-  "ramp_kegg", "ramp_hmdb"), version = "3.0.7")
-chem_props <- database$chem_props
-object <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
-original_counts <- SummarizedExperiment::assay(object, "counts")
-ms1 <- data.frame(mz = SummarizedExperiment::rowData(object)$mz,
-                  intensity = Matrix::rowMeans(original_counts))
-ramp_positive_index <- buildMZAnnotationIndex(
-  chem_props,
-  polarity = "positive", maldi_matrix = "DHB"
+```{r production-pattern}
+object <- spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
+ms1 <- data.frame(mz = rowData(object)$mz, intensity = rowMeans(counts(object)))
+object$full_panel_total <- colSums(counts(object))
+selected_features <- unique(c(
+    rownames(object)[seq(1, nrow(object), by = 4)],
+    findNearestMZ(object, c(264.2686, 400.1466))
+))
+object <- object[selected_features, ]
+ramp_positive_index <- buildMZAnnotationIndex(database$chem_props,
+    polarity = "positive", maldi_matrix = "DHB"
 )
 
-object <- annotateSM(
-  object,
-  db = NULL,
-  index = ramp_positive_index,
-  assay = "main",
-  raw.mz.column = "mz",
-  polarity = "positive", maldi_matrix = "DHB", ms1_spectrum = ms1,
-  ppm_error = 5,
-  min_score = 0, save.intermediate = TRUE,
-  return.only.annotated = FALSE
+object <- annotateSM(object,
+    index = ramp_positive_index, assay = "main",
+    raw.mz.column = "mz", polarity = "positive", maldi_matrix = "DHB",
+    ms1_spectrum = ms1, ppm_error = 5, min_score = 0,
+    save.intermediate = TRUE, return.only.annotated = FALSE, verbose = FALSE
 )
-stopifnot(identical(SummarizedExperiment::assay(object, "counts"), original_counts),
-          identical(dim(object), c(2075L, 876L)), nrow(chem_props) == 289754L)
 annotationInfo(object)
 ```
+
+`FormulaStatus` in `annotationCandidates(object)` records whether the reference
+formula supports formula-based scoring. Variable groups and notation outside
+the parser's supported syntax are summarized once; their formula-based scores
+are `NA`, while exact-mass matching remains available.
+
+## Inspect isotope and matrix-ion candidates
+
+Check for isotope and MALDI matrix-ion candidates using the full `ms1`
+peak list, preserving possible parents omitted by the feature subset.
+
+```{r annotation-qc}
+matrix_flags <- flagMatrixPeaks(ms1$mz,
+    maldi_matrix = "DHB", polarity = "positive", ppm = 5
+)
+isotope_flags <- flagIsotopePeaks(ms1$mz, ms1$intensity, ppm = 3)
+data.frame(
+    diagnostic = c("DHB matrix-ion mass match", "Possible carbon-13 isotope"),
+    flagged_peaks = c(sum(matrix_flags$matrix_ion), sum(isotope_flags$isotope)),
+    assessed_peaks = nrow(ms1)
+)
+```
+
+Matrix flags identify mass coincidences; isotope flags use mass spacing and
+mean-intensity ratios. Supplying a feature-by-location intensity matrix also
+checks profile correlation. Use flags to prioritize candidates for inspection;
+chemical identification requires complementary evidence. All measured features
+are retained here.
 
 ## Inspect stored candidates and score thresholds
 
 Retain all ppm-valid candidates with `min_score = 0`, then compare score
 thresholds without rebuilding the index or repeating annotation.
-`retained_candidates` counts candidate hypotheses; one observed mass can
-contribute several rows. Save the annotated `object` with `saveRDS()` to retain
+`summarizeAnnotationScores()` counts candidate hypotheses (`candidates`; one
+observed mass can contribute several rows), features with at least one
+candidate, and features with one or several distinct RaMP identities. Save the annotated `object` with `saveRDS()` to retain
 the intensities, candidate table and annotation settings for later reuse.
 
+These summaries, `annotationCandidates()` and `plotAnnotationScores()` all
+refer to the features currently present in the object. After row subsetting,
+candidates for removed features are excluded from their results; the original
+annotation store remains in `metadata()` for provenance.
+
 ```{r score-thresholds}
-stored_candidates <- S4Vectors::metadata(object)$mz_annotation$results
-score_thresholds <- c(0, 0.05, 0.2, 0.5)
-# Count distinct compound identities per measured feature at each threshold.
-identity_count <- function(candidates) {
-  ids <- strsplit(candidates$Ramp_IDs, ";[[:space:]]*")
-  pairs <- data.frame(feature = rep(candidates$ID, lengths(ids)),
-                      compound = unlist(ids, use.names = FALSE))
-  pairs <- unique(pairs[grepl("^RAMP_C_", pairs$compound), ])
-  table(pairs$feature)
-}
-threshold_summary <- do.call(rbind, lapply(score_thresholds, function(threshold) {
-  retained <- stored_candidates[stored_candidates$Score >= threshold, ]
-  identities <- identity_count(retained)
-  data.frame(score_threshold = threshold,
-             candidates = nrow(retained),
-             matched_features = length(unique(retained$ID)),
-             single_identity_features = sum(identities == 1L),
-             ambiguous_features = sum(identities > 1L))
-}))
-knitr::kable(threshold_summary, row.names = FALSE)
+threshold_summary <- summarizeAnnotationScores(object,
+    thresholds = c(0, 0.05, 0.2, 0.5)
+)
+threshold_summary
 ```
 
 The 0.05 cutoff retains a broad candidate set for exploratory pathway analysis.
@@ -548,110 +486,80 @@ Single-identity feature counts can initially rise as weaker competing identities
 fall below the cutoff. At a stricter cutoff, the last candidate for many features
 also falls below the threshold, reducing coverage.
 
-```{r annotation-score-distribution, fig.width=7, fig.height=3.6, out.width="760px", fig.cap="Best candidate score per measured mass feature in the mouse striatal section. Each bar counts features; the dashed line marks the exploratory 0.05 cutoff. Features without a ppm-valid candidate are reported in the text."}
-best_score <- tapply(stored_candidates$Score, stored_candidates$ID, max)
-ggplot2::ggplot(data.frame(score = as.numeric(best_score)),
-                ggplot2::aes(x = score)) +
-  ggplot2::geom_histogram(breaks = seq(0, 1, by = 0.025),
-                         fill = "#567D9A", colour = "white") +
-  ggplot2::geom_vline(xintercept = 0.05, linetype = 2, colour = "#8A4D34") +
-  ggplot2::labs(x = "Best candidate score per feature", y = "Mass features") +
-  ggplot2::theme_classic(base_size = 11)
+```{r annotation-score-distribution, fig.width=7, fig.height=3.6, out.width="760px", fig.cap="Best candidate score per selected measured mass feature in the mouse striatal section. Each bar counts features; the dashed line marks the exploratory 0.05 cutoff. Features without a ppm-valid candidate are reported in the text."}
+plotAnnotationScores(object, threshold = 0.05)
 ```
 
 Figure 4.\@ref(fig:annotation-score-distribution) summarizes the score range;
-`r nrow(object) - length(best_score)` measured features have no ppm-valid candidate.
+`r nrow(object) - threshold_summary$matched_features[1]` measured features have no ppm-valid candidate.
 
 ## Candidate identities for selected mass features
 
 The m/z 400.1466 and 264.2686 features also appear in the
 [paired molecular maps](End_to_End_Workflow.html#paired-ion-and-transcript-maps)
 and [association analysis](End_to_End_Workflow.html#raw-and-adjusted-correlations)
-in Article 7. They were selected before inspecting candidate scores.
-For each nearest measured feature, the table shows up to three distinct
-compound/adduct hypotheses and the number of RaMP identities surviving 0.05.
-`ppm_error` measures mass agreement, while the identity count records the
-remaining chemical ambiguity.
+in guide 7. They were selected before inspecting candidate scores.
+`annotationCandidates()` ranks the stored candidates of each nearest measured
+feature by score and then mass error. The first table shows up to three
+distinct compound/adduct hypotheses per feature; `Error` (ppm) measures mass
+agreement. The second gives the number of distinct RaMP identities with
+scores of at least 0.05, which records the remaining chemical ambiguity.
 
 ```{r real-candidate-examples}
 example_mz <- c(264.2686, 400.1466)
-measured_mz <- SummarizedExperiment::rowData(object)$mz
-example_features <- vapply(example_mz, function(mz) {
-  which.min(abs(measured_mz - mz))
-}, integer(1))
-identities_at_cutoff <- identity_count(
-  stored_candidates[stored_candidates$Score >= 0.05, ])
-candidates_for <- function(feature) {
-  candidates <- stored_candidates[stored_candidates$ID == feature, ]
-  candidates <- candidates[order(-candidates$Score, candidates$Error), ]
-  candidates <- candidates[!duplicated(candidates[, c("Ramp_IDs", "Adduct")]), ]
-  candidates$rank <- seq_len(nrow(candidates))
-  candidates
-}
-candidate_examples <- do.call(rbind, lapply(example_features, function(feature) {
-  candidates <- head(candidates_for(feature), 3)
-  if (!nrow(candidates)) return(NULL)
-  data.frame(mz = candidates$observed_mz,
-    candidate = candidates$IsomerNames, adduct = candidates$Adduct,
-    ppm_error = candidates$Error, score = candidates$Score,
-    identities_at_0.05 = as.integer(identities_at_cutoff[as.character(feature)]))
-}))
-candidate_examples$identities_at_0.05[
-  is.na(candidate_examples$identities_at_0.05)] <- 0L
-focal_candidates <- candidates_for(example_features[[2L]])
-difloxacin_candidate <- focal_candidates[
-  focal_candidates$IsomerNames == "Difloxacin" &
+candidate_columns <- c(
+    "feature", "rank", "observed_mz", "IsomerNames",
+    "Adduct", "Error", "Score"
+)
+annotationCandidates(object, features = example_mz, n = 3)[, candidate_columns]
+at_cutoff <- annotationCandidates(object, features = example_mz, minScore = 0.05)
+unique(at_cutoff[, c("feature", "identities")])
+
+focal_candidates <- annotationCandidates(object, features = 400.1466)
+difloxacin <- focal_candidates[focal_candidates$IsomerNames == "Difloxacin" &
     focal_candidates$Adduct == "M+H", ]
-stopifnot(nrow(difloxacin_candidate) == 1L,
-          all(c("M+H-H2O", "M+H-2H2O") %in% ramp_positive_index$rules$name))
-knitr::kable(candidate_examples, format = "html", digits = 4, row.names = FALSE)
 ```
 
 Both selected features retain multiple compound identities at 0.05 and are
 excluded from the compound pathway assay below. At m/z
-`r sprintf("%.4f", difloxacin_candidate$observed_mz)`, difloxacin `[M+H]+`
-ranks `r difloxacin_candidate$rank`, with score
-`r sprintf("%.3f", difloxacin_candidate$Score)`.
+`r sprintf("%.4f", difloxacin$observed_mz)`, difloxacin `[M+H]+`
+ranks `r difloxacin$rank`, with score
+`r sprintf("%.3f", difloxacin$Score)`.
 Difloxacin is a [veterinary fluoroquinolone antibiotic](https://www.ema.europa.eu/en/documents/mrl-report/difloxacin-extension-all-food-producing-species-summary-report-5-committee-veterinary-medicinal-products_en.pdf).
 Assigning this identity to the mouse section requires exposure information and
 orthogonal chemical evidence.
 
 ## Sphingosine within the complete candidate search
 
-Article 7 follows the spatial association of m/z 264.2686 with myelin-related
+Guide 7 follows the spatial association of m/z 264.2686 with myelin-related
 transcripts. The table below locates the sphingosine `[M+H-2H2O]+` hypothesis
 within this complete database search. `rank` orders distinct compound/adduct
-hypotheses by score, then mass error. `max_water_losses` gives the
-structure-derived capacity and `dehydration_status` records the engine's
+hypotheses by score, then mass error. `MaxWaterLosses` gives the
+structure-derived capacity and `DehydrationStatus` records the engine's
 eligibility decision.
 
 ```{r sphingosine-full-search}
-myelin_candidates <- candidates_for(example_features[[1L]])
-sphingosine_full <- myelin_candidates[
-  grepl("(^|;[[:space:]]*)RAMP_C_000042035($|;)",
-        myelin_candidates$Ramp_IDs) &
-    myelin_candidates$Adduct == "M+H-2H2O", ]
-stopifnot(nrow(sphingosine_full) > 0L,
-          all(sphingosine_full$WaterLoss == 2L),
-          all(sphingosine_full$MaxWaterLosses >= 2L))
-knitr::kable(data.frame(
-  rank = sphingosine_full$rank,
-  candidate = sphingosine_full$IsomerNames,
-  adduct = sphingosine_full$Adduct,
-  ppm_error = sphingosine_full$Error,
-  score = sphingosine_full$Score,
-  max_water_losses = sphingosine_full$MaxWaterLosses,
-  dehydration_status = sphingosine_full$DehydrationStatus
-), format = "html", digits = 4, row.names = FALSE)
+myelin_candidates <- annotationCandidates(object, features = 264.2686)
+sphingosine <- myelin_candidates[
+    grepl("RAMP_C_000042035", myelin_candidates$Ramp_IDs) &
+        myelin_candidates$Adduct == "M+H-2H2O",
+]
+sphingosine[, c(
+    "rank", "IsomerNames", "Adduct", "Error", "Score",
+    "MaxWaterLosses", "DehydrationStatus"
+)]
 ```
 
+Several leading candidates share the same score and mass error. Resolving
+these tied identities requires additional spectral or experimental evidence.
+
 The same feature retains
-`r as.integer(identities_at_cutoff[as.character(example_features[[1L]])])`
+`r at_cutoff$identities[at_cutoff$feature == findNearestMZ(object, 264.2686)][1]`
 RaMP identities at the exploratory 0.05 cutoff. Its competing candidates
 include ammonium adducts of other compounds. The water-loss rule brings
 sphingosine into the ranked results with explicit structural support. The
 [formula-specific comparison](End_to_End_Workflow.html#structure-constrained-chemical-follow-up)
-in Article 7 inspects the corresponding structural alternatives without
+in guide 7 inspects the corresponding structural alternatives without
 rebuilding the complete index.
 
 # Carry the annotation threshold into real pathway analysis
@@ -664,45 +572,62 @@ in mouse requires species-specific supporting evidence.
 `pathway_index` uses RaMP identities without human HGNC conversion.
 `annotation_score_threshold = 0.05` applies the exploratory cutoff examined
 above. `metabolite_ambiguity = "exclude"` removes multi-identity peaks before
-computing `markers` and `ranks`; pathway tests require 3–100 ranked members.
+computing regional `markers`. `findRegionalPathways()` ranks every retained
+compound by its regional log fold change (see `markerRanks()`); pathway tests
+require 3–100 ranked members.
 `LogNormalize` uses the natural logarithm, computing
-`log1p(10000 * intensity / location_total)` before compound aggregation.
+`log1p(10000 * intensity / location_total)` before compound aggregation. The
+recorded total uses all 2,075 input features, so feature selection does not
+change the normalization denominator. The MS1 context also uses the full panel.
 
-`network_directory` receives the HTML network. `top_n_pathways` and `max_nodes`
-limit display size; `SM_assay`/`SM_slot` select compound logcounts. `DE.list`
-supplies node scores, `analyte_types` limits nodes to compounds, and
-`image = NULL` omits an optical background.
+`pathwayNetworkPlots()` writes the HTML network to the temporary directory.
+`top_n_pathways` and `max_nodes` limit display size; `SM_assay`/`smAssayName` select compound logcounts. `DE.list`
+supplies node scores, and `analyte_types = "metabolites"` restricts the
+measured-data overlay to compounds. Reference gene nodes can still provide
+interaction context. The spatial panel plots abundances at the experiment's
+coordinates on a plain background.
 
-```{r downstream-thresholds, eval=TRUE, message=FALSE}
-pathway_index <- buildPathwayIndex(database, gene_mapping = "ramp",
-                                 organism = "Mus musculus")
-object <- normalizeSMData(object, "LogNormalize", verbose = FALSE)
-object <- createPathwayAssay(object, assay = "main", slot = "logcounts",
-  new_assay = "compound", pathway_index = pathway_index, database = database,
-  organism = "Mus musculus", annotation_source = "current",
-  annotation_score_threshold = 0.05, metabolite_ambiguity = "exclude")
-markers <- findAllDEMs(object, ident = "RegionLoupe", assay = "compound",
-  slot = "logcounts", method = "markers", spatial_blocks = 0)
-ranks <- markers$expression
-for (region in colnames(ranks)) {
-  tab <- markers$DEMs[markers$DEMs$cluster == region, ]
-  ranks[, region] <- tab$logFC[match(rownames(ranks), tab$gene)]
-}
-set.seed(1234)
-regional_pathways <- findRegionalPathways(object, ident = "RegionLoupe",
-  ranks = list(metabolites = ranks), pathway_index = pathway_index,
-  min_path_size = 3, max_path_size = 100, organism = "Mus musculus")
-stopifnot(nrow(regional_pathways) > 0L)
+```{r downstream-thresholds, message=FALSE}
+pathway_index <- buildPathwayIndex(database,
+    gene_mapping = "ramp",
+    organism = "Mus musculus"
+)
+object <- normalizeSMData(object, "LogNormalize",
+    libSizes = "full_panel_total",
+    verbose = FALSE
+)
+object <- createPathwayAssay(object,
+    assay = "main", assayName = "logcounts",
+    new_assay = "compound", pathway_index = pathway_index, database = database,
+    organism = "Mus musculus", annotation_source = "current",
+    annotation_score_threshold = 0.05, metabolite_ambiguity = "exclude",
+    verbose = FALSE
+)
+markers <- findAllDEMs(object,
+    ident = "RegionLoupe", assay = "compound",
+    assayName = "logcounts", method = "markers", spatial_blocks = 0,
+    verbose = FALSE
+)
+regional_pathways <- findRegionalPathways(object,
+    ident = "RegionLoupe",
+    ranks = list(metabolites = markers), pathway_index = pathway_index,
+    min_path_size = 3, max_path_size = 100, organism = "Mus musculus",
+    verbose = FALSE
+)
 head(regional_pathways[, c("pathwayName", "Cluster_id", "NES", "padj")])
-network_directory <- tempfile("dhb-annotation-networks-")
-dir.create(network_directory)
-network_file <- pathwayNetworkPlots(object, ident = "RegionLoupe",
-  regpathway = regional_pathways, DE.list = list(metabolites = markers$DEMs),
-  SM_assay = "compound", SM_slot = "logcounts", analyte_types = "metabolites",
-  database = database, pathway_index = pathway_index, organism = "Mus musculus",
-  annotation_score_threshold = 0.05, metabolite_detection = "annotated",
-  path = network_directory, image = NULL, top_n_pathways = 4, max_nodes = 350)
-stopifnot(file.exists(network_file))
+database$ramp_reactome <- loadSpaMTPDatabase("ramp_reactome",
+    version = "3.0.7"
+)$ramp_reactome
+network_file <- pathwayNetworkPlots(object,
+    ident = "RegionLoupe",
+    regpathway = regional_pathways, DE.list = list(metabolites = markers$DEMs),
+    SM_assay = "compound", smAssayName = "logcounts",
+    analyte_types = "metabolites", database = database,
+    pathway_index = pathway_index, organism = "Mus musculus",
+    metabolite_detection = "annotated",
+    path = tempdir(), image = NULL, top_n_pathways = 4, max_nodes = 350,
+    verbose = FALSE
+)
 ```
 
 At the 0.05 cutoff, `metabolite_ambiguity = "exclude"` retains
@@ -712,54 +637,39 @@ compound are averaged into one compound row. The table below checks the stored
 mapping used by the pathway analysis.
 
 ```{r compound-mapping-summary}
-compound <- SingleCellExperiment::altExp(object, "compound")
-compound_mapping <- S4Vectors::metadata(compound)$pathway_mapping
-retained_features <- unique(unlist(compound_mapping$original_features))
-stopifnot(length(retained_features) == threshold_summary$single_identity_features[
-  threshold_summary$score_threshold == 0.05])
-knitr::kable(data.frame(
-  retained_features = length(retained_features),
-  excluded_ambiguous_features = length(compound_mapping$excluded_conflicts),
-  compound_rows = nrow(compound)
-), row.names = FALSE)
+compound <- altExp(object, "compound")
+compound_mapping <- metadata(compound)$pathway_mapping
+data.frame(
+    retained_features = length(unique(unlist(compound_mapping$original_features))),
+    excluded_ambiguous_features = length(compound_mapping$excluded_conflicts),
+    compound_rows = nrow(compound)
+)
 ```
 
 ## Network content
 
 `network_file` is a self-contained interactive HTML file that can be opened in a
-browser or copied to a permanent results directory. The summary below reports
-reference topology nodes, reaction edges and measured compound nodes.
-`regional_views` counts regions with the same pathway and node/edge counts.
+browser or copied to a permanent results directory. Its `network_summary`
+attribute reports, for each region and pathway, the reference topology nodes,
+reaction edges and measured compound nodes. Regions use the same reference
+topology, but leading-edge membership, isolated measured nodes and pruning
+can change the displayed network. The table shows distinct network summaries.
 
-```{r network-summary, echo=FALSE}
-network_html <- readLines(network_file, warn = FALSE)
-payload_line <- grep("^    const payload = ", network_html, value = TRUE)
-payload <- jsonlite::fromJSON(sub(";$", "",
-  sub("^    const payload = ", "", payload_line)), simplifyVector = FALSE)
-network_summary <- do.call(rbind, lapply(seq_along(payload$clusters), function(i) {
-  do.call(rbind, lapply(seq_along(payload$pathways), function(j) {
-    network <- payload$networks[[i]][[j]]
-    if (!length(network$nodes)) return(NULL)
-    data.frame(region = payload$clusters[[i]], pathway = payload$pathways[[j]],
-      nodes = length(network$nodes), edges = length(network$links),
-      measured_compounds = sum(vapply(network$nodes,
-        function(node) isTRUE(node$annotated), logical(1))))
-  }))
-}))
-network_overview <- stats::aggregate(
-  region ~ pathway + nodes + edges + measured_compounds,
-  data = network_summary, FUN = length)
-names(network_overview)[names(network_overview) == "region"] <- "regional_views"
-knitr::kable(network_overview, format = "html", row.names = FALSE)
+```{r network-summary}
+network_summary <- attr(network_file, "network_summary")
+unique(network_summary[, c("pathway", "nodes", "edges", "measured_compounds")])
 ```
 
 The displayed networks contain
-`r min(network_overview$measured_compounds)`–`r max(network_overview$measured_compounds)`
+`r min(network_summary$measured_compounds)`–`r max(network_summary$measured_compounds)`
 measured compounds among
-`r min(network_overview$nodes)`–`r max(network_overview$nodes)` nodes.
+`r min(network_summary$nodes)`–`r max(network_summary$nodes)` nodes.
 Most nodes therefore provide reference topology around the measured compounds.
 The measured-node overlay identifies the signals contributing experimental
 coverage to each pathway; pathway activity requires further biological evidence.
+
+See the [human RNA/MSI network](Gene_Identifier_Mapping.html#pathway-network)
+for a live viewer, controls and an `embedPathwayNetwork()` example.
 
 # Interpreting and following up annotations
 

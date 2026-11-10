@@ -19,7 +19,7 @@ annotateMZ(
   database_local_dir = NULL,
   infer_structure = c("auto", "never", "always"),
   structure_backend = c("auto", "native"),
-  structure_workers = getOption("SpaMTP.smiles_workers", 1L),
+  BPPARAM = BiocParallel::SerialParam(),
   min_structure_score = 0.05,
   ...
 )
@@ -29,7 +29,9 @@ annotateMZ(
 
 \item{db}{Metabolite database used when \code{index} is \code{NULL}.}
 
-\item{index}{Optional pre-built \code{spamtp_mz_index}.}
+\item{index}{Optional pre-built \code{spamtp_mz_index}. \code{adducts} can restrict
+the existing rules; unavailable rules or conflicting construction options
+require a new index. Omit \code{db}, \code{rules} and \code{BPPARAM} when reusing an index.}
 
 \item{polarity}{Ion mode. When \code{NULL}, infer it from \code{index} or the matrix
 profile, falling back to positive mode.}
@@ -53,7 +55,7 @@ rules automatically when \code{rules} is \code{NULL}.}
 
 \item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
 
-\item{infer_structure, structure_backend, structure_workers, min_structure_score}{Structure-aware
+\item{infer_structure, structure_backend, BPPARAM, min_structure_score}{Structure-aware
 rule-selection arguments passed to \code{\link[=buildMZAnnotationIndex]{buildMZAnnotationIndex()}}.}
 
 \item{...}{Additional arguments passed to \code{\link[=queryMZAnnotationIndex]{queryMZAnnotationIndex()}}.}
@@ -66,5 +68,7 @@ Convenience wrapper that builds an index when one is not supplied. Reuse a
 pre-built index for repeated or large searches.
 }
 \examples{
-utils::str(formals(annotateMZ))
+data(spamtp_example)
+index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
+annotateMZ(149.04445, index = index, ppm = 5)
 }

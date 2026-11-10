@@ -18,5 +18,7 @@ Reports whether downstream pathway functions will use the current indexed,
 scored RaMP annotation pipeline or a legacy mass-match result.
 }
 \examples{
-utils::str(formals(annotationInfo))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+annotationInfo(spe)
 }

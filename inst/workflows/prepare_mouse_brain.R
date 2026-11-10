@@ -3,7 +3,9 @@
 # Sourcing this file only defines functions. No historical object is read.
 
 mouseBrainSpatialConfig <- function(config = NULL) {
-    if (is.null(config)) return(list())
+    if (is.null(config)) {
+        return(list())
+    }
     if (is.character(config) && length(config) == 1L) {
         if (!file.exists(config)) stop("Spatial configuration file not found.")
         config <- jsonlite::read_json(config, simplifyVector = FALSE)
@@ -18,8 +20,10 @@ mouseBrainSpatialConfig <- function(config = NULL) {
         is.na(config$source) || !nzchar(trimws(config$source))) {
         stop("Provide source provenance for the image scale and/or spot radius.")
     }
-    positive <- function(x) is.numeric(x) && length(x) == 1L &&
-        is.finite(x) && x > 0
+    positive <- function(x) {
+        is.numeric(x) && length(x) == 1L &&
+            is.finite(x) && x > 0
+    }
     if (!is.null(config$target_radius) && !positive(config$target_radius)) {
         stop("target_radius must be positive, in original Visium image pixels.")
     }
@@ -63,11 +67,15 @@ prepareMouseBrain <- function(nativeDir = NULL, outputDir, spatialConfig = NULL,
         utils::packageVersion("SpaMTPData") < "0.99.5") {
         stop("Use SpaMTP >= 0.99.9 and SpaMTPData >= 0.99.5 for this recipe.")
     }
-    resources <- c(visium = "mouse_brain_visium", fmp10 = "mouse_brain_fmp10",
-        dhb = "mouse_brain_dhb_striatum")
+    resources <- c(
+        visium = "mouse_brain_visium", fmp10 = "mouse_brain_fmp10",
+        dhb = "mouse_brain_dhb_striatum"
+    )
     objects <- lapply(resources, function(resource) {
-        x <- SpaMTPData::spaMTPData(resource, version = "1.1.0",
-            local_dir = nativeDir, offline = offline)
+        x <- SpaMTPData::spaMTPData(resource,
+            version = "1.1.0",
+            local_dir = nativeDir, offline = offline
+        )
         if (!methods::is(x, "SpatialExperiment") ||
             length(unique(x$sample_id)) != 1L) {
             stop("Expected a single-sample native resource: ", resource)
@@ -91,18 +99,22 @@ prepareMouseBrain <- function(nativeDir = NULL, outputDir, spatialConfig = NULL,
     spacing <- FNN::get.knn(xy, k = 1)$nn.dist[, 1]
     width <- stats::median(spacing[is.finite(spacing) & spacing > 0])
     if (!is.finite(width) || width <= 0) stop("Cannot determine the MSI pixel width.")
-    pairing <- list(specimen = specimen,
+    pairing <- list(
+        specimen = specimen,
         evidence = "Registered transformed FMP10/Visium pair from the published mouse-brain example",
         alignment = "already registered in the pinned source resources",
         source_versions = list(native = "1.1.0"),
         coordinate_units = "original image pixels", pixel_width = width,
         target_radius = config$target_radius,
         width_method = "Median nearest-neighbour distance between distinct native MSI pixel centres",
-        target_radius_method = if (is.null(config$target_radius))
-            "Not supplied; required only for FMP10/Visium pixel-overlap mapping" else
-            "Explicit radius in original Visium image pixels from spatial configuration",
+        target_radius_method = if (is.null(config$target_radius)) {
+            "Not supplied; required only for FMP10/Visium pixel-overlap mapping"
+        } else {
+            "Explicit radius in original Visium image pixels from spatial configuration"
+        },
         spatial_source = config$source,
-        resources = lapply(objects, function(x) S4Vectors::metadata(x)$SpaMTPData))
+        resources = lapply(objects, function(x) S4Vectors::metadata(x)$SpaMTPData)
+    )
     for (name in c("visium", "fmp10")) {
         S4Vectors::metadata(objects[[name]])$registered_pairing <- pairing
     }
@@ -113,13 +125,15 @@ prepareMouseBrain <- function(nativeDir = NULL, outputDir, spatialConfig = NULL,
         objects[[name]] <- SpaMTP::addSpatialImage(objects[[name]],
             imageSource = image$path, scaleFactor = image$scale_factor,
             sampleId = unique(objects[[name]]$sample_id), imageId = "histology",
-            load = TRUE)
+            load = TRUE
+        )
         S4Vectors::metadata(objects[[name]])$image_provenance <- list(
             source = config$source, resource = resource,
             file_name = basename(image$path),
             image_md5 = unname(tools::md5sum(image$path)),
             scale_factor = image$scale_factor,
-            coordinate_units = "original image pixels")
+            coordinate_units = "original image pixels"
+        )
     }
     for (x in objects) methods::validObject(x)
     if (!dir.create(outputDir, recursive = TRUE)) stop("Cannot create output directory.")
@@ -128,7 +142,8 @@ prepareMouseBrain <- function(nativeDir = NULL, outputDir, spatialConfig = NULL,
     }
     saveRDS(pairing, file.path(outputDir, "pairing.rds"))
     jsonlite::write_json(pairing, file.path(outputDir, "pairing.json"),
-        pretty = TRUE, auto_unbox = TRUE, digits = NA, null = "null")
+        pretty = TRUE, auto_unbox = TRUE, digits = NA, null = "null"
+    )
     if (is.null(config$target_radius)) {
         message("DHB is ready. FMP10/Visium mapping additionally requires an explicit target_radius.")
     }
@@ -137,8 +152,10 @@ prepareMouseBrain <- function(nativeDir = NULL, outputDir, spatialConfig = NULL,
 
 prepareMouseBrainMain <- function(args = commandArgs(trailingOnly = TRUE)) {
     if (!length(args) %in% c(2L, 3L)) {
-        stop(paste("Usage: Rscript prepare_mouse_brain.R",
-            "NATIVE_1.1.0_DIR NEW_OUTPUT_DIR [SPATIAL_CONFIG.json]"))
+        stop(paste(
+            "Usage: Rscript prepare_mouse_brain.R",
+            "NATIVE_1.1.0_DIR NEW_OUTPUT_DIR [SPATIAL_CONFIG.json]"
+        ))
     }
     config <- if (length(args) == 3L) args[3] else NULL
     prepareMouseBrain(args[1], args[2], config)

@@ -11,7 +11,9 @@ getMetaspace(
   include_images = TRUE,
   api_key = NULL,
   isotope_idx = 1,
-  relative = TRUE
+  relative = TRUE,
+  verbose = TRUE,
+  BPPARAM = BiocParallel::SerialParam(progressbar = verbose)
 )
 }
 \arguments{
@@ -19,23 +21,44 @@ getMetaspace(
 
 \item{fdr}{Numeric, the FDR level threshold (default = 0.1).}
 
-\item{database}{Character vector, specifying the database name and version (default = c("HMDB", "v4")).}
+\item{database}{Character vector, specifying the database name and version
+(default = c("HMDB", "v4")).}
 
-\item{include_images}{Logical, if TRUE, downloads all ion image matrices (default = TRUE).}
+\item{include_images}{Logical, if TRUE, downloads all ion image matrices
+(default = TRUE).}
 
-\item{api_key}{Optional character string, your METASPACE API key (default = NULL).}
+\item{api_key}{Optional character string, your METASPACE API key (default =
+NULL).}
 
-\item{isotope_idx}{Integer, index of the isotope image to download for all annotations (1 for main peak) (default = 1).}
+\item{isotope_idx}{Integer, index of the isotope image to download for all
+annotations (1 for main peak) (default = 1).}
 
-\item{relative}{Logical, if TRUE, normalizes pixel intensities (0-1 range) (default = TRUE).}
+\item{relative}{Logical, if TRUE, normalizes pixel intensities (0-1 range)
+(default = TRUE).}
+
+\item{verbose}{Logical; show download messages and a progress bar (default =
+TRUE).}
+
+\item{BPPARAM}{BiocParallel parameters for downloading annotation images.
+Defaults to serial execution without changing the session's parallel plan.}
 }
 \value{
-A list with two elements: \code{annotations} (data.frame) and \code{images} (list of 2D matrices).
+A list with \code{annotations} (data.frame) and \code{images} (list of 2D
+matrices, with NULL for unavailable images). Feature names are unique
+even when annotations have the same rounded m/z; the numeric \code{mz} column
+retains full precision.
 }
 \description{
-The main user-facing function to download annotations and ion images for a METASPACE dataset.
+The main user-facing function to download annotations and ion
+images for a METASPACE dataset.
 }
 \examples{
-utils::str(formals(getMetaspace))
-# getMetaspace(dataset_id = "2020-12-07_03h16m14s", fdr = 0.1, database= c("HMDB", "v4"), relative = TRUE)
+# Requires the METASPACE service and an internet connection.
+if (interactive()) {
+    result <- getMetaspace("2020-12-07_03h16m14s",
+        include_images = FALSE,
+        verbose = FALSE
+    )
+    head(result$annotations)
+}
 }

@@ -47,7 +47,8 @@ applySpatialAlignment (e.g. method='affine', alignment or landmarks).}
 with max_distance, or method='pixel' with width and optional target_radius,
 target_polygons and overlap_threshold, in aligned coordinate units.}
 
-\item{group}{Optional colData field for descriptive summaries and plot colour.}
+\item{group}{Optional colData field for descriptive summaries and plot
+colour.}
 
 \item{replicate}{Optional colData field identifying biological replicates.}
 
@@ -82,10 +83,12 @@ requested workflow clusters when group is absent.}
 (pca or spatial), neighbors, lambda, platform, external reference metadata,
 k_grid, stability_blocks and umap. Graph PCA uses all retained observations
 and the same selected, scaled features as ordinary PCA. Clustering stability
-conditions on full-data embeddings; it is not independent-specimen validation.}
+conditions on full-data embeddings; it is not independent-specimen
+validation.}
 }
 \value{
-A spamtp_workflow list containing object, QC, alignment/mapping audit,
+A spamtp_workflow list containing object, QC, alignment/mapping
+audit,
 analysis, settings, stage log and session information. output_dir also
 receives a self-contained report.html, CSV tables and workflow.rds.
 }
@@ -108,5 +111,15 @@ correlations and clusters are exploratory. Contrasts average workflow
 values within biological replicate and group, not random pixel pools.
 }
 \examples{
-utils::str(formals(runSpaMTPWorkflow))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+fit <- runSpaMTPWorkflow(spe,
+    modalities = list(
+        main = list(type = "metabolomics", layer = "logcounts"),
+        transcriptome = list(type = "transcriptomics", layer = "logcounts")
+    ),
+    npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+    structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
+)
+fit$stages
 }

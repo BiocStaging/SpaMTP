@@ -40,3 +40,12 @@ spatialCoords. Coordinate alignment requires one tissue sample.
 \description{
 Attach and optionally align an optical image to MSI
 }
+\examples{
+data(spamtp_example)
+spe <- spamtp_example$experiment
+image_file <- tempfile(fileext = ".png")
+png::writePNG(matrix(seq(0, 1, length.out = 24), 4, 6), image_file)
+spe <- addSMImage(image_file, spe, interactive = FALSE)
+SpatialExperiment::imgData(spe)
+unlink(image_file)
+}

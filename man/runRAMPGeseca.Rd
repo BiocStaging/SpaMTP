@@ -2,7 +2,8 @@
 % Please edit documentation in R/PathwayAnalysis.R
 \name{runRAMPGeseca}
 \alias{runRAMPGeseca}
-\title{Runs multilevel Monte-Carlo variant for performing gene sets co-regulation analysis using the RAMP_DB metabolite/gene database.}
+\title{Runs multilevel Monte-Carlo variant for performing gene sets co-regulation
+analysis using the RAMP_DB metabolite/gene database.}
 \usage{
 runRAMPGeseca(
   E,
@@ -12,8 +13,7 @@ runRAMPGeseca(
   scale = FALSE,
   sampleSize = 101,
   eps = 1e-50,
-  nproc = 0,
-  BPPARAM = NULL,
+  BPPARAM = BiocParallel::SerialParam(progressbar = verbose),
   nPermSimple = 1000,
   database = NULL,
   database_version = "latest",
@@ -26,30 +26,39 @@ runRAMPGeseca(
   gene_reference_version = "latest",
   gene_reference_local_dir = NULL,
   organism = "Homo sapiens",
-  duplicate_genes = c("error", "mean", "sum")
+  duplicate_genes = c("error", "mean", "sum"),
+  verbose = FALSE
 )
 }
 \arguments{
 \item{E}{Expression matrix with gene identifiers or RaMP IDs as rows and
 observations as columns.}
 
-\item{minSize}{Minimal size of a gene set to test. All pathways below the threshold are excluded (default = 1).}
+\item{minSize}{Minimal size of a gene set to test. All pathways below the
+threshold are excluded (default = 1).}
 
-\item{maxSize}{Maximal size of a gene set to test. All pathways above the threshold are excluded (default = \code{nrow(E) - 1}).}
+\item{maxSize}{Maximal size of a gene set to test. All pathways above the
+threshold are excluded (default = \code{nrow(E) - 1}).}
 
-\item{center}{a logical value indicating whether the gene expression should be centered to have zero mean before the analysis takes place (default = TRUE).}
+\item{center}{a logical value indicating whether the gene expression should
+be centered to have zero mean before the analysis takes place (default =
+TRUE).}
 
-\item{scale}{a logical value indicating whether the gene expression should be scaled to have unit variance before the analysis takes place (default = FALSE).}
+\item{scale}{a logical value indicating whether the gene expression should be
+scaled to have unit variance before the analysis takes place (default =
+FALSE).}
 
 \item{sampleSize}{sample size for conditional sampling (default = 101).}
 
-\item{eps}{This parameter sets the boundary for calculating P-values (default = 1e-50).}
+\item{eps}{This parameter sets the boundary for calculating P-values (default
+= 1e-50).}
 
-\item{nproc}{If not equal to zero sets BPPARAM to use nproc workers (default = 0).}
+\item{BPPARAM}{BiocParallel execution parameters. The default runs serially
+with progress controlled by \code{verbose}; explicit parameters control their
+own progress display.}
 
-\item{BPPARAM}{Parallelization parameter used in bplapply (default = NULL).}
-
-\item{nPermSimple}{Number of permutations in the simple geseca implementation for preliminary estimation of P-values (default = 1000).}
+\item{nPermSimple}{Number of permutations in the simple geseca implementation
+for preliminary estimation of P-values (default = 1000).}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
@@ -60,7 +69,8 @@ by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
 \item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -85,22 +95,35 @@ records and ambiguous symbols are excluded and recorded in the audit.}
 
 \item{gene_reference_local_dir}{Local HGNC resource directory.}
 
-\item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
-orthology map. Use a separately curated species-specific database for other
-organisms.}
+\item{organism}{Species of the input. HGNC mapping requires \code{"Homo sapiens"}.
+RaMP-only mapping (\code{gene_mapping = "ramp"}, or a pathway index without an
+HGNC index) does not perform orthology conversion. Non-human gene analysis
+requires a separately curated species-specific database.}
 
 \item{duplicate_genes}{How to aggregate expression rows of one gene.
 The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}
+
+\item{verbose}{Whether to show progress (default = FALSE).}
 }
 \value{
-A table with GESECA results. Each row corresponds to a tested RAMP_DB pathway.
+A table with GESECA results. Each row corresponds to a tested RAMP_DB
+pathway.
 }
 \description{
 This function is adapted from the \href{https://github.com/alserglab/fgsea/blob/master/R/geseca-multilevel.R}{fgsea::geseca} package to identify significantly expressed RAMP_DB pathways based on an expression/feature embedding matrix.
 }
 \examples{
-utils::str(formals(runRAMPGeseca))
-# sig_pathways <- runRAMPGeseca(E, minSize=15, maxSize=500)
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+expression <- SummarizedExperiment::assay(
+    SingleCellExperiment::altExp(spe, "transcriptome"), "logcounts"
+)
+result <- withr::with_seed(1, runRAMPGeseca(expression,
+    pathway_index = index,
+    minSize = 2, maxSize = 6, nPermSimple = 100, eps = 0.01
+))
+head(result)
 }

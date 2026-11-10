@@ -13,7 +13,7 @@ buildMZAnnotationIndex(
   collapse_isomers = TRUE,
   infer_structure = c("auto", "never", "always"),
   structure_backend = c("auto", "native"),
-  structure_workers = getOption("SpaMTP.smiles_workers", 1L),
+  BPPARAM = BiocParallel::SerialParam(),
   min_structure_score = 0.05
 )
 }
@@ -41,11 +41,12 @@ proton bound before indexing.}
 \item{infer_structure}{\code{"auto"} joins precomputed SpaMTPdb features or
 derives them for at most \code{getOption("SpaMTP.max_runtime_smiles", 5000)}
 unique SMILES, \code{"never"} disables inference, and \code{"always"} forces
-runtime parsing and replaces precomputed structural fields.}
+runtime parsing and replaces precomputed structural fields. \code{"never"}
+and \code{"always"} do not fetch a precomputed structure table.}
 
 \item{structure_backend}{SMILES parser used by \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
 
-\item{structure_workers}{Number of workers used for runtime SMILES parsing.}
+\item{BPPARAM}{BiocParallel parameters for runtime SMILES parsing.}
 
 \item{min_structure_score}{Minimum rule-specific structural prior retained
 before m/z indexing. Set to zero to rank without structure-based pruning.}
@@ -59,5 +60,7 @@ interval search. This is the one-dimensional equivalent of an interval tree
 and avoids scanning every database row for every observed peak.
 }
 \examples{
-utils::str(formals(buildMZAnnotationIndex))
+data(spamtp_example)
+index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
+queryMZAnnotationIndex(149.04445, index, ppm = 5)
 }

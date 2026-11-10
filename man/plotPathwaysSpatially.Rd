@@ -11,7 +11,7 @@ plotPathwaysSpatially(
   title = NULL,
   image.alpha = 1,
   assay = "main",
-  slot = "logcounts",
+  assayName = "logcounts",
   colors = c("darkblue", "lightgrey", "darkred"),
   guide = "colourbar",
   database = NULL,
@@ -26,11 +26,14 @@ plotPathwaysSpatially(
   gene_reference_local_dir = NULL,
   organism = "Homo sapiens",
   duplicate_genes = c("error", "mean", "sum"),
+  combine = FALSE,
+  combineColumns = 2L,
   ...
 )
 }
 \arguments{
-\item{pathways}{Character vector of pathwayRampId values or unambiguous database pathway names.}
+\item{pathways}{Character vector of pathwayRampId values or unambiguous
+database pathway names.}
 
 \item{object}{A SpatialExperiment with reducedDims.}
 
@@ -42,7 +45,7 @@ plotPathwaysSpatially(
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"logcounts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
@@ -58,7 +61,8 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{database_local_dir}{Optional local database directory.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -92,11 +96,28 @@ The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}
 
+\item{combine}{Arrange the pathway maps in one figure with wrapped titles
+and a single colour bar. All maps share the default z-score limits
+(-3 to 3) unless \code{min.cutoff}/\code{max.cutoff} are supplied.}
+
+\item{combineColumns}{Number of columns in the combined figure.}
+
 \item{...}{Additional arguments to plotSinglePathwaySpatially.}
 }
 \value{
-A named list of spatial pathway plots, carrying the same coverage and score attributes as plotPathways().
+A named list of spatial pathway plots, carrying the same coverage
+and score attributes as plotPathways(); with \code{combine = TRUE}, one combined
+plot carrying the \code{pathway_coverage} and \code{pathway_index} attributes.
 }
 \description{
 Plot named pathways in tissue coordinates
+}
+\examples{
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+plotPathwaysSpatially(c("P1", "P2"), spe,
+    assay = "transcriptome",
+    pathway_index = index, combine = TRUE
+)
 }

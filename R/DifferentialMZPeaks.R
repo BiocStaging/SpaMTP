@@ -1,274 +1,368 @@
-
 #### SpaMTP Differential Metabolite Analysis Functions ########################################################################################################################################################################################
-
 
 
 #' Pools Bioconductor experiment into random pools for pseudo-bulking.
 #'
-#' Runs pooling of a SpaMTP dataset to generate pseudo-replicates for each unique identity provided.
+#' Runs pooling of a SpaMTP dataset to generate pseudo-replicates for each
+#' unique identity provided.
 #' This function is used by `findAllDEMs()`.
 #' These random pools are technical partitions, not independent biological
 #' replicates; resulting p-values must not be interpreted as biological
 #' replication. For population inference aggregate independent samples instead.
 #'
-#' @param data.filt A Bioconductor experiment containing count values for pooling.
-#' @param idents A character string defining the idents column to pool the data against.
-#' @param n An integer defining the amount of pseudo-replicates to generate for each sample (default = 3).
+#' @param data.filt A Bioconductor experiment containing count values for
+#'   pooling.
+#' @param idents A character string defining the idents column to pool the data
+#'   against.
+#' @param n An integer defining the amount of pseudo-replicates to generate for
+#'   each sample (default = 3).
 #' @param assay Primary (`"main"`) or alternative experiment name.
-#' @param slot Expression assay name within the selected experiment. Values
+#' @param assayName Expression assay name within the selected experiment. Values
 #'   must be finite and non-negative for technical pooling.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param verbose Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).
-#' @param seed Numeric value used to set the seed for reproducible randomisation (default = 1234).
+#' @param verbose Boolean indicating whether to show the message. If TRUE the
+#'   message will be show, else the message will be suppressed (default = TRUE).
+#' @param seed Numeric value used to set the seed for reproducible randomisation
+#'   (default = 1234).
 #'
-#' @returns A SingleCellExperiment object which contains pooled (n)-pseudo-replicate counts data based on the Bioconductor experiment input
+#' @returns A SingleCellExperiment object which contains pooled
+#'   (n)-pseudo-replicate counts data based on the Bioconductor experiment input
 #' @export
 #'
 #' @examples
-#' utils::str(formals(runPooling))
-runPooling <- function(data.filt, idents, n, assay, slot, seed = 1234, verbose = TRUE) {
-  .validateFeatureCount(n, "n")
-  cell_metadata <- .cellMetadata(data.filt)
-  if (length(idents) != 1L || !idents %in% colnames(cell_metadata) ||
-      anyNA(cell_metadata[[idents]])) {
-    stop("idents must name a colData column without missing values.", call. = FALSE)
-  }
-  samples <- unique(cell_metadata[[idents]])
-  verbose_message(paste("Partitioning each group into", n, "technical pools."),
-                  verbose = verbose)
-  for(i in seq_along(samples)){
-    wo<-which(cell_metadata[[idents]]== samples[i])
-    if (length(wo) < n) {
-      stop("Every group must have at least n pixels.", call. = FALSE)
+#' data(spamtp_example)
+#' spe <- spamtp_example$experiment
+#' pooled <- runPooling(spe,
+#'     idents = "region", n = 3, assay = "main",
+#'     assayName = "counts", verbose = FALSE
+#' )
+#' dim(pooled)
+runPooling <- function(
+    data.filt,
+    idents,
+    n,
+    assay,
+    assayName,
+    seed = 1234,
+    verbose = TRUE
+) {
+    .validateFeatureCount(n, "n")
+    cell_metadata <- .cellMetadata(data.filt)
+    if (length(idents) != 1L || !idents %in% colnames(cell_metadata) ||
+        anyNA(cell_metadata[[idents]])) {
+        stop(
+            "idents must name a colData column without missing values.",
+            call. = FALSE
+        )
     }
-    pooled_ids <- withr::with_seed(
-      seed + i,
-      sample(rep(seq_len(n), length.out = length(wo)))
+    samples <- unique(cell_metadata[[idents]])
+    verbose_message(paste("Partitioning each group into", n, "technical pools."),
+        verbose = verbose
     )
-    cell_metadata[wo,'orig.ident2']<-paste0("group", i, "_pool", pooled_ids)
-  }
-  expression <- .assayData(data.filt, assay, slot)
-  if (!nrow(expression) || !ncol(expression) || any(!is.finite(expression)) ||
-      any(expression < 0)) {
-    stop("Pooling needs non-empty, finite, non-negative intensities.", call. = FALSE)
-  }
-  # edgeR materializes its input. Bound each call to about one million values
-  # so sparse MSI input is not densified in its entirety.
-  blockSize <- max(1L, floor(1e6 / ncol(expression)))
-  blocks <- split(seq_len(nrow(expression)),
-                  ceiling(seq_len(nrow(expression)) / blockSize))
-  pooledCounts <- do.call(rbind, lapply(blocks, function(rows) {
-    edgeR::sumTechReps(expression[rows, , drop = FALSE], ID = cell_metadata$orig.ident2)
-  }))
-  pools <- colnames(pooledCounts)
-  pooledMetadata <- cell_metadata[match(pools, cell_metadata$orig.ident2), , drop = FALSE]
-  for (column in colnames(cell_metadata)) {
-    for (index in seq_along(pools)) {
-      values <- cell_metadata[[column]][cell_metadata$orig.ident2 == pools[index]]
-      if (length(unique(values)) != 1L) pooledMetadata[[column]][index] <- NA
+    for (i in seq_along(samples)) {
+        wo <- which(cell_metadata[[idents]] == samples[i])
+        if (length(wo) < n) {
+            stop("Every group must have at least n pixels.", call. = FALSE)
+        }
+        pooled_ids <- withr::with_seed(
+            seed + i,
+            sample(rep(seq_len(n), length.out = length(wo)))
+        )
+        cell_metadata[wo, "orig.ident2"] <- paste0("group", i, "_pool", pooled_ids)
     }
-  }
-  rownames(pooledMetadata) <- pools
-  pooledMetadata$ncells <- as.integer(table(factor(cell_metadata$orig.ident2, levels = pools)))
-  summed <- SingleCellExperiment::SingleCellExperiment(
-    assays = list(counts = pooledCounts),
-    rowData = S4Vectors::DataFrame(.featureMetadata(data.filt, assay)),
-    colData = S4Vectors::DataFrame(pooledMetadata))
-  S4Vectors::metadata(summed)$spamtp_pooling <- list(
-    group = idents, pools_per_group = n, seed = seed,
-    replication = "technical partitions, not biological replicates")
-  return(summed)
+    expression <- .assayData(data.filt, assay, assayName)
+    if (!nrow(expression) || !ncol(expression) || any(!is.finite(expression)) ||
+        any(expression < 0)) {
+        stop(
+            "Pooling needs non-empty, finite, non-negative intensities.",
+            call. = FALSE
+        )
+    }
+    # edgeR materializes its input. Bound each call to about one million values
+    # so sparse MSI input is not densified in its entirety.
+    blockSize <- max(1L, floor(1e6 / ncol(expression)))
+    blocks <- split(
+        seq_len(nrow(expression)),
+        ceiling(seq_len(nrow(expression)) / blockSize)
+    )
+    pooledCounts <- do.call(rbind, lapply(blocks, function(rows) {
+        edgeR::sumTechReps(
+            expression[rows, , drop = FALSE],
+            ID = cell_metadata$orig.ident2
+        )
+    }))
+    pools <- colnames(pooledCounts)
+    pooledMetadata <- cell_metadata[match(pools, cell_metadata$orig.ident2), , drop = FALSE]
+    for (column in colnames(cell_metadata)) {
+        for (index in seq_along(pools)) {
+            values <- cell_metadata[[column]][cell_metadata$orig.ident2 == pools[index]]
+            if (length(unique(values)) != 1L) pooledMetadata[[column]][index] <- NA
+        }
+    }
+    rownames(pooledMetadata) <- pools
+    pooledMetadata$ncells <- as.integer(table(factor(cell_metadata$orig.ident2, levels = pools)))
+    summed <- SingleCellExperiment::SingleCellExperiment(
+        assays = list(counts = pooledCounts),
+        rowData = S4Vectors::DataFrame(.featureMetadata(data.filt, assay)),
+        colData = S4Vectors::DataFrame(pooledMetadata)
+    )
+    S4Vectors::metadata(summed)$spamtp_pooling <- list(
+        group = idents, pools_per_group = n, seed = seed,
+        replication = "technical partitions, not biological replicates"
+    )
+    return(summed)
 }
-
-
 
 
 #' Run limma contrasts on log-transformed technical pools
 #'
-#' Worker function for calculating differentially abundant metabolites per pooling group.
+#' Worker function for calculating differentially abundant metabolites per
+#' pooling group.
 #' Used by the compatibility `method = "technical"` branch of [findAllDEMs()].
 #' Fits limma to `log2(counts(pooled_data) + 1)` and uses `limma::treat()`;
 #' an edgeR DGEList stores the values and results, but no edgeR count-model
 #' test or voom transformation is performed. Technical pools are not independent
 #' biological replicates.
 #'
-#' @param pooled_data A SingleCellExperiment object which contains the pooled pseudo-replicate data.
+#' @param pooled_data A SingleCellExperiment object which contains the pooled
+#'   pseudo-replicate data.
 #' @param data The original SummarizedExperiment, including SingleCellExperiment
 #'   or SpatialExperiment, supplying pixel groups and feature annotations.
-#' @param ident Column in `colData(data)` and `colData(pooled_data)` defining groups.
+#' @param ident Column in `colData(data)` and `colData(pooled_data)` defining
+#'   groups.
 #' @param output_dir Existing directory for output CSV tables, or NULL to omit
 #'   file output.
-#' @param run_name A character string defining the title of this DE analysis (will be used when saving DEMs to .csv file).
-#' @param n An integer that defines the number of pseudo-replicates per sample (default = 3).
+#' @param run_name A character string defining the title of this DE analysis
+#'   (will be used when saving DEMs to .csv file).
+#' @param n An integer that defines the number of pseudo-replicates per sample
+#'   (default = 3).
 #' @param logFC_threshold Fold-change threshold passed as
 #'   `log2(logFC_threshold)` to `limma::treat()` (default = 1.2).
 #' @param annotation.column Column in the selected experiment's `rowData()`
 #'   containing feature annotations, or NULL to omit annotations.
 #' @param assay Primary (`"main"`) or alternative experiment name in `data`.
 #'   Pooled expression is always read from `counts(pooled_data)`.
-#' @param verbose Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).
-#' @param return.individual Boolean value defining whether to return a list of individual edgeR objects for each designated ident. If FALSE, one merged edgeR object will be returned (default = FALSE).
+#' @param verbose Boolean indicating whether to show the message. If TRUE the
+#'   message will be show, else the message will be suppressed (default = TRUE).
+#' @param return.individual Boolean value defining whether to return a list of
+#'   individual edgeR objects for each designated ident. If FALSE, one merged
+#'   edgeR object will be returned (default = FALSE).
 #'
-#' @returns A modified edgeR object which contains the relative pseudo-bulking analysis outputs, including a DEMs data.frame with a list of differential expressed m/z metabolites
+#' @returns A modified edgeR object which contains the relative pseudo-bulking
+#'   analysis outputs, including a DEMs data.frame with a list of differential
+#'   expressed m/z metabolites
 #' @export
 #'
 #'
 #' @examples
-#' utils::str(formals(runDE))
-runDE <- function(pooled_data, data, ident, output_dir, run_name, n, logFC_threshold, annotation.column, assay, return.individual = FALSE, verbose = TRUE){
-
-  cellMetadata <- .cellMetadata(data)
-  verbose_message(message_text = paste("Running limma DE Analysis for ", run_name, " -> with samples [", paste(unique(unlist(cellMetadata[[ident]])), collapse = ", "), "]"), verbose = verbose)
-
-  annotation_result <- list()
-
-  for (condition in unique(cellMetadata[[ident]])) {
-
-    # Create groups
-    groups <- SingleCellExperiment::colData(pooled_data)[[ident]]
-    groups <- ifelse(groups == condition, "Comp_A", "Comp_B")
-
-    # Extract continuous expression data (e.g., intensity matrix)
-    expression_data <- SingleCellExperiment::counts(pooled_data)  # Or the assay holding your continuous data
-
-    y <- edgeR::DGEList(SingleCellExperiment::counts(pooled_data), samples=SingleCellExperiment::colData(pooled_data)$orig.ident2, group = groups)
-
-    y$samples$condition <- groups
-    y$samples$ident <- as.character(SummarizedExperiment::colData(pooled_data)[[ident]])
-
-
-    # Optional: If your data is raw intensities, log-transform it here (add small offset if needed)
-    expression_data <- log2(expression_data + 1)
-
-    #keep <- rowMeans(expression_data) > some_threshold  # Define threshold based on your data
-    #expression_data <- expression_data[keep, ]
-
-    # Create design matrix
-    design <- model.matrix(~groups)
-    design[, 2] <- 1 - design[, 2]  # To match your original contrast logic
-
-    # Fit linear model
-    fit <- limma::lmFit(expression_data, design)
-
-    # Empirical Bayes moderation
-    fit <- limma::eBayes(fit, robust = TRUE)
-
-    # Use treat for log fold change threshold testing if desired
-    res <- limma::treat(fit, lfc = log2(logFC_threshold), robust = TRUE)
-
-    decisions <- limma::decideTests(res)
-    all_decisions <- stats::setNames(
-      as.integer(decisions[, ncol(decisions)]), rownames(decisions))
-
-    res_table <- limma::topTreat(res, coef = ncol(fit$design), n = nrow(expression_data))
-
-    res_table$regulate <- dplyr::recode(
-      as.character(all_decisions[rownames(res_table)]),
-      "0" = "Normal",
-      "1" = "Up",
-      "-1" = "Down"
+#' data(spamtp_example)
+#' spe <- spamtp_example$experiment
+#' # Pseudo-pools illustrate the legacy interface, not biological replication.
+#' pooled <- runPooling(spe,
+#'     idents = "region", n = 3, assay = "main",
+#'     assayName = "counts", verbose = FALSE
+#' )
+#' result <- runDE(pooled, spe,
+#'     ident = "region", output_dir = NULL,
+#'     run_name = "example", n = 3, logFC_threshold = 1.2,
+#'     annotation.column = "all_IsomerNames", assay = "main", verbose = FALSE
+#' )
+#' head(result$DEMs)
+runDE <- function(
+    pooled_data,
+    data,
+    ident,
+    output_dir,
+    run_name,
+    n,
+    logFC_threshold,
+    annotation.column,
+    assay,
+    return.individual = FALSE,
+    verbose = TRUE
+) {
+    cellMetadata <- .cellMetadata(data)
+    verbose_message(
+        message_text = paste(
+            "Running limma DE Analysis for ",
+            run_name,
+            " -> with samples [",
+            paste(unique(unlist(cellMetadata[[ident]])), collapse = ", "),
+            "]"
+        ),
+        verbose = verbose
     )
 
-    # Order by p-value or FDR
-    de_group_limma <- res_table[order(res_table$adj.P.Val), ]
+    annotation_result <- list()
 
-    # Rename adj.P.Val to FDR
-    colnames(de_group_limma) <- ifelse(colnames(de_group_limma) == "adj.P.Val", "FDR", colnames(de_group_limma))
+    for (condition in unique(cellMetadata[[ident]])) {
+        # Create groups
+        groups <- SingleCellExperiment::colData(pooled_data)[[ident]]
+        groups <- ifelse(groups == condition, "Comp_A", "Comp_B")
 
-    # Add gene/metabolite names
-    de_group_limma$gene <- rownames(de_group_limma)
+        # Extract continuous expression data (e.g., intensity matrix)
+        expression_data <- SingleCellExperiment::counts(pooled_data) # Or the assay holding your continuous data
 
-    # Add annotations if requested
-    if (!is.null(annotation.column)) {
-      annotation.data <- .featureMetadata(data, assay)
-      if (!(annotation.column %in% colnames(annotation.data))) {
-        stop("The annotation column does not exist in the assay feature metadata.")
-      } else {
-        annotation.data_subset <- annotation.data[rownames(de_group_limma), ]
-        de_group_limma$annotations <- annotation.data_subset[[annotation.column]]
-      }
+        y <- edgeR::DGEList(
+            SingleCellExperiment::counts(pooled_data),
+            samples = SingleCellExperiment::colData(pooled_data)$orig.ident2,
+            group = groups
+        )
+
+        y$samples$condition <- groups
+        y$samples$ident <- as.character(SummarizedExperiment::colData(pooled_data)[[ident]])
+
+
+        # Optional: If your data is raw intensities, log-transform it here (add small offset if needed)
+        expression_data <- log2(expression_data + 1)
+
+        # keep <- rowMeans(expression_data) > some_threshold  # Define threshold based on your data
+        # expression_data <- expression_data[keep, ]
+
+        # Create design matrix
+        design <- model.matrix(~groups)
+        design[, 2] <- 1 - design[, 2] # To match your original contrast logic
+
+        # Fit linear model
+        fit <- limma::lmFit(expression_data, design)
+
+        # Empirical Bayes moderation
+        fit <- limma::eBayes(fit, robust = TRUE)
+
+        # Use treat for log fold change threshold testing if desired
+        res <- limma::treat(fit, lfc = log2(logFC_threshold), robust = TRUE)
+
+        decisions <- limma::decideTests(res)
+        all_decisions <- stats::setNames(
+            as.integer(decisions[, ncol(decisions)]), rownames(decisions)
+        )
+
+        res_table <- limma::topTreat(
+            res,
+            coef = ncol(fit$design),
+            n = nrow(expression_data)
+        )
+
+        res_table$regulate <- dplyr::recode(
+            as.character(all_decisions[rownames(res_table)]),
+            "0" = "Normal",
+            "1" = "Up",
+            "-1" = "Down"
+        )
+
+        # Order by p-value or FDR
+        de_group_limma <- res_table[order(res_table$adj.P.Val), ]
+
+        # Rename adj.P.Val to FDR
+        colnames(de_group_limma) <- ifelse(
+            colnames(de_group_limma) == "adj.P.Val",
+            "FDR",
+            colnames(de_group_limma)
+        )
+
+        # Add gene/metabolite names
+        de_group_limma$gene <- rownames(de_group_limma)
+
+        # Add annotations if requested
+        if (!is.null(annotation.column)) {
+            annotation.data <- .featureMetadata(data, assay)
+            if (!(annotation.column %in% colnames(annotation.data))) {
+                stop("The annotation column does not exist in the assay feature metadata.")
+            } else {
+                annotation.data_subset <- annotation.data[rownames(de_group_limma), ]
+                de_group_limma$annotations <- annotation.data_subset[[annotation.column]]
+            }
+        }
+
+        # Write CSV output if directory specified
+        if (!is.null(output_dir)) {
+            utils::write.csv(
+                de_group_limma,
+                file.path(output_dir, paste0(condition, "_", run_name, ".csv"))
+            )
+        }
+
+        # Store results
+        y$expression <- expression_data
+        y$DEMs <- de_group_limma
+        annotation_result[[condition]] <- y
+
+        verbose_message(
+            message_text = paste("Analysis complete for condition:", condition),
+            verbose = verbose
+        )
     }
 
-    # Write CSV output if directory specified
-    if (!is.null(output_dir)) {
-      utils::write.csv(de_group_limma, file.path(output_dir, paste0(condition, "_", run_name, ".csv")))
+
+    if (return.individual) {
+        annotation_result <- lapply(names(annotation_result), function(x) {
+            annotation_result[[x]]$DEMs$cluster <- x
+            annotation_result[[x]]
+        })
+
+        return(annotation_result)
+    } else {
+        edger <- edgeR::DGEList(
+            counts = annotation_result[[1]]$counts,
+            samples = annotation_result[[1]]$samples
+        )
+        edger$samples$group <- edger$samples$ident
+        edger$samples$condition <- NULL
+
+        dems <- lapply(names(annotation_result), function(x) {
+            annotation_result[[x]]$DEMs$cluster <- x
+            rownames(annotation_result[[x]]$DEMs) <- NULL
+            annotation_result[[x]]$DEMs
+        })
+
+        combined_dems <- do.call(rbind, dems)
+        rownames(combined_dems) <- seq_along(combined_dems$cluster)
+
+        edger$expression <- annotation_result[[1]]$expression
+        edger$DEMs <- combined_dems
+        return(edger)
     }
-
-    # Store results
-    y$expression <- expression_data
-    y$DEMs <- de_group_limma
-    annotation_result[[condition]] <- y
-
-    verbose_message(message_text = paste("Analysis complete for condition:", condition), verbose = verbose)
-
-  }
-
-
-
-  if (return.individual){
-    annotation_result <- lapply(names(annotation_result), function(x){
-      annotation_result[[x]]$DEMs$cluster <- x
-      annotation_result[[x]]
-    })
-
-    return(annotation_result)
-  } else {
-
-    edger <- edgeR::DGEList(
-      counts = annotation_result[[1]]$counts,
-      samples = annotation_result[[1]]$samples
-    )
-    edger$samples$group <- edger$samples$ident
-    edger$samples$condition <- NULL
-
-    dems <- lapply(names(annotation_result), function(x){
-      annotation_result[[x]]$DEMs$cluster <- x
-      rownames(annotation_result[[x]]$DEMs) <- NULL
-      annotation_result[[x]]$DEMs
-    })
-
-    combined_dems <- do.call(rbind, dems)
-    rownames(combined_dems) <- 1:length(combined_dems$cluster)
-
-    edger$expression <- annotation_result[[1]]$expression
-    edger$DEMs <- combined_dems
-    return(edger)
-  }
-
 }
 
 
-#' Finds differentially expressed m/z values/metabolites between all comparison groups.
+#' Finds differentially expressed m/z values/metabolites between all comparison
+#' groups.
 #'
 #' @param data A SingleCellExperiment, including SpatialExperiment, for
 #'   `markers` or `replicate` mode. Technical pooling also accepts a plain
 #'   SummarizedExperiment.
 #' @param ident Column name in `SummarizedExperiment::colData(data)` defining
 #'   the groups to compare. Technical mode requires this column to be a factor.
-#' @param n An integer that defines the number of pseudo-replicates (pools) per sample (default = 3).
+#' @param n An integer that defines the number of pseudo-replicates (pools) per
+#'   sample (default = 3).
 #' @param logFC_threshold Technical-mode fold-change threshold, passed as
 #'   `log2(logFC_threshold)` to `limma::treat()` (default = 1.2).
 #'   Not used to filter marker or biological-replicate results.
-#' @param DE_output_dir A character string defining the directory path for all output files to be stored. This path must a new directory. Else, set to NULL as default.
-#' @param run_name A character string defining the title of this DE analysis that will be used when saving DEMs to .csv file (default = 'findAllDEMs').
+#' @param DE_output_dir A character string defining the directory path for all
+#'   output files to be stored. This path must a new directory. Else, set to
+#'   NULL as default.
+#' @param run_name A character string defining the title of this DE analysis
+#'   that will be used when saving DEMs to .csv file (default = 'findAllDEMs').
 #' @param annotation.column Optional column in the selected experiment's
-#'   `rowData()`, such as `"all_IsomerNames"` from `annotateSM()` (default NULL).
+#' `rowData()`, such as `"all_IsomerNames"` from `annotateSM()` (default NULL).
 #' @param assay Primary (`"main"`) or alternative experiment name. The default
 #'   `"Spatial"` is a compatibility alias for the primary experiment.
-#' @param slot Expression assay name within the selected experiment
+#' @param assayName Expression assay name within the selected experiment
 #'   (default = `"counts"`). Choose the value scale for the analysis: technical
 #'   pooling mode requires finite non-negative unlogged values; marker and
 #'   replicate modes use the supplied values directly, commonly `"logcounts"`.
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param return.individual In technical mode, return one result per group
 #'   instead of a merged result. Unsupported in marker/replicate modes.
-#' @param verbose Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).
-#' @param seed Numeric value used to set the seed for reproducible randomisation (default = 1234).
+#' @param verbose Boolean indicating whether to show the message. If TRUE the
+#'   message will be show, else the message will be suppressed (default = TRUE).
+#' @param seed Numeric value used to set the seed for reproducible randomisation
+#'   (default = 1234).
 #'
 #' @param method `markers` uses scran effect-size summaries without pixel P
-#'   values; `replicate` fits configured contrasts on biological-replicate means.
+#' values; `replicate` fits configured contrasts on biological-replicate means.
 #'   The historical `technical` mode is retained for compatibility, but random
-#'   pools are technical subdivisions and cannot establish biological replication.
+#' pools are technical subdivisions and cannot establish biological replication.
 #'   The compatibility default is `"technical"`; choose `"markers"` or
 #'   `"replicate"` explicitly for the corresponding native analysis.
 #' @param replicate Complete colData field identifying biological replicates.
@@ -276,9 +370,10 @@ runDE <- function(pooled_data, data, ident, output_dir, run_name, n, logFC_thres
 #'   required for replicate inference. At least three replicates per arm or
 #'   three complete pairs are required.
 #' @param min_region_size Minimum labelled observations in a marker group.
-#' @param spatial_blocks Number of spatial blocks per sample for a leave-one-block
+#' @param spatial_blocks Number of spatial blocks per sample for a
+#'   leave-one-block
 #'   sensitivity analysis of marker effects, or zero to disable. Blocks use
-#'   coordinates only. They are not biological replicates or confidence intervals.
+#' coordinates only. They are not biological replicates or confidence intervals.
 #' @returns A result list, not a modified experiment. Technical mode returns
 #'   pooled values in `counts` and differential results in `DEMs` (or a list
 #'   per group when `return.individual = TRUE`). Marker mode returns `DEMs`,
@@ -289,193 +384,328 @@ runDE <- function(pooled_data, data, ident, output_dir, run_name, n, logFC_thres
 #' @export
 #'
 #' @examples
-#' utils::str(formals(findAllDEMs))
-findAllDEMs <- function(data, ident, n = 3, logFC_threshold = 1.2, DE_output_dir = NULL, run_name = "findAllDEMs", annotation.column = NULL, assay = "Spatial", slot = "counts", return.individual = FALSE, verbose = TRUE, seed = 1234,
+#' ## Paired treatment/control design with four simulated patients
+#' design <- expand.grid(
+#'     pixel = seq_len(3), condition = c("control", "treated"),
+#'     patient_id = paste0("patient", seq_len(4))
+#' )
+#' expression <- withr::with_seed(1234, matrix(
+#'     stats::rnorm(6 * nrow(design), mean = 5, sd = 0.3),
+#'     nrow = 6,
+#'     dimnames = list(
+#'         paste0("feature", seq_len(6)),
+#'         paste0("observation", seq_len(nrow(design)))
+#'     )
+#' ))
+#' treated <- design$condition == "treated"
+#' expression[1:2, treated] <- expression[1:2, treated] + 1.2
+#' sce <- SingleCellExperiment::SingleCellExperiment(
+#'     assays = list(logcounts = expression),
+#'     colData = S4Vectors::DataFrame(design)
+#' )
+#' fit <- findAllDEMs(sce,
+#'     ident = "condition", assay = "main",
+#'     assayName = "logcounts", method = "replicate", replicate = "patient_id",
+#'     contrasts = list(treated_vs_control = list(
+#'         numerator = "treated", denominator = "control", paired = TRUE
+#'     )),
+#'     verbose = FALSE
+#' )
+#' head(fit$tests$treated_vs_control$table)
+findAllDEMs <- function(
+    data, ident, n = 3, logFC_threshold = 1.2, DE_output_dir = NULL, run_name = "findAllDEMs", annotation.column = NULL, assay = "Spatial", assayName = "counts", return.individual = FALSE, verbose = TRUE, seed = 1234,
     method = c("technical", "markers", "replicate"), replicate = NULL,
-    contrasts = list(), min_region_size = 3, spatial_blocks = 0){
-  method <- match.arg(method)
-  if (method != "technical") {
-    if (!is.null(DE_output_dir) || return.individual)
-      stop("For markers/replicate modes, export the returned tables explicitly.", call. = FALSE)
-    .requireExperiment(data, "SingleCellExperiment")
-    if (length(ident) != 1L || !ident %in% colnames(SummarizedExperiment::colData(data)))
-      stop("ident must name a colData column.", call. = FALSE)
-    if (method == "replicate") return(.replicateRegionContrasts(
-      .assayData(data, assay, slot), as.data.frame(SummarizedExperiment::colData(data)),
-      ident, replicate, contrasts))
-    return(.nativeRegionMarkers(data, ident, assay, slot, min_region_size,
-      spatial_blocks, seed, annotation.column))
-  }
-  warning("Random pixel pools are technical subdivisions, not biological replicates. Use method='markers' for region characterization or method='replicate' for biological inference.", call. = FALSE)
-
-  if (!(is.null(DE_output_dir))){
-    if (dir.exists(DE_output_dir)){
-      warning("Please supply a directory path that doesn't already exist")
-      stop("dir.exists(DE_output_dir) = TRUE")
-    } else{
-      dir.create(DE_output_dir)
+    contrasts = list(), min_region_size = 3, spatial_blocks = 0
+) {
+    method <- match.arg(method)
+    if (method != "technical") {
+        if (!is.null(DE_output_dir) || return.individual) {
+            stop(
+                "For markers/replicate modes, export the returned tables explicitly.",
+                call. = FALSE
+            )
+        }
+        .requireExperiment(data, "SingleCellExperiment")
+        if (length(ident) != 1L || !ident %in% colnames(SummarizedExperiment::colData(data))) {
+            stop("ident must name a colData column.", call. = FALSE)
+        }
+        if (method == "replicate") {
+            return(.replicateRegionContrasts(
+                .assayData(data, assay, assayName), as.data.frame(SummarizedExperiment::colData(data)),
+                ident, replicate, contrasts
+            ))
+        }
+        return(.nativeRegionMarkers(
+            data, ident, assay, assayName, min_region_size,
+            spatial_blocks, seed, annotation.column
+        ))
     }
-  }
+    warning(
+        "Random pixel pools are technical subdivisions, not biological replicates. Use method='markers' for region characterization or method='replicate' for biological inference.",
+        call. = FALSE
+    )
 
-  if (!is.factor(.cellMetadata(data)[[ident]])){
-    stop("ident provided is not a factor! Please convert the ident column using `factor()` ...")
-  }
+    if (!(is.null(DE_output_dir))) {
+        if (dir.exists(DE_output_dir)) {
+            warning("Please supply a directory path that doesn't already exist")
+            stop("dir.exists(DE_output_dir) = TRUE")
+        } else {
+            dir.create(DE_output_dir)
+        }
+    }
 
-  #Step 1: Run Pooling to split each unique ident into 'n' number of pseudo-replicate pools
-  pooled_data <- runPooling(data,ident, n = n, assay = assay, slot = slot, verbose = verbose, seed = seed)
+    if (!is.factor(.cellMetadata(data)[[ident]])) {
+        stop("ident provided is not a factor! Please convert the ident column using `factor()` ...")
+    }
 
-  #Step 2: Run EdgeR to calculate differentially expressed m/z peaks
-  DEM_results <- runDE(pooled_data, data, ident = ident, output_dir = DE_output_dir, run_name = run_name, n=n, logFC_threshold=logFC_threshold, annotation.column = annotation.column, assay = assay, verbose = verbose, return.individual = return.individual)
+    # Step 1: Run Pooling to split each unique ident into 'n' number of pseudo-replicate pools
+    pooled_data <- runPooling(
+        data,
+        ident,
+        n = n,
+        assay = assay,
+        assayName = assayName,
+        verbose = verbose,
+        seed = seed
+    )
 
-  # Returns an EDGEr object which contains the pseudo-bulk counts in $counts and DEMs in $DEMs
-  return(DEM_results)
+    # Step 2: Run EdgeR to calculate differentially expressed m/z peaks
+    DEM_results <- runDE(
+        pooled_data,
+        data,
+        ident = ident,
+        output_dir = DE_output_dir,
+        run_name = run_name,
+        n = n,
+        logFC_threshold = logFC_threshold,
+        annotation.column = annotation.column,
+        assay = assay,
+        verbose = verbose,
+        return.individual = return.individual
+    )
 
+    # Returns an EDGEr object which contains the pseudo-bulk counts in $counts and DEMs in $DEMs
+    return(DEM_results)
 }
-
-
 
 
 #' Heatmap of Differentially Expressed Metabolites
 #'
-#' Generates a heatmap of DEMs generated from edgeR analysis run using `findAllDEMs()`.
+#' Generates a heatmap of DEMs generated from edgeR analysis run using
+#' `findAllDEMs()`.
 #' This function uses `pheatmap` to plot data.
 #'
-#' @param edgeR_output A list containing outputs from edgeR analysis (from findAllDEMs()). This includes pseudo-bulked counts and DEMs.
-#' @param n A numeric integer that defines the number of UP and DOWN regulated peaks to plot (default = 25).
-#' @param only.pos Boolean indicating if only positive markers should be returned (default = FALSE).
-#' @param FDR.threshold Numeric value that defines the FDR threshold to use for defining most significant results (default = 0.05).
-#' @param logfc.threshold Numeric value that defines the logFC threshold to use for filtering significant results (default = 0.5).
+#' @param edgeR_output A list containing outputs from edgeR analysis (from
+#'   findAllDEMs()). This includes pseudo-bulked counts and DEMs.
+#' @param n A numeric integer that defines the number of UP and DOWN regulated
+#'   peaks to plot (default = 25).
+#' @param only.pos Boolean indicating if only positive markers should be
+#'   returned (default = FALSE).
+#' @param FDR.threshold Numeric value that defines the FDR threshold to use for
+#'   defining most significant results (default = 0.05).
+#' @param logfc.threshold Numeric value that defines the logFC threshold to use
+#'   for filtering significant results (default = 0.5).
 #' @param order.by Ranking column: `FDR`, `logFC`, `mean_auc` or `mean_cohen`.
 #'   Descriptive native marker results default to `mean_auc`; other inputs use
 #'   `FDR`. FDR ranking is unavailable for descriptive marker results.
-#' @param scale A character string indicating if the values should be centered and scaled in either the row direction or the column direction, or none. Corresponding values are "row", "column" and "none"
-#' @param color A vector of colors used in heatmap (default = grDevices::colorRampPalette(c("navy", "white", "red"))(50)).
-#' @param cluster_cols Boolean value determining if columns should be clustered or hclust object (default = FALSE).
-#' @param cluster_rows Boolean value determining if rows should be clustered or hclust object (default = TRUE).
-#' @param fontsize_row A numeric value defining the fontsize of rownames (default = 15).
-#' @param fontsize_col A numeric value defining the fontsize of colnames (default = 15).
-#' @param cutree_cols A numeric value defining the number of clusters the columns are divided into, based on the hierarchical clustering(using cutree), if cols are not clustered, the argument is ignored (default = 9).
-#' @param silent Boolean value indicating if the plot should not be draw (default = TRUE).
-#' @param plot_annotations_column Character string indicating the column name that contains the metabolite annotations to plot. Annotations = TRUE must be used in findAllDEMs() for edgeR output to include annotations. If plot_annotations_column = NULL, m/z vaues will be plotted (default = NULL).
-#' @param save_to_path Character string defining the full filepath and name of the plot to be saved as.
-#' @param plot.save.width Integer value representing the width of the saved pdf plot (default = 20).
-#' @param plot.save.height Integer value representing the height of the saved pdf plot (default = 20).
-#' @param nlabels.to.show Numeric value defining the number of annotations to show per m/z (default = NULL).
-#' @param annotation_colors List for specifying annotation_row and annotation_col track colors manually. Check pheatmap R-Package documentation for details. If set to 'NA', default coloring will be used (default = NA).
+#' @param scale A character string indicating if the values should be centered
+#'   and scaled in either the row direction or the column direction, or none.
+#'   Corresponding values are "row", "column" and "none"
+#' @param color A vector of colors used in heatmap (default =
+#'   grDevices::colorRampPalette(c("navy", "white", "red"))(50)).
+#' @param cluster_cols Boolean value determining if columns should be clustered
+#'   or hclust object (default = FALSE).
+#' @param cluster_rows Boolean value determining if rows should be clustered or
+#'   hclust object (default = TRUE).
+#' @param fontsize_row A numeric value defining the fontsize of rownames
+#'   (default = 15).
+#' @param fontsize_col A numeric value defining the fontsize of colnames
+#'   (default = 15).
+#' @param cutree_cols A numeric value defining the number of clusters the
+#'   columns are divided into, based on the hierarchical clustering(using
+#'   cutree), if cols are not clustered, the argument is ignored (default = 9).
+#' @param silent Boolean value indicating if the plot should not be draw
+#'   (default = TRUE).
+#' @param plot_annotations_column Character string indicating the column name
+#'   that contains the metabolite annotations to plot. Annotations = TRUE must
+#'   be used in findAllDEMs() for edgeR output to include annotations. If
+#'   plot_annotations_column = NULL, m/z vaues will be plotted (default = NULL).
+#' @param save_to_path Character string defining the full filepath and name of
+#'   the plot to be saved as.
+#' @param plot.save.width Integer value representing the width of the saved pdf
+#'   plot (default = 20).
+#' @param plot.save.height Integer value representing the height of the saved
+#'   pdf plot (default = 20).
+#' @param nlabels.to.show Numeric value defining the number of annotations to
+#'   show per m/z (default = NULL).
+#' @param annotation_colors List for specifying annotation_row and
+#'   annotation_col track colors manually. Check pheatmap R-Package
+#'   documentation for details. If set to 'NA', default coloring will be used
+#'   (default = NA).
 #'
-#' @returns A heatmap plot of significantly differentially expressed metabolites defined in the edgeR ouput object.
+#' @returns A heatmap plot of significantly differentially expressed metabolites
+#'   defined in the edgeR ouput object.
 #' @export
 #'
-#' @import dplyr
-#'
 #' @examples
-#' utils::str(formals(demsHeatmap))
+#' data(spamtp_example)
+#' spe <- spamtp_example$experiment
+#' markers <- findAllDEMs(spe,
+#'     ident = "region", method = "markers",
+#'     min_region_size = 3, spatial_blocks = 0, verbose = FALSE
+#' )
+#' if (requireNamespace("pheatmap", quietly = TRUE)) {
+#'     heatmap <- demsHeatmap(markers,
+#'         n = 2, order.by = "mean_auc",
+#'         logfc.threshold = 0, silent = TRUE
+#'     )
+#'     heatmap
+#' }
 #'
 #' # demsHeatmap(DEMs)
-demsHeatmap <- function(edgeR_output,
-                         n = 5,
-                         only.pos = FALSE,
-                         FDR.threshold = 0.05,
-                         logfc.threshold = 0.5,
-                         order.by = "FDR",
-                         scale ="row",
-                         color = grDevices::colorRampPalette(c("navy", "white", "red"))(50),
-                         cluster_cols = FALSE,
-                         cluster_rows = TRUE,
-                         fontsize_row = 15,
-                         fontsize_col = 15,
-                         cutree_cols = 9,
-                         silent = TRUE,
-                         plot_annotations_column = NULL,
-                         save_to_path = NULL,
-                         plot.save.width = 20,
-                         plot.save.height = 20,
-                         nlabels.to.show = NULL,
-                         annotation_colors = NULL){
-
-
-  .validateFeatureCount(n, "n")
-  degs <- edgeR_output$DEMs
-  markers <- inherits(edgeR_output, "spamtp_markers")
-  if (markers && missing(order.by)) order.by <- "mean_auc"
-  if (!order.by %in% c("FDR", "logFC", "mean_auc", "mean_cohen"))
-    stop("Unknown marker ranking column.", call. = FALSE)
-  if (order.by == "FDR" && !"FDR" %in% names(degs))
-    stop("These descriptive markers have no FDR. Rank by mean_auc or mean_cohen.", call. = FALSE)
-  if (!markers) degs <- degs[!is.na(degs$FDR) & degs$FDR < FDR.threshold, , drop = FALSE]
-  selected <- lapply(unique(degs$cluster), function(g) {
-    d <- degs[degs$cluster == g, , drop = FALSE]
-    positive <- d[d$logFC > logfc.threshold & !is.na(d$logFC), , drop = FALSE]
-    negative <- d[d$logFC < -logfc.threshold & !is.na(d$logFC), , drop = FALSE]
-    pos <- head(positive[order(if (order.by == "FDR") positive$FDR else -positive[[order.by]], positive$gene, na.last = TRUE), , drop = FALSE], n)
-    neg <- if (only.pos) NULL else head(negative[order(negative[[order.by]], negative$gene, na.last = TRUE), , drop = FALSE], n)
-    rbind(pos, neg)
-  })
-  df <- do.call(rbind, selected)
-  if (!nrow(df)) stop("No features meet the heatmap selection criteria.", call. = FALSE)
-  # Native marker / replicate results supply exactly the matrix used by the
-  # analysis. Do not re-normalize already transformed values through edgeR CPM.
-  expression <- edgeR_output$expression
-  if (is.null(expression)) expression <- edgeR::cpm(edgeR_output, log = TRUE)
-  genes <- unique(df$gene)
-  mtx <- as.matrix(expression[genes, , drop = FALSE])
-  if (scale == "row") {
-    variable <- apply(mtx, 1, stats::sd) > 0
-    mtx <- mtx[variable, , drop = FALSE]; genes <- genes[variable]
-  }
-  if (!nrow(mtx)) stop("No variable heatmap rows remain.", call. = FALSE)
-  col_annot <- data.frame(region = edgeR_output$samples$ident, row.names = colnames(mtx))
-  labels <- genes
-  if (!is.null(plot_annotations_column)) {
-    if (!plot_annotations_column %in% names(df)) stop("Unknown annotation column.", call. = FALSE)
-    annotation <- as.character(df[[plot_annotations_column]][match(genes, df$gene)])
-    if (!is.null(nlabels.to.show)) annotation <- labels_to_show(annotation, n = nlabels.to.show)
-    good <- !is.na(annotation) & nzchar(annotation)
-    labels[good] <- paste0(annotation[good], " [", genes[good], "]")
-  }
-  colors <- if (is.null(annotation_colors)) NA else if (is.list(annotation_colors) &&
-    "region" %in% names(annotation_colors)) annotation_colors else list(region = unlist(annotation_colors))
-  p <- pheatmap::pheatmap(mtx, scale = scale, color = color,
-    cluster_cols = if (ncol(mtx) < 2L) FALSE else cluster_cols,
-    annotation_col = col_annot, cluster_rows = if (nrow(mtx) < 2L) FALSE else cluster_rows,
-    labels_row = labels, fontsize_row = fontsize_row, fontsize_col = fontsize_col,
-    cutree_cols = if (identical(cluster_cols, FALSE)) NA else min(cutree_cols, ncol(mtx)),
-    silent = silent, annotation_colors = colors)
-  p$selected_features <- genes
-  p$expression <- mtx
-  p$selection <- df
-  if (!is.null(save_to_path)) savePheatmapAsPDF(p, save_to_path, plot.save.width, plot.save.height)
-  p
-
+demsHeatmap <- function(
+    edgeR_output,
+    n = 5,
+    only.pos = FALSE,
+    FDR.threshold = 0.05,
+    logfc.threshold = 0.5,
+    order.by = "FDR",
+    scale = "row",
+    color = grDevices::colorRampPalette(c("navy", "white", "red"))(50),
+    cluster_cols = FALSE,
+    cluster_rows = TRUE,
+    fontsize_row = 15,
+    fontsize_col = 15,
+    cutree_cols = 9,
+    silent = TRUE,
+    plot_annotations_column = NULL,
+    save_to_path = NULL,
+    plot.save.width = 20,
+    plot.save.height = 20,
+    nlabels.to.show = NULL,
+    annotation_colors = NULL
+) {
+    .validateFeatureCount(n, "n")
+    degs <- edgeR_output$DEMs
+    markers <- inherits(edgeR_output, "spamtp_markers")
+    if (markers && missing(order.by)) order.by <- "mean_auc"
+    if (!order.by %in% c("FDR", "logFC", "mean_auc", "mean_cohen")) {
+        stop("Unknown marker ranking column.", call. = FALSE)
+    }
+    if (order.by == "FDR" && !"FDR" %in% names(degs)) {
+        stop(
+            "These descriptive markers have no FDR. Rank by mean_auc or mean_cohen.",
+            call. = FALSE
+        )
+    }
+    if (!markers) degs <- degs[!is.na(degs$FDR) & degs$FDR < FDR.threshold, , drop = FALSE]
+    selected <- lapply(unique(degs$cluster), function(g) {
+        d <- degs[degs$cluster == g, , drop = FALSE]
+        positive <- d[d$logFC > logfc.threshold & !is.na(d$logFC), , drop = FALSE]
+        negative <- d[d$logFC < -logfc.threshold & !is.na(d$logFC), , drop = FALSE]
+        pos <- head(
+            positive[order(
+                if (order.by == "FDR") positive$FDR else -positive[[order.by]],
+                positive$gene,
+                na.last = TRUE
+            ), , drop = FALSE],
+            n
+        )
+        neg <- if (only.pos) NULL else head(
+            negative[order(negative[[order.by]], negative$gene, na.last = TRUE), , drop = FALSE],
+            n
+        )
+        rbind(pos, neg)
+    })
+    df <- do.call(rbind, selected)
+    if (!nrow(df)) stop(
+        "No features meet the heatmap selection criteria.",
+        call. = FALSE
+    )
+    # Native marker / replicate results supply exactly the matrix used by the
+    # analysis. Do not re-normalize already transformed values through edgeR CPM.
+    expression <- edgeR_output$expression
+    if (is.null(expression)) expression <- edgeR::cpm(edgeR_output, log = TRUE)
+    genes <- unique(df$gene)
+    mtx <- as.matrix(expression[genes, , drop = FALSE])
+    if (scale == "row") {
+        variable <- apply(mtx, 1, stats::sd) > 0
+        mtx <- mtx[variable, , drop = FALSE]
+        genes <- genes[variable]
+    }
+    if (!nrow(mtx)) stop("No variable heatmap rows remain.", call. = FALSE)
+    col_annot <- data.frame(
+        region = edgeR_output$samples$ident,
+        row.names = colnames(mtx)
+    )
+    labels <- genes
+    if (!is.null(plot_annotations_column)) {
+        if (!plot_annotations_column %in% names(df)) stop("Unknown annotation column.", call. = FALSE)
+        annotation <- as.character(df[[plot_annotations_column]][match(genes, df$gene)])
+        if (!is.null(nlabels.to.show)) annotation <- labels_to_show(annotation, n = nlabels.to.show)
+        good <- !is.na(annotation) & nzchar(annotation)
+        labels[good] <- paste0(annotation[good], " [", genes[good], "]")
+    }
+    colors <- if (is.null(annotation_colors)) {
+        NA
+    } else if (is.list(annotation_colors) &&
+        "region" %in% names(annotation_colors)) {
+        annotation_colors
+    } else {
+        list(region = unlist(annotation_colors))
+    }
+    .requireSuggested("pheatmap")
+    p <- pheatmap::pheatmap(mtx,
+        scale = scale, color = color,
+        cluster_cols = if (ncol(mtx) < 2L) FALSE else cluster_cols,
+        annotation_col = col_annot, cluster_rows = if (nrow(mtx) < 2L) FALSE else cluster_rows,
+        labels_row = labels, fontsize_row = fontsize_row, fontsize_col = fontsize_col,
+        cutree_cols = if (identical(cluster_cols, FALSE)) NA else min(cutree_cols, ncol(mtx)),
+        silent = silent, annotation_colors = colors
+    )
+    p$selected_features <- genes
+    p$expression <- mtx
+    p$selection <- df
+    if (!is.null(save_to_path)) savePheatmapAsPDF(
+        p,
+        save_to_path,
+        plot.save.width,
+        plot.save.height
+    )
+    p
 }
 
 
 #' Saves a demsHeatmap as a PDF
 #'
 #' @param pheatmap A pheatmap plot object that is being saved.
-#' @param filename Character string defining the full filepath and name of the plot to be saved as.
-#' @param width Integer value representing the width of the saved pdf plot (default = 20).
-#' @param height Integer value representing the height of the saved pdf plot (default = 20).
+#' @param filename Character string defining the full filepath and name of the
+#'   plot to be saved as.
+#' @param width Integer value representing the width of the saved pdf plot
+#'   (default = 20).
+#' @param height Integer value representing the height of the saved pdf plot
+#'   (default = 20).
 #'
 #' @return The generated PDF path, invisibly.
 #'
 #' @export
 #'
 #' @examples
-#' utils::str(formals(savePheatmapAsPDF))
-#' # savePheatmapAsPDF(pheatmap, filename = "/Documents/plots/pheatmap1")
-savePheatmapAsPDF <- function(pheatmap, filename, width=20, height=20){
-
-  output_file <- paste0(filename,".pdf")
-  pdf(output_file, width=width, height=height)
-  grid::grid.newpage()
-  grid::grid.draw(pheatmap$gtable)
-  dev.off()
-  invisible(output_file)
+#' if (requireNamespace("pheatmap", quietly = TRUE)) {
+#'     heatmap <- pheatmap::pheatmap(matrix(1:12, 3), silent = TRUE)
+#'     output <- tempfile(fileext = ".pdf")
+#'     savePheatmapAsPDF(heatmap, output, width = 5, height = 4)
+#'     file.info(output)$size
+#'     unlink(output)
+#' }
+savePheatmapAsPDF <- function(pheatmap, filename, width = 20, height = 20) {
+    output_file <- paste0(filename, ".pdf")
+    pdf(output_file, width = width, height = height)
+    grid::grid.newpage()
+    grid::grid.draw(pheatmap$gtable)
+    dev.off()
+    invisible(output_file)
 }
-
-
-
 
 
 ########################################################################################################################################################################################################################

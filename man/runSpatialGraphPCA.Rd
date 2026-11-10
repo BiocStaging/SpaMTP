@@ -8,7 +8,7 @@ runSpatialGraphPCA(
   data,
   n_components = 50,
   assay = "main",
-  slot = "scaled",
+  assayName = "scaled",
   image = NULL,
   platform = "Visium",
   lambda = 0.5,
@@ -24,25 +24,35 @@ runSpatialGraphPCA(
 \arguments{
 \item{data}{A SpatialExperiment or aligned Cardinal MSImagingExperiment.}
 
-\item{n_components}{Integer specifying the number of principal components to compute (default = 50).}
+\item{n_components}{Integer specifying the number of principal components to
+compute (default = 50).}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"scaled"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{image}{Reserved; must be NULL. Subset pixels before running graph PCA.}
 
-\item{platform}{Character string matching either \code{"Visium"} or \code{"ST"} to determine how the k-NN graph is constructed. If "Visium" k-nns will handle the hexagon spot arrangement, including setting \code{n_neighbors} = 6, else "ST" assignment will set \code{n_neighbors} = 4 unless a value is specifically provided (default = "Visium").}
+\item{platform}{Character string matching either \code{"Visium"} or \code{"ST"} to
+determine how the k-NN graph is constructed. If "Visium" k-nns will handle
+the hexagon spot arrangement, including setting \code{n_neighbors} = 6, else
+"ST" assignment will set \code{n_neighbors} = 4 unless a value is specifically
+provided (default = "Visium").}
 
-\item{lambda}{Numeric value defining the regularisation parameter that controls the influence of the graph Laplacian (default = 0.5).}
+\item{lambda}{Numeric value defining the regularisation parameter that
+controls the influence of the graph Laplacian (default = 0.5).}
 
-\item{n_neighbors}{Integer value specifying the number of spatial neighbours to use. If \code{NULL}, will default of 6 for "Visium" data and 4 for "ST" platforms (default = NULL).}
+\item{n_neighbors}{Integer value specifying the number of spatial neighbours
+to use. If \code{NULL}, will default of 6 for "Visium" data and 4 for "ST"
+platforms (default = NULL).}
 
-\item{include_self}{Boolean logical value indicating whether to include self-connections in the graph (default = FALSE).}
+\item{include_self}{Boolean logical value indicating whether to include
+self-connections in the graph (default = FALSE).}
 
-\item{alg}{Character string specifying the algorithm to use for nearest neighbour search (passed to \code{FNN::get.knn()}) (default ="kd_tree").}
+\item{alg}{Character string specifying the algorithm to use for nearest
+neighbour search (passed to \code{FNN::get.knn()}) (default ="kd_tree").}
 
 \item{fast}{Use partial eigendecomposition via \code{RSpectra::eigs_sym()}
 (default \code{TRUE}). For wide inputs requesting few components, matrix-vector
@@ -55,20 +65,41 @@ and the graph matrix in \code{S4Vectors::metadata(data)$spatialGraphs}
 \item{reduction_name}{Name for the parent object's
 \code{SingleCellExperiment::reducedDim()} (default = \code{"SpatialPCA"}).}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 }
 \value{
 A SpatialExperiment with a new \code{colPair()} graph and \code{reducedDim()}
 embedding. Expression assays are preserved.
 }
 \description{
-Computes a graph-regularised PCA using spatial coordinates and scaled expression data. A k-nearest neighbour (k-NN) graph is computed using spatial locations and used to regularise the PCA decomposition via a graph Laplacian. The result is stored in reducedDim(), with spatial edges in colPairs().
+Computes a graph-regularised PCA using spatial coordinates and scaled
+expression data. A k-nearest neighbour (k-NN) graph is computed using spatial
+locations and used to regularise the PCA decomposition via a graph Laplacian.
+The result is stored in reducedDim(), with spatial edges in colPairs().
 }
 \details{
 Note: This method has been adapted from the GraphPCA Python package
 (\doi{10.1186/s13059-024-03429-x}).
+
+The neighbour graph and Laplacian are sparse, but the selected expression
+assay and graph-regularised solve result are materialised in memory.
+Each dense double-precision feature-by-pixel matrix needs 8 bytes per entry:
+2,000 features by 100,000 pixels require about 1.6 GB per matrix, before
+temporary copies, graph factorisation and eigensolver workspace.
+A delayed input assay does not remove these allocations. Subset the selected
+experiment's features or the object's pixels before calling this function
+when the full matrices would exceed available memory. Outside the wide-input
+operator path described by \code{fast}, the eigendecomposition also constructs a
+dense feature-by-feature matrix.
 }
 \examples{
-utils::str(formals(runSpatialGraphPCA))
-# spamtp_obj <- runSpatialGraphPCA(spamtp_obj, platform = "Visium")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+spe <- scaleSMData(spe)
+spe <- runSpatialGraphPCA(spe,
+    n_components = 2, platform = "ST",
+    n_neighbors = 3, verbose = FALSE
+)
+head(SingleCellExperiment::reducedDim(spe, "SpatialPCA"))
 }

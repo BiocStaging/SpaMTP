@@ -7,7 +7,7 @@
 findSpatiallyVariableMetabolites(
   object,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   image = NULL,
   nfeatures = 2000,
   max_spots = 5000,
@@ -21,7 +21,7 @@ findSpatiallyVariableMetabolites(
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment to analyse.}
 
-\item{slot}{Assay containing expression values.
+\item{assayName}{Assay containing expression values.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{image}{Retained for compatibility; coordinates use spatialCoords.}
@@ -48,10 +48,13 @@ Constant features return NA.
 }
 \examples{
 x <- SpatialExperiment::SpatialExperiment(
-  assays = list(counts = rbind(a = 1:6, b = c(1, 3, 5, 2, 4, 6))),
-  rowData = S4Vectors::DataFrame(mz = c(100, 200)),
-  spatialCoords = cbind(x = 1:6, y = 0),
-  colData = S4Vectors::DataFrame(row.names = paste0("p", 1:6)))
-x <- findSpatiallyVariableMetabolites(x)
-getSpatiallyVariableMetabolites(x)
+    assays = list(counts = rbind(a = 1:6, b = c(1, 3, 5, 2, 4, 6))),
+    rowData = S4Vectors::DataFrame(mz = c(100, 200)),
+    spatialCoords = cbind(x = 1:6, y = 0),
+    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:6))
+)
+if (requireNamespace("ape", quietly = TRUE)) {
+    x <- findSpatiallyVariableMetabolites(x)
+    getSpatiallyVariableMetabolites(x)
+}
 }

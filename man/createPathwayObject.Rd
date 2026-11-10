@@ -7,7 +7,7 @@
 createPathwayObject(
   object,
   assay = NULL,
-  slot = "logcounts",
+  assayName = "logcounts",
   new.assay = "pathway",
   remove.nans = TRUE,
   database = NULL,
@@ -27,16 +27,18 @@ createPathwayObject(
 )
 }
 \arguments{
-\item{object}{A SingleCellExperiment (including SpatialExperiment) with expression
+\item{object}{A SingleCellExperiment (including SpatialExperiment) with
+expression
 features indexed by gene identifiers or RaMP IDs.}
 
 \item{assay}{Primary or alternative experiment to score.}
 
-\item{slot}{Expression assay. If omitted for a Bioconductor container,
+\item{assayName}{Expression assay. If omitted for a Bioconductor container,
 prefers logcounts, normcounts, then counts in the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{new.assay}{Name for the pathway-level \code{altExp()} (default = \code{"pathway"}).
+\item{new.assay}{Name for the pathway-level \code{altExp()} (default =
+\code{"pathway"}).
 Scores are stored in that experiment's \code{pathwayScores} expression assay.}
 
 \item{remove.nans}{Remove pathways without matched analytes (default TRUE).}
@@ -75,7 +77,8 @@ records and ambiguous symbols are excluded and recorded in the audit.}
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -93,7 +96,8 @@ The input with pathwayScores in a new alternative experiment.
 Pathway identifiers are preserved.
 }
 \description{
-This function computes pathway-level scores from analyte-level expression data
+This function computes pathway-level scores from analyte-level expression
+data
 and stores them in altExp for SingleCellExperiment-derived objects.
 Each score is the sum of matched expression divided by the square root
 of the matched feature count, then centred and scaled across pixels.
@@ -104,11 +108,16 @@ Accepts gene identifiers directly or a harmonized RaMP assay.
 min_path_size and max_path_size are applied to measured unique members.
 rowData contains database_size (after identity reconciliation),
 database_raw_size, measured_size, coverage_fraction, used_size,
-database_members, measured_members, used_members and excluded_conflict_records.
+database_members, measured_members, used_members and
+excluded_conflict_records.
 The complete coverage table, including excluded and unmeasured pathways,
 is retained in metadata(altExp(x, new.assay))$pathway_mapping$coverage.
 Scores summarize observed expression; they are not pathway activity tests.
 }
 \examples{
-utils::str(formals(createPathwayObject))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+spe <- createPathwayObject(spe, assay = "transcriptome", pathway_index = index)
+SummarizedExperiment::assay(SingleCellExperiment::altExp(spe, "pathway"), "pathwayScores")[, 1:4]
 }

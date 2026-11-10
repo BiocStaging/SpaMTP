@@ -24,12 +24,14 @@ estimateAnnotationFDR(
 
 \item{ppm}{Mass tolerance in parts per million.}
 
-\item{ms1_spectrum}{Optional data frame with \code{mz} and \code{intensity} columns
-used as isotope and adduct-family context; it is shifted with the peaks.}
+\item{ms1_spectrum}{Optional data frame with \code{mz} and \code{intensity} columns,
+or a numeric m/z vector assigned unit intensities, used as isotope and
+adduct-family context. It is shifted with the peaks.}
 
 \item{shifts_da}{Decoy shifts in Da. Each must exceed twice the tolerance
 at the largest observed m/z. By default, -8, -5, 5 and 8 times that
-tolerance half-width (\code{ppm} at the largest m/z).}
+tolerance half-width (\code{ppm} at the largest m/z). For \code{ppm = 0}, supply
+nonzero shifts explicitly; no default width can be inferred.}
 
 \item{cutoffs}{Score cutoffs at which to report the estimate.}
 
@@ -43,6 +45,8 @@ An object of class \code{spamtp_annotation_fdr}: a list with \code{curve}
 decoy-to-target ratio, capped at 1, in the historical \code{fdr} column),
 \code{best_scores} (best score per peak for the target and each decoy;
 0 means no candidate within tolerance) and the settings.
+A single \code{spamtp_formula_warning} summarizes unavailable formula evidence
+across the target and decoy queries.
 }
 \description{
 Scores the observed peak list and decoy copies of it in which every peak,
@@ -65,9 +69,9 @@ demonstrate FDR control. Chemical identity requires independent evidence.
 }
 \examples{
 db <- data.frame(
-  formula = c("C5H8O5", "C6H12O6", "C4H9NO2"),
-  exactmass = c(148.037173366, 180.063388104, 103.063328537),
-  isomers_names = c("2-hydroxyglutarate", "hexose", "GABA")
+    formula = c("C5H8O5", "C6H12O6", "C4H9NO2"),
+    exactmass = c(148.037173366, 180.063388104, 103.063328537),
+    isomers_names = c("2-hydroxyglutarate", "hexose", "GABA")
 )
 index <- buildMZAnnotationIndex(db, adducts = c("M+H", "M+Na", "M+K"))
 fdr <- estimateAnnotationFDR(c(149.04445, 203.05261, 250.1), index)

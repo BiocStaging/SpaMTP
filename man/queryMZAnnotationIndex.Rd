@@ -26,7 +26,10 @@ queryMZAnnotationIndex(
 columns. It should represent the same retention-time window or spatial
 pixel/region as the queried peaks.}
 
-\item{use_mass_defect}{Apply the CHO negative mass-defect penalty.}
+\item{use_mass_defect}{Check CHO formula/ion mass consistency. A mismatch
+beyond the query tolerance (at least 5 ppm for rounded reference masses)
+receives a 0.2 chemical score. Negative fractional mass defects alone
+are not penalized.}
 
 \item{check_isotopes}{Score carbon-13 and, when relevant, chlorine/bromine
 M+2 patterns.}
@@ -43,6 +46,12 @@ the checked structure's site count and capacity. \code{dehydration_status} is
 \code{"structure-compatible"} for retained positive water losses and
 \code{"not_required"} for other rules. Missing capacities for other rules are
 left as \code{NA}. These fields describe eligibility, not confirmed identity.
+\code{formula_status} is \code{"parsed"}, \code{"unavailable"}, or \code{"not_checked"}.
+Unsupported formulas retain exact-mass candidates, with unavailable
+formula-based scores recorded as \code{NA} and omitted from the score product.
+Water-loss candidates require complete formula counts as well as structure
+evidence. A single \code{spamtp_formula_warning} summarizes unavailable formulas
+per query; its \code{formulas} field contains the affected reference strings.
 }
 \description{
 Candidates are pruned by ppm tolerance and proton/charge validity during
@@ -54,5 +63,7 @@ records; \code{infer_structure = "never"} requires precomputed dehydration
 capacity. Isomer identities are resolved separately for these losses.
 }
 \examples{
-utils::str(formals(queryMZAnnotationIndex))
+data(spamtp_example)
+index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
+queryMZAnnotationIndex(c(149.04445, 181.07066), index, ppm = 5)
 }

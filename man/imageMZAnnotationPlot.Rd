@@ -25,7 +25,7 @@ imageMZAnnotationPlot(
   combine = TRUE,
   coord.fixed = TRUE,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   column.name = "all_IsomerNames",
   plot.exact = TRUE,
   plot.pixel = FALSE,
@@ -72,12 +72,13 @@ queries, or "none" separately for each panel.}
 
 \item{assay}{Primary experiment ("main") or altExp name.}
 
-\item{slot}{Expression assay name, e.g. "counts" or "logcounts".
+\item{assayName}{Expression assay name, e.g. "counts" or "logcounts".
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{column.name}{Annotation column in rowData.}
 
-\item{plot.exact}{Match complete semicolon-delimited names (case-insensitive).}
+\item{plot.exact}{Match complete semicolon-delimited names
+(case-insensitive).}
 
 \item{plot.pixel}{Draw square rather than circular point symbols.}
 
@@ -94,5 +95,7 @@ All matching peaks are summed per metabolite. A peak shared by overlapping
 mass-tolerance windows is counted once. No temporary metadata is written.
 }
 \examples{
-utils::str(formals(imageMZAnnotationPlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+imageMZAnnotationPlot(spe, "Glucose")
 }

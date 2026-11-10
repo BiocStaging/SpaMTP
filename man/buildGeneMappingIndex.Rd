@@ -51,5 +51,8 @@ does not invalidate it. Rebuild saved indices from older schema versions
 with this function before using them in a new workflow.
 }
 \examples{
-utils::str(formals(buildGeneMappingIndex))
+data(spamtp_example)
+db <- spamtp_example$database
+index <- buildGeneMappingIndex(db$source_df, spamtp_example$gene_reference)
+mapGeneIdentifiers(c("GENE1", "OLD1", "entrez:102"), index = index)
 }

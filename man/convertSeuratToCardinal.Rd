@@ -7,7 +7,7 @@
 convertSeuratToCardinal(
   data,
   assay = "Spatial",
-  slot = "counts",
+  layer = "counts",
   run_col = NULL,
   feature.metadata = FALSE,
   verbose = TRUE
@@ -18,10 +18,8 @@ convertSeuratToCardinal(
 
 \item{assay}{Seurat assay to convert.}
 
-\item{slot}{Exact Seurat expression layer name, read with
-\code{SeuratObject::LayerData()}, not an internal S4 slot. This boundary
-converter differs from native analysis selectors; see \link{experimentAccess}
-and \code{\link[=seuratToSpatialExperiment]{seuratToSpatialExperiment()}}.}
+\item{layer}{Exact Seurat expression layer name, read with
+\code{SeuratObject::LayerData()}. See \code{\link[=seuratToSpatialExperiment]{seuratToSpatialExperiment()}}.}
 
 \item{run_col}{Optional cell-metadata column containing run identifiers.}
 
@@ -37,5 +35,11 @@ A Cardinal \code{MSImagingExperiment}.
 Convert an optional Seurat object to Cardinal
 }
 \examples{
-utils::str(formals(convertSeuratToCardinal))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+if (requireNamespace("SeuratObject", quietly = TRUE)) {
+    converted <- spatialExperimentToSeurat(spe)
+    msi <- convertSeuratToCardinal(converted, verbose = FALSE)
+    dim(msi)
+}
 }

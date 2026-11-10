@@ -71,3 +71,12 @@ centroids inside square MSI pixels; ties use the nearest MSI centre then
 pixel ID. Otherwise each MSI pixel must cover overlap.threshold of the target
 spot/polygon area. Matching MSI intensities are averaged with equal weights.
 }
+\examples{
+data(spamtp_example)
+spe <- spamtp_example$experiment
+mapped <- mapSpatialOmics(spe, spe,
+    ST.hires = TRUE, SM.pixel.width = 1,
+    ST.assay = "transcriptome"
+)
+table(mapped$mapped)
+}

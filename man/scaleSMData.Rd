@@ -7,10 +7,11 @@
 scaleSMData(
   data,
   assay = "main",
-  slot = "logcounts",
+  assayName = "logcounts",
   center = TRUE,
   scale = TRUE,
-  outputAssay = "scaled"
+  outputAssay = "scaled",
+  delayed = TRUE
 )
 }
 \arguments{
@@ -18,29 +19,50 @@ scaleSMData(
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
-\item{slot}{Input expression assay, usually \code{"logcounts"}.
+\item{assayName}{Input expression assay, usually \code{"logcounts"}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{center, scale}{Logical values passed to base \code{scale()}.}
+\item{center, scale}{Logical; subtract row means and/or divide by row
+standard deviations, as in base \code{scale()} applied to features.}
 
 \item{outputAssay}{Name of a new assay for scaled values. Must differ from
 the input assay and must not already exist.}
+
+\item{delayed}{Logical; store a lazily evaluated \code{DelayedMatrix} (default)
+or an in-memory \code{matrix}.}
 }
 \value{
 The input container with a scaled assay in the selected experiment.
 }
 \description{
-Each feature is centred and/or scaled across pixels using base R's
-\code{scale()}. Zero-variance features become zero after centring and scaling.
-The input assay is preserved and the result is stored in \code{scaled} by
-default. This materialises a dense matrix; use implicit centring in PCA
-instead when a full scaled matrix would exceed available memory.
+Each feature (row) is centred and/or scaled to unit variance across pixels.
+Zero-variance features become zero. The input assay is preserved and the
+result is stored in \code{scaled} by default.
+}
+\details{
+Centring makes sparse data dense, so a fully materialised scaled matrix
+needs 8 bytes per feature-pixel entry (for example, 2,000 features by
+100,000 pixels need about 1.6 GB). By default the result is therefore a
+\code{DelayedMatrix}: row means and standard deviations are computed by block
+processing and the arithmetic is applied lazily when values are read.
+This avoids storing the full scaled matrix during this step; memory also
+includes the input, block-processing buffers and row statistics.
+
+Downstream analyses can still allocate dense matrices.
+\code{\link[=runSpatialGraphPCA]{runSpatialGraphPCA()}} materialises the selected expression assay and its
+dense solve result. \code{\link[=createMergedModalityAssay]{createMergedModalityAssay()}} also materialises each
+modality that still needs scaling. Subset features or pixels before those
+calls when needed, and allow for temporary copies in addition to the
+8 bytes per entry. Setting \code{delayed = FALSE} materialises scaling
+immediately.
 }
 \examples{
-counts <- matrix(seq_len(20), nrow = 4,
-    dimnames = list(paste0("mz-", 101:104), paste0("p", 1:5)))
+counts <- matrix(seq_len(20),
+    nrow = 4,
+    dimnames = list(paste0("mz-", 101:104), paste0("p", 1:5))
+)
 sce <- SingleCellExperiment::SingleCellExperiment(assays = list(counts = counts))
 sce <- normalizeSMData(sce, "LogNormalize", verbose = FALSE)
 sce <- scaleSMData(sce)
-SummarizedExperiment::assayNames(sce)
+SummarizedExperiment::assay(sce, "scaled")
 }

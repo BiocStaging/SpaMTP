@@ -11,7 +11,7 @@ spatialMZPlot(
   images = NULL,
   crop = TRUE,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   keep.scale = "feature",
   min.cutoff = NA,
   max.cutoff = NA,
@@ -39,10 +39,11 @@ spatialMZPlot(
 
 \item{assay}{Primary experiment ("main") or altExp name.}
 
-\item{slot}{Expression assay name, e.g. "counts" or "logcounts".
+\item{assayName}{Expression assay name, e.g. "counts" or "logcounts".
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{keep.scale}{Colour scaling: "feature", "all" or "none"; NULL means "none".}
+\item{keep.scale}{Colour scaling: "feature", "all" or "none"; NULL means
+"none".}
 
 \item{min.cutoff, max.cutoff}{One cutoff or one per query; numeric or
 quantile strings such as "q10". NA uses the observed range.}
@@ -74,5 +75,7 @@ spatialCoords units. Each sample/image is a separate panel. With images=NULL
 all samples are plotted without an image.
 }
 \examples{
-utils::str(formals(spatialMZPlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+spatialMZPlot(spe, c("ion1", "ion3"))
 }

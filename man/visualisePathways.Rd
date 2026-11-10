@@ -8,7 +8,7 @@ visualisePathways(
   SpaMTP,
   pathway_df,
   assay = "SPM",
-  slot = "counts",
+  assayName = "counts",
   min_n = 3,
   p_val_threshold = 0.1,
   method = "ward.D2",
@@ -23,22 +23,27 @@ visualisePathways(
 \arguments{
 \item{SpaMTP}{A SpatialExperiment used for fishersPathwayAnalysis.}
 
-\item{pathway_df}{Dataframe containing the pathway enrichment results (output from SpaMTP::fishersPathwayAnalysis function).}
+\item{pathway_df}{Dataframe containing the pathway enrichment results (output
+from SpaMTP::fishersPathwayAnalysis function).}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
 \code{"SPM"} is a compatibility alias for the primary experiment.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{min_n}{Integer value specifying the minimum number of analytes required to be present in a pathway (default = 3).}
+\item{min_n}{Integer value specifying the minimum number of analytes required
+to be present in a pathway (default = 3).}
 
-\item{p_val_threshold}{The p-val cutoff to keep the pathways generated from fisher exact test (default = "0.1").}
+\item{p_val_threshold}{The p-val cutoff to keep the pathways generated from
+fisher exact test (default = "0.1").}
 
-\item{method}{Character string defining the statistical method used to calculate hclust (default = "ward.D2").}
+\item{method}{Character string defining the statistical method used to
+calculate hclust (default = "ward.D2").}
 
-\item{verbose}{Boolean indicating whether to show informative messages. If FALSE these messages will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show informative messages. If
+FALSE these messages will be suppressed (default = TRUE).}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
@@ -55,8 +60,19 @@ by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 A combined gg, ggplot object with pathway and dendrogram
 }
 \description{
-Displays the pathway analysis results form running the 'fishersPathwayAnalysis()' function
+Displays the pathway analysis results form running the
+'fishersPathwayAnalysis()' function
 }
 \examples{
-utils::str(formals(visualisePathways))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+enrichment <- fishersPathwayAnalysis(list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
+    universe = list(metabolites = paste0("RAMP_C_", 1:3)),
+    database = spamtp_example$database, min_path_size = 1,
+    pathway_all_info = TRUE, verbose = FALSE
+)
+visualisePathways(spe, enrichment,
+    assay = "main", min_n = 1,
+    p_val_threshold = 1, database = spamtp_example$database, verbose = FALSE
+)
 }

@@ -11,7 +11,8 @@ ppm_range_match(observed_mz, reference_mz, ppm)
 
 \item{reference_mz}{Numeric value defining the reference mz value.}
 
-\item{ppm}{Numeric value defining the maximum acceptable ppm_error/threshold for searching.}
+\item{ppm}{Numeric value defining the maximum acceptable ppm_error/threshold
+for searching.}
 }
 \value{
 Boolean value indicating if a match is found (TRUE) or not (FALSE)

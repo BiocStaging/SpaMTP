@@ -22,7 +22,8 @@ renderSpaMTPReport(
 \item{max_points}{Maximum observations displayed per scatter plot. Analyses
 and exported tables are not subsampled.}
 
-\item{interactive}{Embed an offline region/DE explorer using local JavaScript.}
+\item{interactive}{Embed an offline region/DE explorer using local
+JavaScript.}
 
 \item{preview_features}{Maximum feature profiles embedded in the explorer.}
 
@@ -38,8 +39,22 @@ Absolute path to report.html, invisibly.
 The HTML embeds PNG figures and styles and needs no network, Pandoc or R
 session to view. Full tables, mapping weights, processing settings and the
 analysed object are also saved for reproducibility. Existing files are never
-overwritten. A report is published to output_dir only after rendering succeeds.
+overwritten. A report is published to output_dir only after rendering
+succeeds.
 }
 \examples{
-utils::str(formals(renderSpaMTPReport))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+fit <- runSpaMTPWorkflow(spe,
+    modalities = list(
+        main = list(type = "metabolomics", layer = "logcounts"),
+        transcriptome = list(type = "transcriptomics", layer = "logcounts")
+    ),
+    npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+    structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
+)
+folder <- tempfile("report-")
+report <- renderSpaMTPReport(fit, folder, interactive = FALSE, max_points = 24)
+basename(report)
+unlink(folder, recursive = TRUE)
 }

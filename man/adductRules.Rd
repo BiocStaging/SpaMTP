@@ -17,13 +17,25 @@ adductRules(
 multiply charged ions, and neutral losses.}
 }
 \value{
-A data frame containing validated adduct rules.
+A data frame containing validated adduct rules. Column
+\code{metabocoreutils_name} names the MetaboCoreUtils adduct that supplies the
+ion mass (\code{NA} for the locally defined rules). \code{carbon_delta},
+\code{chlorine_delta} and \code{bromine_delta} describe isotope-relevant atoms added
+or removed by the rule, in addition to \code{n_molecules} copies of the compound.
 }
 \description{
-The rules use neutral monoisotopic mass and explicit ion masses. Each row
-stores the molecular multiplier, total numerator mass shift, charge, number
-of protons removed from the analyte, and the charge contributed by added
-species. This allows rules to be checked before candidate generation.
+Ion masses are taken from \code{\link[MetaboCoreUtils:adducts]{MetaboCoreUtils::adducts()}}: each rule's
+molecular multiplier and total numerator mass shift are the MetaboCoreUtils
+\code{mass_multi} and \code{mass_add} scaled by the absolute charge, so the ion m/z
+\code{(n_molecules * M + mass_shift) / abs(charge)} equals
+\code{\link[MetaboCoreUtils:mass2mz]{MetaboCoreUtils::mass2mz()}}. SpaMTP keeps its short rule names (for
+example \code{"M+H"}) and adds annotation priors and chemical constraints: the
+number of protons removed from the analyte, the charge contributed by added
+species, water losses, metal and halogen flags, a complexity class and a
+base adduct. This allows rules to be checked before candidate generation.
+Only negative-mode water loss (\code{"M-H2O-H"}, the MetaboCoreUtils \verb{[M-H]-}
+mass minus water) and the identity rule \code{"M"} for neutral-mass input are
+defined locally.
 }
 \details{
 Positive \verb{[M+H-H2O]+} and \verb{[M+H-2H2O]+} rules require
@@ -34,5 +46,6 @@ Structural compatibility does not predict fragment abundance or establish
 identity; acquisition conditions and MS/MS evidence remain relevant.
 }
 \examples{
-utils::str(formals(adductRules))
+rules <- adductRules("positive")
+rules[rules$name \%in\% c("M+H", "M+Na"), c("name", "mass_shift", "charge")]
 }

@@ -32,9 +32,13 @@ A \code{SpatialExperiment}.
 \description{
 \code{asSpatialExperiment()} is the Bioconductor-native conversion entry point
 used by SpaMTP. Continuous or unaligned raw spectra should remain in a
-Cardinal \code{MSImagingArrays} or \code{MSImagingExperiment}; conversion is intended for data with a
+Cardinal \code{MSImagingArrays} or \code{MSImagingExperiment}; conversion is intended
+for data with a
 common feature-by-pixel matrix, typically after peak alignment or binning.
 }
 \examples{
-methods::showMethods("asSpatialExperiment")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+msi <- spatialExperimentToCardinal(spe)
+asSpatialExperiment(msi)
 }

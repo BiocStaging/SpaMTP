@@ -15,17 +15,23 @@ readSMMatrix(
 )
 }
 \arguments{
-\item{mtx.file}{Character string defining the path of the spatial metabolomic image matrix .csv file.}
+\item{mtx.file}{Character string defining the path of the spatial metabolomic
+image matrix .csv file.}
 
-\item{assay}{Label stored in mainExpName(); intensities are in the counts assay.}
+\item{assay}{Label stored in mainExpName(); intensities are in the counts
+assay.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE, the message will be shown; else, it will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE, the
+message will be shown; else, it will be suppressed (default = TRUE).}
 
-\item{feature.start.column}{Numeric value defining the start index containing the x, y, and m/z value columns within the table (default = 1).}
+\item{feature.start.column}{Numeric value defining the start index containing
+the x, y, and m/z value columns within the table (default = 1).}
 
-\item{mz.prefix}{Character string matching the prefix string in front of each m/z name (default = NULL).}
+\item{mz.prefix}{Character string matching the prefix string in front of each
+m/z name (default = NULL).}
 
-\item{project.name}{Character string defining the name of the sample to be assigned as \code{orig.ident} (default = "SpaMTP").}
+\item{project.name}{Character string defining the name of the sample to be
+assigned as \code{orig.ident} (default = "SpaMTP").}
 
 \item{returnType}{Output container; only \code{"SpatialExperiment"} is supported.}
 }
@@ -35,9 +41,13 @@ A \code{SpatialExperiment}.
 \description{
 This function reads SM data stored in a table format, with one row per
 pixel and two columns named 'x' and 'y' storing its coordinates.
-All other columns should be the relative m/z values containing the intensity values of each pixel.
+All other columns should be the relative m/z values containing the intensity
+values of each pixel.
 Coordinates are stored only in \code{spatialCoords()}, not duplicated in
 pixel metadata where a later alignment could leave them out of date.
+Intensities use a plain matrix when more than half of the entries are
+nonzero, and a sparse matrix otherwise. Missing entries count as stored
+values when choosing the representation.
 }
 \details{
 \strong{NOTE:} The input file must be in a format similar to the table below:
@@ -51,11 +61,19 @@ pixel metadata where a later alignment could leave them out of date.
 5  0   5    0    0    0
 }\if{html}{\out{</div>}}
 \itemize{
-\item The first two columns (\code{x}, \code{y}) contain the respective spatial coordinates.
-\item The subsequent columns contain the m/z values and their intensities for each spatial pixel.
+\item The first two columns (\code{x}, \code{y}) contain the respective spatial
+coordinates.
+\item The subsequent columns contain the m/z values and their intensities for
+each spatial pixel.
 }
 }
 \examples{
-utils::str(formals(readSMMatrix))
-# msi_data <- readSMMatrix("~/Documents/msi_mtx.csv")
+file <- tempfile(fileext = ".csv")
+utils::write.csv(data.frame(
+    x = 1:4, y = c(0, 0, 1, 1),
+    mz100 = c(1, 3, 2, 4), mz200 = c(4, 2, 3, 1)
+), file, row.names = FALSE)
+spe <- readSMMatrix(file, mz.prefix = "mz", verbose = FALSE)
+SpatialExperiment::spatialCoords(spe)
+unlink(file)
 }

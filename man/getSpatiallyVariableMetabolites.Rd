@@ -7,7 +7,8 @@
 getSpatiallyVariableMetabolites(object, assay = "main", n = 10)
 }
 \arguments{
-\item{object}{A SpatialExperiment returned by findSpatiallyVariableMetabolites.}
+\item{object}{A SpatialExperiment returned by
+findSpatiallyVariableMetabolites.}
 
 \item{assay}{Primary or alternative experiment containing results.}
 
@@ -18,4 +19,12 @@ Feature names in Moran's I rank order, excluding untested features.
 }
 \description{
 Get the top spatially variable metabolites
+}
+\examples{
+data(spamtp_example)
+spe <- spamtp_example$experiment
+if (requireNamespace("ape", quietly = TRUE)) {
+    spe <- findSpatiallyVariableMetabolites(spe, nfeatures = 3, verbose = FALSE)
+    getSpatiallyVariableMetabolites(spe, n = 3)
+}
 }

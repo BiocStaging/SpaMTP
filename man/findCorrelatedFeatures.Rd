@@ -11,8 +11,8 @@ findCorrelatedFeatures(
   ident = NULL,
   SM.assay = "main",
   ST.assay = NULL,
-  SM.slot = "counts",
-  ST.slot = "counts",
+  smAssayName = "counts",
+  stAssayName = "counts",
   nfeatures = 10,
   covariates = NULL,
   features = NULL
@@ -33,15 +33,16 @@ experiment. Legacy \code{SPM} and \code{Spatial} also select the primary experim
 
 \item{ST.assay}{Alternative experiment name, or NULL for metabolites only.}
 
-\item{SM.slot}{Assay containing metabolite values.
+\item{smAssayName}{Assay containing metabolite values.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{ST.slot}{Assay containing transcriptomic values.
+\item{stAssayName}{Assay containing transcriptomic values.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{nfeatures}{Maximum results per reference; NULL returns all features.}
 
-\item{covariates}{Optional colData fields to regress from both features before
+\item{covariates}{Optional colData fields to regress from both features
+before
 correlation, for example sample and annotated region. Raw correlations are
 also returned. This is a descriptive conditional association, not a causal
 or spatial significance test.}
@@ -59,9 +60,10 @@ altExp without assigning artificial m/z values. Constant features return NA.
 }
 \examples{
 x <- SpatialExperiment::SpatialExperiment(
-  assays = list(counts = rbind(a = 1:4, b = 4:1)),
-  rowData = S4Vectors::DataFrame(mz = c(100, 200)),
-  spatialCoords = cbind(x = 1:4, y = 0),
-  colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)))
+    assays = list(counts = rbind(a = 1:4, b = 4:1)),
+    rowData = S4Vectors::DataFrame(mz = c(100, 200)),
+    spatialCoords = cbind(x = 1:4, y = 0),
+    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4))
+)
 findCorrelatedFeatures(x, mz = 100)
 }

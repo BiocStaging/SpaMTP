@@ -8,23 +8,33 @@ getRefinedAnnotations(obj, assay = "main", n = 1)
 }
 \arguments{
 \item{obj}{A SummarizedExperiment, including SingleCellExperiment or
-SpatialExperiment. The selected experiment must have annotations in \code{rowData()}.}
+SpatialExperiment. The selected experiment must have annotations in
+\code{rowData()}.}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment whose \code{rowData()}
 contains the annotations (default = \code{"main"}).}
 
-\item{n}{Integer defining the number of entries an annotation can have assigned. Any higher counts will be removed (default = 1).}
+\item{n}{Integer defining the number of entries an annotation can have
+assigned. Any higher counts will be removed (default = 1).}
 }
 \value{
 The input container with the selected experiment restricted to
-features having at most \code{n} annotations. Pixel columns are unchanged.
+annotated features having at most \code{n} candidate rows. \code{n = 0} returns
+no features. Stored candidates are counted when available, so semicolons
+within one candidate's isomer names do not inflate the count. For legacy
+objects without stored candidates, distinct semicolon-separated names
+are counted. Unannotated features are excluded. Pixel columns are unchanged.
 }
 \description{
-Used to subset dataset to only include annotations that have n number of entries.
-For example some peaks can have multiple annotations. Peaks which have above n number of annotations assigned will be removed from Bioconductor experiment.
+Used to subset dataset to only include annotations that have n number of
+entries.
+For example some peaks can have multiple annotations. Peaks which have above
+n number of annotations assigned will be removed from Bioconductor
+experiment.
 }
 \examples{
-utils::str(formals(getRefinedAnnotations))
-# HMDB_db <- load("data/HMDB_1_names.rds")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+head(getRefinedAnnotations(spe, n = 1))
 
 }

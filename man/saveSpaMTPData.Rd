@@ -8,7 +8,7 @@ saveSpaMTPData(
   data,
   outdir,
   assay = "Spatial",
-  slot = "counts",
+  assayName = "counts",
   image = NULL,
   annotations = FALSE,
   generate.h5 = TRUE,
@@ -19,24 +19,35 @@ saveSpaMTPData(
 \item{data}{A SummarizedExperiment, including SingleCellExperiment or
 SpatialExperiment. Image export requires SpatialExperiment.}
 
-\item{outdir}{Character string of the directory to save the mtx.mtx, barcode.tsv, features.tsv, barcode_metadata.csv and feature_metadata.csv in.}
+\item{outdir}{Character string of the directory to save the mtx.mtx,
+barcode.tsv, features.tsv, barcode_metadata.csv and feature_metadata.csv
+in.}
 
-\item{assay}{Character string defining the primary or alternative experiment that contains the m/z count data (default = "Spatial").}
+\item{assay}{Character string defining the primary or alternative experiment
+that contains the m/z count data (default = "Spatial").}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{image}{Image ID identifying exactly one imgData row; NULL omits image export.}
+\item{image}{Image ID identifying exactly one imgData row; NULL omits image
+export.}
 
-\item{annotations}{Boolean values defining if the Bioconductor experiment contains annotations to be saved (default = FALSE).}
+\item{annotations}{Boolean values defining if the Bioconductor experiment
+contains annotations to be saved (default = FALSE).}
 
-\item{generate.h5}{Boolean value indicating whether to generate a filtered_feature_bc_matrix.h5 file. Often used by data loading functions (e.g. scanpy.load_visium). If \code{FALSE}, only a filtered_feature_bc_matrix folder will be generated (default = TRUE).}
+\item{generate.h5}{Boolean value indicating whether to generate a
+filtered_feature_bc_matrix.h5 file. Often used by data loading functions
+(e.g. scanpy.load_visium). If \code{FALSE}, only a filtered_feature_bc_matrix
+folder will be generated (default = TRUE).}
 
-\item{verbose}{Boolean indicating whether to show informative processing messages. If TRUE the message will be show, else the message will be suppressed (default = TRUE).
+\item{verbose}{Boolean indicating whether to show informative processing
+messages. If TRUE the message will be show, else the message will be
+suppressed (default = TRUE).
 \subsection{Details}{
 \itemize{
-\item This can be used for saving data for transfer to python. Can be read in as Anndata using scanpy.read_10x_mtx().
+\item This can be used for saving data for transfer to python. Can be read in as
+Anndata using scanpy.read_10x_mtx().
 \item For saving in R saveRDS() is recommended.
 }
 }}
@@ -45,12 +56,21 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 The output-directory path, invisibly.
 }
 \description{
-This function saves a Bioconductor experiment into a standard single-cell/spatial file format.
-This includes a filtered_feature_bc_matrix folder containing files storing the features, barcode/pixels and intensity matrix.
+This function saves a Bioconductor experiment into a standard
+single-cell/spatial file format.
+This includes a filtered_feature_bc_matrix folder containing files storing
+the features, barcode/pixels and intensity matrix.
 Pixel metadata are also stored. Feature annotations and spatial image files
 are optional exports; the export does not preserve every alternative
 experiment or analysis result. Use \code{saveRDS()} for an entire R container.
 }
 \examples{
-utils::str(formals(saveSpaMTPData))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+if (requireNamespace("DropletUtils", quietly = TRUE)) {
+    folder <- tempfile("export-")
+    saveSpaMTPData(spe, folder, assay = "main", generate.h5 = FALSE, verbose = FALSE)
+    list.files(folder)
+    unlink(folder, recursive = TRUE)
+}
 }

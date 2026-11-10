@@ -8,7 +8,7 @@ createPathwayAssay(
   SpaMTP,
   analyte_type = "metabolites",
   assay = "Spatial",
-  slot = "counts",
+  assayName = "counts",
   new_assay = "pathway",
   annotation_score_threshold = 0.05,
   annotation_source = c("current", "auto", "legacy"),
@@ -33,12 +33,13 @@ createPathwayAssay(
 \item{SpaMTP}{A SingleCellExperiment, including SpatialExperiment, containing
 metabolomic or transcriptomic expression.}
 
-\item{analyte_type}{Character string specifying the type of analytes to process.Must be either "genes" or "metabolites" (default = "metabolites").}
+\item{analyte_type}{Character string specifying the type of analytes to
+process.Must be either "genes" or "metabolites" (default = "metabolites").}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
 \code{"Spatial"} is a compatibility alias for the primary experiment.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
@@ -52,7 +53,8 @@ map m/z features to RaMP compounds (default = 0.05).}
 requires the indexed, scored RaMP output; \code{"auto"} and \code{"legacy"} enable
 compatibility with older serialized SpaMTP objects.}
 
-\item{verbose}{Boolean logical value indicating whether to print verbose messages during execution. (default = TRUE).}
+\item{verbose}{Boolean logical value indicating whether to print verbose
+messages during execution. (default = TRUE).}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
@@ -88,7 +90,8 @@ records and ambiguous symbols are excluded and recorded in the audit.}
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -108,7 +111,7 @@ features and exact aggregation weights are retained in metadata.}
 \value{
 The input container with a new
 \code{SingleCellExperiment::altExp(SpaMTP, new_assay)}. Its expression assay
-retains the name supplied in \code{slot}, and its \code{rowData()} describes the
+retains the name supplied in \code{assayName}, and its \code{rowData()} describes the
 RaMP identities and original measured features.
 }
 \description{
@@ -127,10 +130,15 @@ duplicate handling and index provenance are stored in
 metadata(altExp(x, new_assay))$pathway_mapping.
 }
 \examples{
-utils::str(formals(createPathwayAssay))
-## Create a pathway assay from metabolite data
-#spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "metabolites", assay = "SPM", new_assay = "pathway")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+mapped <- createPathwayAssay(spe,
+    analyte_type = "genes", assay = "transcriptome",
+    new_assay = "gene_ids", pathway_index = index, verbose = FALSE
+)
+rownames(SingleCellExperiment::altExp(mapped, "gene_ids"))
 
 ## Create a pathway assay from gene data with verbose output
-#spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", new_assay = "gene_pathway", verbose = TRUE)
+# spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", new_assay = "gene_pathway", verbose = TRUE)
 }

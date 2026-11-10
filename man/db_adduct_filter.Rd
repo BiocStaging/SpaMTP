@@ -11,9 +11,11 @@ db_adduct_filter(db, adduct, polarity = "neg", verbose = TRUE)
 
 \item{adduct}{Character string defining the adduct to be checked.}
 
-\item{polarity}{Character string defining the polarity of the adducts (default = "neg").}
+\item{polarity}{Character string defining the polarity of the adducts
+(default = "neg").}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 }
 \value{
 A filtered reference metabolomic database DataFrame

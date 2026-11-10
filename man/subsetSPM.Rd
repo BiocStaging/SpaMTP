@@ -15,7 +15,8 @@ subsetSPM(
 )
 }
 \arguments{
-\item{object}{A SummarizedExperiment, including SingleCellExperiment or SpatialExperiment.}
+\item{object}{A SummarizedExperiment, including SingleCellExperiment or
+SpatialExperiment.}
 
 \item{subset}{Logical expression indicating features/variables to keep}
 
@@ -25,7 +26,9 @@ subsetSPM(
 
 \item{features}{A vector of feature names or indices to keep}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = FALSE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default =
+FALSE).}
 
 \item{...}{Reserved; additional arguments are rejected.}
 }
@@ -40,6 +43,7 @@ reduced dimensions and spatial edges remain synchronized with pixels.
 Function params/args:
 }
 \examples{
-utils::str(formals(subsetSPM))
-# subsetSPM(spe, subset = region == "edge")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+subsetSPM(spe, cells = colnames(spe)[1:6], features = c("ion1", "ion3"))
 }

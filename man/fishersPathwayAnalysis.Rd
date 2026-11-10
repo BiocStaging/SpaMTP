@@ -100,7 +100,8 @@ records and ambiguous symbols are excluded and recorded in the audit.}
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -144,10 +145,10 @@ are not confirmed compound identifications. In a combined analysis, genes
 and compounds are counted as individual RaMP IDs in a single pooled test.
 }
 \examples{
-utils::str(formals(fishersPathwayAnalysis))
-# For a targeted gene panel:
-# fishersPathwayAnalysis(
-#   Analyte = list(genes = paste0("gene_symbol:", significant_genes)),
-#   universe = list(genes = paste0("gene_symbol:", measured_panel_genes))
-# )
+data(spamtp_example)
+db <- spamtp_example$database
+fishersPathwayAnalysis(list(genes = c("GENE1", "GENE2")),
+    universe = list(genes = paste0("GENE", 1:8)), database = db,
+    min_path_size = 2, verbose = FALSE
+)
 }

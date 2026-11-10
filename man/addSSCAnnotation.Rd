@@ -9,12 +9,16 @@ addSSCAnnotation(data, data_ssc, resolution)
 \arguments{
 \item{data}{A Cardinal Object containing the raw/binned m/z count data.}
 
-\item{data_ssc}{A Cardinal Object containing the ssc segmentation results. Note: Cardinal's spatialShrunkenCentroids() must be run to generate this object.}
+\item{data_ssc}{A Cardinal Object containing the ssc segmentation results.
+Note: Cardinal's spatialShrunkenCentroids() must be run to generate this
+object.}
 
-\item{resolution}{An integer (< v3.6.0) or string (>= v3.6.0) defining the ssc segmentation resolution to add to the raw Cardinal object.}
+\item{resolution}{An integer (< v3.6.0) or string (>= v3.6.0) defining the
+ssc segmentation resolution to add to the raw Cardinal object.}
 }
 \value{
-A Cardinal Object containing the raw m/z counts and the relative ssc segmentation annotations per pixel.
+A Cardinal Object containing the raw m/z counts and the relative ssc
+segmentation annotations per pixel.
 }
 \description{
 Adds spatial shrunken centroid (SSC) labels to
@@ -23,7 +27,13 @@ This function accepts Cardinal containers only; it does not modify S4 slots
 directly or require Seurat.
 }
 \examples{
-utils::str(formals(addSSCAnnotation))
-# ssc_data <- Cardinal::spatialShrunkenCentroids(CardinalObj, ...)
-# new_CardinalObj <- addSSCAnnotation(CardinalObj, ssc_data, resolution ="r=2,k=8,s=32")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+msi <- spatialExperimentToCardinal(spe)
+segmentation <- withr::with_seed(1, Cardinal::spatialShrunkenCentroids(
+    msi,
+    r = 1, k = 2, s = 0, verbose = FALSE
+))
+labelled <- addSSCAnnotation(msi, segmentation, resolution = 1)
+table(Cardinal::pixelData(labelled)$ssc)
 }

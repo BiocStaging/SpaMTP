@@ -9,14 +9,18 @@ findDuplicateAnnotations(data, assay = "main")
 \arguments{
 \item{data}{Bioconductor experiment containing annotated m/z values.}
 
-\item{assay}{Character string defining the primary or alternative experiment that contains the annotated metadata corresponding to the m/z values (default = "Spatial").}
+\item{assay}{Primary or alternative experiment containing the annotated
+m/z metadata. Defaults to \code{"main"}.}
 }
 \value{
-Vector of character strings describing metabolites that are assigned to multiple m/z values
+Vector of character strings describing metabolites that are assigned
+to multiple m/z values
 }
 \description{
 Finds if any metabolite is duplicated across multiple m/z values.
 }
 \examples{
-utils::str(formals(findDuplicateAnnotations))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+findDuplicateAnnotations(spe)
 }

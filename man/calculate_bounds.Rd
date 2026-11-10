@@ -10,7 +10,8 @@ calculate_bounds(input_df)
 \item{input_df}{DataFrame of the observed dataframe being annotated}
 }
 \value{
-A list containing the lower and upper mz range for the provided sample
+A list containing the lower and upper mz range for the provided
+sample
 }
 \description{
 Calculates the mz range of the observed_df

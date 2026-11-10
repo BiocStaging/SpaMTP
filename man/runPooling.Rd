@@ -4,35 +4,48 @@
 \alias{runPooling}
 \title{Pools Bioconductor experiment into random pools for pseudo-bulking.}
 \usage{
-runPooling(data.filt, idents, n, assay, slot, seed = 1234, verbose = TRUE)
+runPooling(data.filt, idents, n, assay, assayName, seed = 1234, verbose = TRUE)
 }
 \arguments{
-\item{data.filt}{A Bioconductor experiment containing count values for pooling.}
+\item{data.filt}{A Bioconductor experiment containing count values for
+pooling.}
 
-\item{idents}{A character string defining the idents column to pool the data against.}
+\item{idents}{A character string defining the idents column to pool the data
+against.}
 
-\item{n}{An integer defining the amount of pseudo-replicates to generate for each sample (default = 3).}
+\item{n}{An integer defining the amount of pseudo-replicates to generate for
+each sample (default = 3).}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment. Values
+\item{assayName}{Expression assay name within the selected experiment. Values
 must be finite and non-negative for technical pooling.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{seed}{Numeric value used to set the seed for reproducible randomisation (default = 1234).}
+\item{seed}{Numeric value used to set the seed for reproducible randomisation
+(default = 1234).}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 }
 \value{
-A SingleCellExperiment object which contains pooled (n)-pseudo-replicate counts data based on the Bioconductor experiment input
+A SingleCellExperiment object which contains pooled
+(n)-pseudo-replicate counts data based on the Bioconductor experiment input
 }
 \description{
-Runs pooling of a SpaMTP dataset to generate pseudo-replicates for each unique identity provided.
+Runs pooling of a SpaMTP dataset to generate pseudo-replicates for each
+unique identity provided.
 This function is used by \code{findAllDEMs()}.
 These random pools are technical partitions, not independent biological
 replicates; resulting p-values must not be interpreted as biological
 replication. For population inference aggregate independent samples instead.
 }
 \examples{
-utils::str(formals(runPooling))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+pooled <- runPooling(spe,
+    idents = "region", n = 3, assay = "main",
+    assayName = "counts", verbose = FALSE
+)
+dim(pooled)
 }

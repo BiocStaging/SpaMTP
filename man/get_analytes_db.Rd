@@ -11,16 +11,19 @@ get_analytes_db(input_id, analytehaspathway, chem_props, pathway)
 
 \item{analytehaspathway}{A dataframe containing RAMP_pathway ID's.}
 
-\item{chem_props}{A database containing the chemical properties and metadata of each RAMP_DB analyte.}
+\item{chem_props}{A database containing the chemical properties and metadata
+of each RAMP_DB analyte.}
 
-\item{pathway}{A dataframe containing RAMP_DB pathways and their relative metadata}
+\item{pathway}{A dataframe containing RAMP_DB pathways and their relative
+metadata}
 }
 \value{
-A analyte database containing corresponding pathways associated with each detected metabolite
+A analyte database containing corresponding pathways associated with
+each detected metabolite
 }
 \description{
 Helper function for building a pathway db based on detected
 }
 \examples{
-#HELPER FUNCTION
+# HELPER FUNCTION
 }

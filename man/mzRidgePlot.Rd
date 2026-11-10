@@ -9,7 +9,7 @@ mzRidgePlot(
   group.by = NULL,
   mzs = NULL,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   title = "RidgePlot",
   x.lab = "intensity",
   y.lab = "var",
@@ -22,15 +22,17 @@ mzRidgePlot(
 )
 }
 \arguments{
-\item{data}{Bioconductor experiment containing the metabolomic intensity data.}
+\item{data}{Bioconductor experiment containing the metabolomic intensity
+data.}
 
 \item{group.by}{Name of the \code{colData()} column to group by (default = NULL).}
 
-\item{mzs}{Vector of characters defining which features (m/z's) to label on the plot. If \code{NULL} no features will be labeled (default = NULL).}
+\item{mzs}{Vector of characters defining which features (m/z's) to label on
+the plot. If \code{NULL} no features will be labeled (default = NULL).}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment.
+\item{assayName}{Expression assay name within the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{title}{Character string of the plot title (default = "RidgePlot").}
@@ -39,17 +41,25 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{y.lab}{Character string of the y-axis label (default = "intensity").}
 
-\item{bottom.cutoff}{Numeric value defining the percent of data to exclude for the lower end of the distribution. A bottom.cutoff = 0.05 will remove the bottom 5\% of data point (default = NULL).}
+\item{bottom.cutoff}{Numeric value defining the percent of data to exclude
+for the lower end of the distribution. A bottom.cutoff = 0.05 will remove
+the bottom 5\% of data point (default = NULL).}
 
-\item{top.cutoff}{Numeric value defining the percent of data to exclude for the upper end of the distribution. A top.cutoff = 0.05 will remove the top 5\% of data point (default = NULL).}
+\item{top.cutoff}{Numeric value defining the percent of data to exclude for
+the upper end of the distribution. A top.cutoff = 0.05 will remove the top
+5\% of data point (default = NULL).}
 
 \item{bins}{number of bins to group}
 
-\item{log.data}{Boolean value indicating whether to log transform the y-axis values (default = FALSE).}
+\item{log.data}{Boolean value indicating whether to log transform the y-axis
+values (default = FALSE).}
 
-\item{cols}{Vector of strings defining the colours to use for plotting. This vector should match the length of unique groups (default = NULL).}
+\item{cols}{Vector of strings defining the colours to use for plotting. This
+vector should match the length of unique groups (default = NULL).}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = FALSE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default =
+FALSE).}
 }
 \value{
 A \code{ggplot} ridge-plot object.
@@ -58,5 +68,7 @@ A \code{ggplot} ridge-plot object.
 Generates a ridge plot of spatial metabolic intensity data
 }
 \examples{
-utils::str(formals(mzRidgePlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+mzRidgePlot(spe, group.by = "region", mzs = c("ion1", "ion3"))
 }

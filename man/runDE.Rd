@@ -19,19 +19,23 @@ runDE(
 )
 }
 \arguments{
-\item{pooled_data}{A SingleCellExperiment object which contains the pooled pseudo-replicate data.}
+\item{pooled_data}{A SingleCellExperiment object which contains the pooled
+pseudo-replicate data.}
 
 \item{data}{The original SummarizedExperiment, including SingleCellExperiment
 or SpatialExperiment, supplying pixel groups and feature annotations.}
 
-\item{ident}{Column in \code{colData(data)} and \code{colData(pooled_data)} defining groups.}
+\item{ident}{Column in \code{colData(data)} and \code{colData(pooled_data)} defining
+groups.}
 
 \item{output_dir}{Existing directory for output CSV tables, or NULL to omit
 file output.}
 
-\item{run_name}{A character string defining the title of this DE analysis (will be used when saving DEMs to .csv file).}
+\item{run_name}{A character string defining the title of this DE analysis
+(will be used when saving DEMs to .csv file).}
 
-\item{n}{An integer that defines the number of pseudo-replicates per sample (default = 3).}
+\item{n}{An integer that defines the number of pseudo-replicates per sample
+(default = 3).}
 
 \item{logFC_threshold}{Fold-change threshold passed as
 \code{log2(logFC_threshold)} to \code{limma::treat()} (default = 1.2).}
@@ -42,15 +46,21 @@ containing feature annotations, or NULL to omit annotations.}
 \item{assay}{Primary (\code{"main"}) or alternative experiment name in \code{data}.
 Pooled expression is always read from \code{counts(pooled_data)}.}
 
-\item{return.individual}{Boolean value defining whether to return a list of individual edgeR objects for each designated ident. If FALSE, one merged edgeR object will be returned (default = FALSE).}
+\item{return.individual}{Boolean value defining whether to return a list of
+individual edgeR objects for each designated ident. If FALSE, one merged
+edgeR object will be returned (default = FALSE).}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 }
 \value{
-A modified edgeR object which contains the relative pseudo-bulking analysis outputs, including a DEMs data.frame with a list of differential expressed m/z metabolites
+A modified edgeR object which contains the relative pseudo-bulking
+analysis outputs, including a DEMs data.frame with a list of differential
+expressed m/z metabolites
 }
 \description{
-Worker function for calculating differentially abundant metabolites per pooling group.
+Worker function for calculating differentially abundant metabolites per
+pooling group.
 Used by the compatibility \code{method = "technical"} branch of \code{\link[=findAllDEMs]{findAllDEMs()}}.
 Fits limma to \code{log2(counts(pooled_data) + 1)} and uses \code{limma::treat()};
 an edgeR DGEList stores the values and results, but no edgeR count-model
@@ -58,5 +68,17 @@ test or voom transformation is performed. Technical pools are not independent
 biological replicates.
 }
 \examples{
-utils::str(formals(runDE))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+# Pseudo-pools illustrate the legacy interface, not biological replication.
+pooled <- runPooling(spe,
+    idents = "region", n = 3, assay = "main",
+    assayName = "counts", verbose = FALSE
+)
+result <- runDE(pooled, spe,
+    ident = "region", output_dir = NULL,
+    run_name = "example", n = 3, logFC_threshold = 1.2,
+    annotation.column = "all_IsomerNames", assay = "main", verbose = FALSE
+)
+head(result$DEMs)
 }

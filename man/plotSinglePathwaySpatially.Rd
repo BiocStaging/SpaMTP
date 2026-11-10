@@ -11,7 +11,7 @@ plotSinglePathwaySpatially(
   title = NULL,
   image.alpha = 1,
   assay = "main",
-  slot = "logcounts",
+  assayName = "logcounts",
   colors = c("darkblue", "lightgrey", "darkred"),
   guide = "colourbar",
   crop = TRUE,
@@ -41,7 +41,7 @@ plotSinglePathwaySpatially(
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"logcounts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
@@ -67,7 +67,8 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{image.labels}{Optional labels for the selected images.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -84,8 +85,9 @@ Plot a pathway score in tissue coordinates
 }
 \examples{
 x <- SpatialExperiment::SpatialExperiment(
-  assays = list(logcounts = rbind(a = 1:4, b = 4:1)),
-  spatialCoords = cbind(x = 1:4, y = 0),
-  colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)))
+    assays = list(logcounts = rbind(a = 1:4, b = 4:1)),
+    spatialCoords = cbind(x = 1:4, y = 0),
+    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4))
+)
 plotSinglePathwaySpatially("a", x)
 }

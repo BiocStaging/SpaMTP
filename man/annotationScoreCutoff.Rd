@@ -25,9 +25,12 @@ result is a diagnostic threshold; it does not guarantee control of the
 false-discovery rate. See the assumptions in \code{\link[=estimateAnnotationFDR]{estimateAnnotationFDR()}}.
 }
 \examples{
-fdr <- structure(list(curve = data.frame(
-  cutoff = c(0, 0.1, 0.5), target_peaks = c(100, 60, 10),
-  decoy_peaks = c(90, 20, 1), fdr = c(0.9, 1 / 3, 0.1))),
-  class = "spamtp_annotation_fdr")
+fdr <- structure(
+    list(curve = data.frame(
+        cutoff = c(0, 0.1, 0.5), target_peaks = c(100, 60, 10),
+        decoy_peaks = c(90, 20, 1), fdr = c(0.9, 1 / 3, 0.1)
+    )),
+    class = "spamtp_annotation_fdr"
+)
 annotationScoreCutoff(fdr, target_fdr = 0.2)
 }

@@ -7,14 +7,18 @@
 #'
 #' \describe{
 #'   \item{\code{bladder_demo.rds}}{2,210 mouse urinary bladder locations,
-#'     sampling every fourth pixel along x and y. All 79 features from the archived annotated panel,
+#' sampling every fourth pixel along x and y. All 79 features from the archived
+#'     annotated panel,
 #'     their processed intensities, coordinates and \code{ssc} labels are retained.
+#'     \code{compartment} gives the archived interpretation of SSC classes 2, 5
+#'     and 6 (adventitia, muscle, urothelium); other classes, including
+#'     background, are grouped as \code{"Other SSC classes"}.
 #'     \code{archived_lipid_candidates} preserves historical candidate names.
 #'     The source workflow applies TIC normalization before peak integration.}
 #'   \item{\code{pig_demo.rds}}{All 4,959 locations from the PIGII_206 pig fetal
 #'     section, acquired by DESI on a Thermo LTQ. Three prespecified windows,
 #'     centred at m/z 187.36, 537.08 and 840.43 with a 0.5 m/z half-width, sum
-#'     original profile-bin intensities. These windows support ion-image display;
+#' original profile-bin intensities. These windows support ion-image display;
 #'     compound identification requires additional chemical evidence.}
 #'   \item{\code{human_demo.rds}}{240 paired locations nearest the coordinate-wise
 #'     median of one aligned low-grade glioma section. All 574 processed MSI
@@ -23,7 +27,7 @@
 #'     Progenitor groups; the exact assignment procedure is unavailable in
 #'     the resource. \code{sample_id} identifies the archived section.
 #'     Locations retain Xenium cell positions and cell-level RNA counts.
-#'     The source study averages registered MSI intensities within 20 micrometres
+#' The source study averages registered MSI intensities within 20 micrometres
 #'     of each cell; the archive does not retain the averaging weights.
 #'     The subset does not pool RNA across cells.}
 #' }
@@ -47,7 +51,8 @@
 #'
 #' \code{metadata(x)$vignette_subset} records selection, source provenance and
 #' original dimensions. Bladder grid coordinates are anchored at the source x/y
-#' minima; human distance ties are resolved by barcode. These additional grid and
+#' minima; human distance ties are resolved by barcode. These additional grid
+#' and
 #' distance selections do not use expression or test statistics. These
 #' single-section examples support descriptive regional comparisons.
 #'
@@ -83,5 +88,7 @@
 #' \url{https://github.com/Vitek-Lab/Cardinal3-vignettes/blob/main/Vignettes/Vignette1/case-study1-vignette.rmd}.
 #' Bladder interpretations are archived in the original SpaMTP tutorial,
 #' \url{https://genomicsmachinelearning.github.io/SpaMTP/articles/Mouse_Urinary_Bladder.html}.
+#' @seealso [bundledResourceFiles] for pathway corrections and mouse-brain
+#'   calibration metadata.
 #' @name vignetteData
 NULL

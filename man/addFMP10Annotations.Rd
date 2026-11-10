@@ -19,18 +19,32 @@ addFMP10Annotations(
 )
 }
 \arguments{
-\item{obj}{Bioconductor experiment containing m/z intensity values for annotation. Data should be generated with a FMP10 matrix.}
+\item{obj}{Bioconductor experiment containing m/z intensity values for
+annotation. Data should be generated with a FMP10 matrix.}
 
-\item{only.fmp.adduct}{Boolean indicating if only metabolites with FMP10+ adducts (\code{+FMP10}, +\verb{2FMP10}, etc.) should be assigned to m/z values (default = FALSE).}
+\item{only.fmp.adduct}{Boolean indicating if only metabolites with FMP10+
+adducts (\code{+FMP10}, +\verb{2FMP10}, etc.) should be assigned to m/z values
+(default = FALSE).}
 
-\item{add.custom.annotation}{data.frame containing addition FMP10 metabolite annotations that are not in the current FMP10 database. Note: this data.frame must contain these column c("mass", "annotation", "Adduct", "Formula", "Isomers", "Isomers_IDs"). If set to NULL, only reference FMP10 database will be used (default = NULL).}
+\item{add.custom.annotation}{data.frame containing addition FMP10 metabolite
+annotations that are not in the current FMP10 database. Note: this
+data.frame must contain these column c("mass", "annotation", "Adduct",
+"Formula", "Isomers", "Isomers_IDs"). If set to NULL, only reference FMP10
+database will be used (default = NULL).}
 
 \item{assay}{Primary or alternative experiment whose \code{rowData()} receives
 the annotations (default = "main").}
 
-\item{return.only.annotated}{Boolean defining whether to return a Bioconductor experiment containing only successfully annotated m/z values (default = FALSE).}
+\item{return.only.annotated}{Boolean defining whether to return a
+Bioconductor experiment containing only successfully annotated m/z values
+(default = FALSE).}
 
-\item{mass.threshold}{Numeric value defining the acceptable threshold (plus-minus) between the custom annotations and the actual m/z values contained within the SpaMTP object (default = 0.05).}
+\item{mass.threshold}{Numeric value defining the acceptable threshold
+(plus-minus) between the custom annotations and the actual m/z values
+contained within the SpaMTP object, in Da (default = 0.05). The boundary
+is inclusive; zero keeps exact matches and NULL disables the distance limit.
+Choose this tolerance for the calibrated instrument accuracy; 0.05 Da
+can be permissive for high-resolution data. \code{all_Errors} is reported in ppm.}
 
 \item{annotation.column}{Name of the \code{rowData()} column receiving annotations
 (default = "all_IsomerNames").}
@@ -45,12 +59,29 @@ by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 \item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
 }
 \value{
-Bioconductor experiment containing the relative metabolite annotations stored in the feature metadata dataframe.
+Bioconductor experiment containing the relative metabolite
+annotations stored in the feature metadata dataframe.
 }
 \description{
-Adds metabolite annotations to respective m/z values generated using an FMP10 matrix. This is done based on a curated FMP10 matrix database.
+Adds metabolite annotations to respective m/z values generated using an FMP10
+matrix. This is done based on a curated FMP10 matrix database. This
+annotation pass replaces the selected experiment's candidate summaries
+and stored candidates with the curated matches. Use \code{addCustomMZAnnotations()}
+to add display labels without replacing a candidate annotation pass.
+Exact nearest-mass ties annotate all tied features, with names, scores and
+stored candidates kept together under the preserved feature identity.
 }
 \examples{
-utils::str(formals(addFMP10Annotations))
-# addFMP10Annotations(spamtp, only.fmp.adduct = FALSE)
+data(spamtp_example)
+spe <- spamtp_example$experiment
+# A miniature supplied reference keeps the example offline.
+reference <- data.frame(
+    mass = 500, annotation = "example derivative",
+    Adduct = "M+FMP10", Formula = "C10H10O2", Isomers = "example",
+    Isomers_IDs = "example:1", IsomerNames = "example derivative"
+)
+annotated <- addFMP10Annotations(spe,
+    database = list(filtered_fmp10 = reference, chem_props = spamtp_example$metabolites)
+)
+SummarizedExperiment::rowData(annotated)["ion7", ]
 }

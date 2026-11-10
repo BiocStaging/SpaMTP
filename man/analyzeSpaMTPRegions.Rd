@@ -19,7 +19,8 @@ analyzeSpaMTPRegions(
 \item{regions}{A colData column for regions; NULL uses the workflow group,
 or workflow_cluster if clustering was requested. No labels are invented.}
 
-\item{min_region_size}{Minimum observations in both a region and its reference.}
+\item{min_region_size}{Minimum observations in both a region and its
+reference.}
 
 \item{native}{Named settings: moran, graph_pca, max_points (600),
 max_features (50), neighbors (4), lambda (0.5). These additional bounded
@@ -29,16 +30,20 @@ Graph PCA separately and uses it in the comparative analysis.}
 \item{markers}{Compute native scran marker scores through findAllDEMs.}
 
 \item{spatial_blocks}{Number of coordinate-only blocks per sample for marker
-sensitivity; zero disables block omission. These are not biological replicates.}
+sensitivity; zero disables block omission. These are not biological
+replicates.}
 }
 \value{
-The result with region_analysis, native_analysis and updated provenance.
+The result with region_analysis, native_analysis and updated
+provenance.
 }
 \description{
 Adds descriptive region-versus-rest effects, detection fractions, region
 means and eligibility audits. Existing biological-replicate contrasts remain
-unchanged. Optional native spatial modules call findSpatiallyVariableMetabolites
-and runSpatialGraphPCA on an explicitly bounded, recorded feature/point screen.
+unchanged. Optional native spatial modules call
+findSpatiallyVariableMetabolites
+and runSpatialGraphPCA on an explicitly bounded, recorded feature/point
+screen.
 Works with any modality names, species and observation metadata, including
 results saved by earlier workflow versions.
 }
@@ -51,5 +56,16 @@ is not a genome-wide or biological-replicate test. Marker reference means
 equally weight other eligible regions, following scran pairwise summaries.
 }
 \examples{
-utils::str(formals(analyzeSpaMTPRegions))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+fit <- runSpaMTPWorkflow(spe,
+    modalities = list(
+        main = list(type = "metabolomics", layer = "logcounts"),
+        transcriptome = list(type = "transcriptomics", layer = "logcounts")
+    ),
+    npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+    structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
+)
+fit <- analyzeSpaMTPRegions(fit, regions = "region", spatial_blocks = 0)
+fit$region_analysis$summary
 }

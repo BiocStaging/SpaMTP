@@ -32,5 +32,11 @@ A Seurat object.
 Convert a Cardinal object to an optional Seurat object
 }
 \examples{
-utils::str(formals(cardinalToSeurat))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+msi <- spatialExperimentToCardinal(spe)
+if (requireNamespace("SeuratObject", quietly = TRUE)) {
+    converted <- cardinalToSeurat(msi, verbose = FALSE)
+    dim(converted)
+}
 }

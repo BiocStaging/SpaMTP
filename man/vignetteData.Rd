@@ -33,8 +33,12 @@ substituting the desired filename below.
 \details{
 \describe{
 \item{\code{bladder_demo.rds}}{2,210 mouse urinary bladder locations,
-sampling every fourth pixel along x and y. All 79 features from the archived annotated panel,
+sampling every fourth pixel along x and y. All 79 features from the archived
+annotated panel,
 their processed intensities, coordinates and \code{ssc} labels are retained.
+\code{compartment} gives the archived interpretation of SSC classes 2, 5
+and 6 (adventitia, muscle, urothelium); other classes, including
+background, are grouped as \code{"Other SSC classes"}.
 \code{archived_lipid_candidates} preserves historical candidate names.
 The source workflow applies TIC normalization before peak integration.}
 \item{\code{pig_demo.rds}}{All 4,959 locations from the PIGII_206 pig fetal
@@ -73,7 +77,8 @@ without assigning anatomical labels to individual pixels.
 
 \code{metadata(x)$vignette_subset} records selection, source provenance and
 original dimensions. Bladder grid coordinates are anchored at the source x/y
-minima; human distance ties are resolved by barcode. These additional grid and
+minima; human distance ties are resolved by barcode. These additional grid
+and
 distance selections do not use expression or test statistics. These
 single-section examples support descriptive regional comparisons.
 
@@ -92,4 +97,8 @@ Source MD5 checksums are:
 \item{\code{mouse_bladder_annotated_spe.rds}}{\code{f9f34fec8d8e266c0cbb1853e0274ee1}}
 \item{\code{pig206.RDS}}{\code{d056b5c31c136b6e64ffb975ebca9100}}
 }
+}
+\seealso{
+\link{bundledResourceFiles} for pathway corrections and mouse-brain
+calibration metadata.
 }

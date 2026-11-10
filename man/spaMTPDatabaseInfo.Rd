@@ -17,6 +17,7 @@ A data frame describing resources in SpaMTPdb.
 Inspect SpaMTP database resources
 }
 \examples{
-utils::str(formals(spaMTPDatabaseInfo))
+registry <- spaMTPDatabaseInfo(version = "3.0.7")
+head(registry[, c("resource", "version", "bytes")])
 spaMTPDatabaseInfo()
 }

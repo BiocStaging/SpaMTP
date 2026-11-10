@@ -10,7 +10,7 @@ massIntensityPlot(
   split.by = NULL,
   cols = NULL,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   label.annotations = FALSE,
   annotation.column = "all_IsomerNames",
   mz.labels = NULL,
@@ -38,7 +38,7 @@ exclusive with group.by.}
 
 \item{assay}{Primary or alternative experiment.}
 
-\item{slot}{Expression assay.
+\item{assayName}{Expression assay.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{label.annotations}{Display annotations instead of m/z labels.}
@@ -47,7 +47,8 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{mz.labels}{Numeric m/z values to label using nearest measured peaks.}
 
-\item{metabolite.labels}{Metabolite names to label; mutually exclusive with mz.labels.}
+\item{metabolite.labels}{Metabolite names to label; mutually exclusive with
+mz.labels.}
 
 \item{xlab, ylab}{Axis labels.}
 
@@ -70,5 +71,7 @@ A ggplot.
 Feature masses come from rowData, so arbitrary feature IDs are supported.
 }
 \examples{
-utils::str(formals(massIntensityPlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+massIntensityPlot(spe, group.by = "region")
 }

@@ -9,10 +9,12 @@ formula_filter(df, elements = NULL)
 \arguments{
 \item{df}{DataFrame of the reference database.}
 
-\item{elements}{Vector of character strings of elements to include (default = c("H", "C", "N", "O", "S", "Cl", "Br", "F", "Na", "P", "I", "Si")).}
+\item{elements}{Vector of character strings of elements to include (default =
+c("H", "C", "N", "O", "S", "Cl", "Br", "F", "Na", "P", "I", "Si")).}
 }
 \value{
-A refined DataFrame which only includes annotations containing the specified elements
+A refined DataFrame which only includes annotations containing the
+specified elements
 }
 \description{
 Filters reference Database to only select natural elements

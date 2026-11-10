@@ -35,5 +35,5 @@ product rules. Profiles without a verified universal net transformation are
 retained in the registry but do not generate speculative mass shifts.
 }
 \examples{
-utils::str(formals(maldiMatrixRules))
+head(maldiMatrixRules("DHB", polarity = "positive"))
 }

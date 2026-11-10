@@ -18,7 +18,8 @@ flagIsotopePeaks(
 
 \item{intensity}{Either one mean intensity per peak, or a features x
 observations matrix (rows in the order of \code{mz}); a matrix also enables
-the co-localisation test.}
+the co-localisation test. Correlation is unavailable for fewer than two
+observations or constant profiles; such pairs do not pass that test.}
 
 \item{ppm}{Spacing tolerance in parts per million of the heavier peak.}
 

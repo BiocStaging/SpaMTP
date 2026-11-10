@@ -17,6 +17,7 @@ plotSpatialFeature(
   maxCutoff = NA,
   combine = TRUE,
   ncol = NULL,
+  legendTitle = assayName,
   ...
 )
 
@@ -31,6 +32,7 @@ plotSpatialFeature(
   maxCutoff = NA,
   combine = TRUE,
   ncol = NULL,
+  legendTitle = assayName,
   ...
 )
 
@@ -45,6 +47,7 @@ plotSpatialFeature(
   maxCutoff = NA,
   combine = TRUE,
   ncol = NULL,
+  legendTitle = assayName,
   ...
 )
 }
@@ -55,7 +58,7 @@ plotSpatialFeature(
 
 \item{assayName}{Assay containing the feature values.}
 
-\item{labels}{Optional panel labels corresponding to \code{features}.}
+\item{labels}{Optional panel titles corresponding to \code{features}.}
 
 \item{pointSize}{Point size.}
 
@@ -68,6 +71,8 @@ plotSpatialFeature(
 
 \item{ncol}{Number of columns in a combined plot.}
 
+\item{legendTitle}{Title of the colour bar (default \code{assayName}).}
+
 \item{...}{Reserved for class-specific methods.}
 }
 \value{
@@ -75,9 +80,17 @@ A \code{ggplot}, a combined plot, or a list of plots.
 }
 \description{
 This S4 plotting entry point reads feature values from an assay and pixel
-positions from \code{SpatialExperiment::spatialCoords()}. It therefore does not
-require a Seurat image or field-of-view object.
+positions from \code{SpatialExperiment::spatialCoords()}. Features are looked up
+in the primary experiment first and then in the paired alternative
+experiments (\code{SingleCellExperiment::altExps()}) that contain \code{assayName}, so
+mass features and paired transcripts can be shown side by side. Each panel
+has its own colour scale; the y axis is reversed to follow image
+orientation.
 }
 \examples{
-methods::showMethods("plotSpatialFeature")
+spe <- SpatialExperiment::SpatialExperiment(
+    assays = list(counts = rbind(`mz-100` = 1:6, `mz-200` = 6:1)),
+    spatialCoords = cbind(x = rep(1:3, 2), y = rep(1:2, each = 3))
+)
+plotSpatialFeature(spe, c("mz-100", "mz-200"), labels = c("m/z 100", "m/z 200"))
 }

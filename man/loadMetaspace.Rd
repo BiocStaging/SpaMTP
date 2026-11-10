@@ -12,7 +12,8 @@ loadMetaspace(
   relative = FALSE,
   transform = FALSE,
   verbose = TRUE,
-  returnType = "SpatialExperiment"
+  returnType = "SpatialExperiment",
+  BPPARAM = BiocParallel::SerialParam(progressbar = verbose)
 )
 }
 \arguments{
@@ -20,28 +21,40 @@ loadMetaspace(
 
 \item{fdr}{Numeric, the FDR level threshold (default = 0.1).}
 
-\item{database}{Character vector, specifying the database name and version (default = c("HMDB", "v4")).}
+\item{database}{Character vector, specifying the database name and version
+(default = c("HMDB", "v4")).}
 
-\item{api_key}{Optional character string, your METASPACE API key (default = NULL).}
+\item{api_key}{Optional character string, your METASPACE API key (default =
+NULL).}
 
-\item{relative}{Logical, if TRUE, normalizes pixel intensities (0-1 range) (default = FALSE).}
+\item{relative}{Logical, if TRUE, normalizes pixel intensities (0-1 range)
+(default = FALSE).}
 
-\item{transform}{Boolean specifiying whether to transform/flip the image (default = FALSE).}
+\item{transform}{Boolean specifiying whether to transform/flip the image
+(default = FALSE).}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 
 \item{returnType}{Output container; only \code{"SpatialExperiment"} is supported.}
+
+\item{BPPARAM}{BiocParallel parameters for downloading annotation images.
+Defaults to serial execution without changing the session's parallel plan.}
 }
 \value{
 A \code{SpatialExperiment}.
 }
 \description{
 Downloads METASPACE data, converts it to a feature matrix, and
-packages it in a Bioconductor \code{SpatialExperiment}. Use explicit conversion for other containers.
+packages it in a Bioconductor \code{SpatialExperiment}. Use explicit conversion
+for other containers.
 Coordinates are stored in \code{spatialCoords()} without redundant copies in
 \code{colData()}; dataset and acquisition metadata remain in \code{colData()}.
 }
 \examples{
-utils::str(formals(loadMetaspace))
-# loadMetaspace(dataset_id = "2020-12-07_03h16m14s", fdr = 0.1, database= c("HMDB", "v4"), relative = TRUE)
+# Requires the METASPACE service and downloads image data.
+if (interactive()) {
+    spe <- loadMetaspace("2020-12-07_03h16m14s", verbose = FALSE)
+    plotSpatialFeature(spe, rownames(spe)[1])
+}
 }

@@ -4,20 +4,35 @@
 \alias{metaspaceClient}
 \title{Metaspace R Client Constructor}
 \usage{
-metaspaceClient(host = "https://metaspace2020.org", api_key = NULL)
+metaspaceClient(
+  host = "https://metaspace2020.org",
+  api_key = NULL,
+  BPPARAM = BiocParallel::SerialParam()
+)
 }
 \arguments{
 \item{host}{Character string specifying the METASPACE host URL (default = "https://metaspace2020.org").}
 
-\item{api_key}{Optional. Your METASPACE API key for accessing private datasets. If accessing a public dataset this can be left as \code{NULL} (default = NULL).}
+\item{api_key}{Optional. Your METASPACE API key for accessing private
+datasets. If accessing a public dataset this can be left as \code{NULL} (default
+= NULL).}
+
+\item{BPPARAM}{BiocParallel parameters for downloading annotation images.
+Defaults to serial execution without changing the session's parallel plan.}
 }
 \value{
-A list containing functions for querying METASPACE data.
+A list containing functions for querying METASPACE data. Annotation
+results preserve \code{isotopeImages} as a list column. Missing isotope URLs
+yield NULL image entries. Hotspot clipping follows the Python client:
+the 99th percentile of pixels brighter than the image maximum / 256.
 }
 \description{
-Creates a client object with methods to interact with the METASPACE GraphQL API.
+Creates a client object with methods to interact with the
+METASPACE GraphQL API.
 }
 \examples{
-utils::str(formals(metaspaceClient))
-# ms <- metaspaceClient()
+client <- metaspaceClient(BPPARAM = BiocParallel::SerialParam())
+names(client)
+# Querying the remote service requires an internet connection.
+if (interactive()) client$get_info("2020-12-07_03h16m14s")
 }

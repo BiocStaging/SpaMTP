@@ -8,7 +8,7 @@ plot3DFeature(
   data,
   features,
   assays = c("transcriptome", "main"),
-  slots = "counts",
+  assayNames = "counts",
   between.layer.height = 100,
   names = NULL,
   size = 3,
@@ -35,7 +35,7 @@ A single feature is repeated for comparison across two experiments.}
 
 \item{assays}{One or two primary/altExp names.}
 
-\item{slots}{One or two expression assay names.
+\item{assayNames}{One or two expression assay names.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{between.layer.height}{Distance between layers.}
@@ -70,5 +70,10 @@ colData columns can also be plotted. Coordinates and images use
 SpatialExperiment accessors. Only one sample is displayed at a time.
 }
 \examples{
-utils::str(formals(plot3DFeature))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+plot3DFeature(spe,
+    features = c("GENE1", "ion1"),
+    assays = c("transcriptome", "main")
+)
 }

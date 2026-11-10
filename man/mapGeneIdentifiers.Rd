@@ -71,5 +71,8 @@ RaMP ID. Gene references are supplied by SpaMTPdb; this function does not
 query live annotation services. Input order and duplicates are preserved.
 }
 \examples{
-utils::str(formals(mapGeneIdentifiers))
+data(spamtp_example)
+db <- spamtp_example$database
+index <- buildGeneMappingIndex(db$source_df, spamtp_example$gene_reference)
+mapGeneIdentifiers(c("GENE1", "OLD1", "ENSG0002.1"), index = index)
 }

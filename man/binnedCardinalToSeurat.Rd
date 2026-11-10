@@ -30,5 +30,15 @@ A Seurat object.
 Convert a binned Cardinal matrix to an optional Seurat object
 }
 \examples{
-utils::str(formals(binnedCardinalToSeurat))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+msi <- spatialExperimentToCardinal(spe)
+if (requireNamespace("SeuratObject", quietly = TRUE)) {
+    intensities <- as.matrix(Cardinal::spectra(msi))
+    rownames(intensities) <- as.character(Cardinal::mz(msi))
+    binned <- binnedCardinalToSeurat(msi, intensities,
+        verbose = FALSE
+    )
+    dim(binned)
+}
 }

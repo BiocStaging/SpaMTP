@@ -59,13 +59,16 @@ original download metadata. Published files are unchanged. See
 and reproducible build instructions.
 }
 \examples{
-utils::str(formals(loadSpaMTPDatabase))
+data(spamtp_example)
+db <- spamtp_example$database
+resources <- loadSpaMTPDatabase("chem_props", database = db, offline = TRUE)
+resources$chem_props[, c("common_name", "mol_formula", "monoisotop_mass")]
 example_database <- list(
-  ramp_db_metadata = list(ramp_version = "example")
+    ramp_db_metadata = list(ramp_version = "example")
 )
 database <- loadSpaMTPDatabase(
-  "ramp_db_metadata",
-  database = example_database
+    "ramp_db_metadata",
+    database = example_database
 )
 names(database)
 }

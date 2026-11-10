@@ -9,17 +9,21 @@ metaspaceToFeatureMatrix(metaspace_data, transform = FALSE, verbose = TRUE)
 \arguments{
 \item{metaspace_data}{A list object returned by \code{getMetaspace}.}
 
-\item{transform}{Logical. If TRUE, transposes each image matrix before flattening (e.g., to align coordinate systems) (default = FALSE).}
+\item{transform}{Logical. If TRUE, transposes each image matrix before
+flattening (e.g., to align coordinate systems) (default = FALSE).}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 }
 \value{
-A numeric matrix where rows are molecular features (m/z) and columns are spatial pixels (named 'x_y').
+A numeric matrix where rows are molecular features (m/z) and columns
+are spatial pixels (named 'x_y'). Missing images are omitted with a warning;
+if none are available, the function stops.
 }
 \description{
 Transforms the list of 2D ion image matrices from \code{getMetaspace} into a single matrix suitable for spatial analysis packages.
 }
 \examples{
-utils::str(formals(metaspaceToFeatureMatrix))
-# metaspaceToFeatureMatrix(mtx, transform = TRUE)
+images <- list(`100.00000` = matrix(1:6, 2), `200.00000` = matrix(6:1, 2))
+metaspaceToFeatureMatrix(list(images = images), verbose = FALSE)
 }

@@ -2,18 +2,22 @@
 % Please edit documentation in R/MZAnnotation.R
 \name{labels_to_show}
 \alias{labels_to_show}
-\title{Filters the annotation list to only include the first n number of annotations per m/z}
+\title{Filters the annotation list to only include the first n number of annotations
+per m/z}
 \usage{
 labels_to_show(annotation_column, n = 3)
 }
 \arguments{
-\item{annotation_column}{Vector from the \code{rowData()} column containing m/z annotations.}
+\item{annotation_column}{Vector from the \code{rowData()} column containing m/z
+annotations.}
 
-\item{n}{Numeric value defining the number of annotations to keep (default = 3).}
+\item{n}{Numeric value defining the number of annotations to keep (default =
+3).}
 }
 \value{
 Vector containing the first n number of annotations
 }
 \description{
-Filters the annotation list to only include the first n number of annotations per m/z
+Filters the annotation list to only include the first n number of annotations
+per m/z
 }

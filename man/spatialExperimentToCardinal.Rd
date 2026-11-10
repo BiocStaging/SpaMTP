@@ -18,5 +18,8 @@ A Cardinal \code{MSImagingExperiment}.
 Convert a SpatialExperiment to Cardinal
 }
 \examples{
-utils::str(formals(spatialExperimentToCardinal))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+msi <- spatialExperimentToCardinal(spe)
+Cardinal::mz(msi)
 }

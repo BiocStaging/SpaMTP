@@ -8,7 +8,7 @@ binMetabolites(
   data,
   mzs,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   bin_name = "Binned_Metabolites"
 )
 }
@@ -19,7 +19,7 @@ binMetabolites(
 
 \item{assay}{Primary or alternative experiment.}
 
-\item{slot}{Expression assay.
+\item{assayName}{Expression assay.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{bin_name}{Output colData column name. Existing columns are protected.}
@@ -31,5 +31,8 @@ The updated SpatialExperiment.
 The sum is stored in colData without modifying the expression assays.
 }
 \examples{
-utils::str(formals(binMetabolites))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+binned <- binMetabolites(spe, c("ion1", "ion2"), bin_name = "combined")
+head(binned$combined)
 }

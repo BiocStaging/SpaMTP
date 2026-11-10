@@ -6,6 +6,7 @@ output:
     toc: true
     toc_depth: 3
     number_sections: true
+    df_print: kable
     css: spamtp-vignettes.css
 vignette: >
   %\VignetteIndexEntry{2. SpaMTP: Data access and migration}
@@ -15,34 +16,42 @@ vignette: >
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
-  fig.align = "center", fig.width = 7, fig.height = 4.5,
-  out.width = "720px", dpi = 96
+    collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
+    fig.align = "center", fig.width = 7, fig.height = 4.5,
+    out.width = "100%", dpi = 120
 )
+options(width = 88)
 ```
 
 # Native containers and public accessors
 
 SpaMTP keeps raw, unaligned spectra in Cardinal and feature-by-pixel matrices
 in `SpatialExperiment`. Public accessors read, modify and subset these
-containers. This guide uses real mouse-brain mass spectrometry imaging (MSI)
-and paired RNA to demonstrate the native API; historical Seurat tutorials use
-different interfaces.
+containers. This guide follows a mouse-brain mass spectrometry imaging (MSI)
+and paired RNA experiment through import, metadata access, normalization and
+subsetting. Use the migration table below when updating a historical
+Seurat-based script.
 
 ## Migrating existing scripts {#migrating-existing-scripts}
 
 The native API uses lower-camel-case names and Bioconductor containers. These
 common calls replace their historical Seurat-oriented counterparts:
 
+::: {.interface-reference}
+
 | Historical call | Current interface | Input or behaviour to review |
 |:--|:--|:--|
-| `NormalizeSMData()` | `normalizeSMData()` | Select the native modality with `assay` and input layer with `slot` |
+| `NormalizeSMData()` | `normalizeSMData()` | Select the native modality with `assay` and input layer with `assayName` |
 | `RunMetabolicPCA()` | `runMetabolicPCA()` | Scores are stored in `reducedDim()` |
 | `FindAllDEMs()` | `findAllDEMs()` | Choose descriptive markers or a biological-replicate model explicitly |
 | `AnnotateSM()` | `annotateSM()` | Indexed, scored candidates are stored with reference provenance |
 | `FindRegionalPathways()` | `findRegionalPathways()` | Supply reconciled identities and complete regional rankings |
 | `MultiOmicIntegration()` | `multiOmicIntegration()` | Concatenates scaled PCA embeddings with equal modality weights |
-| Seurat `GetAssayData()` | `SummarizedExperiment::assay()` | Read a named matrix from the main or `altExp()` experiment |
+| Seurat `GetAssayData()` | `assay()` | Read a named matrix from the main or `altExp()` experiment |
+
+<p class="table-scroll-hint">Scroll horizontally to see the guidance column.</p>
+
+:::
 
 Convert a historical object with `seuratToSpatialExperiment()` before these
 calls, then check feature IDs, paired location names and matrix scales. Recompute
@@ -67,12 +76,15 @@ Replacement forms modify data, for example `colData(spe)$region <- values`.
 ## Modality and expression layer
 
 `assay = "SPT"` selects `altExp(spe, "SPT")` in this example;
-`slot = "counts"` selects its raw-count matrix. Use `assay = "main"` for
+`assayName = "counts"` selects its raw-count matrix. Use `assay = "main"` for
 the primary experiment. These selectors require exact names. See
 `help("experimentAccess", package = "SpaMTP")` for aliases.
 
 ```{r load-package, message=FALSE}
 library(SpaMTP)
+library(SpatialExperiment)
+library(SpaMTPData)
+library(scater)
 ```
 
 # Mouse-brain MSI and paired RNA
@@ -85,12 +97,9 @@ uses the same data for regional analysis. The first load downloads the pinned
 resource unless a verified local or cached copy is available.
 
 ```{r brain-data}
-spe <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
-rna <- SingleCellExperiment::altExp(spe, "SPT")
-data.frame(
-  modality = c("MSI", "RNA"),
-  features = c(nrow(spe), nrow(rna)),
-  paired_locations = c(ncol(spe), ncol(rna)))
+spe <- spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
+spe
+altExp(spe, "SPT")
 ```
 
 `RegionLoupe` includes ACB (nucleus accumbens), CP (caudoputamen), OT
@@ -102,9 +111,10 @@ independent specimens.
 # Read a binned MSI table
 
 `readSMMatrix()` expects one row per pixel, coordinates named `x`/`y` and
-numeric m/z column names. This round trip writes eight measured masses at
-**every supplied location** to a temporary CSV. It demonstrates the file
-format; subsequent analysis uses the complete `spe` object above.
+numeric m/z column names. This example writes eight measured masses at
+**every supplied location** to a temporary CSV and reads them back. It
+demonstrates the file format; subsequent analysis uses the complete `spe`
+object above.
 
 `project.name` sets the imported sample label. The CSV importer generates
 pixel IDs from coordinates, so archived barcodes and RNA pairing must be
@@ -112,50 +122,37 @@ retained separately. For raw imzML input, see the
 [native workflow](SpaMTP_Bioconductor.html).
 
 ```{r read-matrix}
-intensity <- SummarizedExperiment::assay(spe, "counts")
-mz <- SummarizedExperiment::rowData(spe)$mz
-xy <- SpatialExperiment::spatialCoords(spe)
-export_features <- unique(round(seq(1, nrow(spe), length.out = 8)))
-input <- data.frame(xy, t(as.matrix(intensity[export_features, ])),
-  check.names = FALSE)
-names(input) <- c("x", "y", as.character(mz[export_features]))
+export_features <- rownames(spe)[round(seq(1, nrow(spe), length.out = 8))]
+table_input <- data.frame(spatialCoords(spe),
+    t(as.matrix(counts(spe)[export_features, ])),
+    check.names = FALSE
+)
+names(table_input) <- c("x", "y", rowData(spe)[export_features, "mz"])
+csv_file <- tempfile(fileext = ".csv")
+write.csv(table_input, csv_file, row.names = FALSE)
 
-imported <- local({
-  path <- tempfile(fileext = ".csv")
-  on.exit(unlink(path))
-  utils::write.csv(input, path, row.names = FALSE)
-  readSMMatrix(path, project.name = "mouse_brain", verbose = FALSE)
-})
-stopifnot(isTRUE(all.equal(
-  as.matrix(SummarizedExperiment::assay(imported, "counts")),
-  as.matrix(intensity[export_features, ]), check.attributes = FALSE)))
-SummarizedExperiment::rowData(imported)$mz
+imported <- readSMMatrix(csv_file, project.name = "mouse_brain", verbose = FALSE)
+imported
+rowData(imported)$mz
 ```
 
 # Pixel and feature metadata
 
 Rows identify measured MSI features; columns identify paired locations.
 `colLabels()` sets the default grouping to the archived anatomy without
-changing `RegionLoupe`. The first table shows each region's coverage on both
-sides; the second summarizes per-location quality control (QC) measurements.
+changing `RegionLoupe`. Two per-location quality control (QC) measurements are
+added to `colData()`: `total_intensity` sums the measured MSI intensities and
+`detected_features` counts MSI features with intensity above zero.
 
 ```{r metadata-access}
-SingleCellExperiment::colLabels(spe) <- factor(spe$RegionLoupe)
-SummarizedExperiment::colData(spe)$total_intensity <- Matrix::colSums(intensity)
-SummarizedExperiment::colData(spe)$detected_features <- Matrix::colSums(intensity > 0)
+colLabels(spe) <- factor(spe$RegionLoupe)
+spe$total_intensity <- colSums(counts(spe))
+spe$detected_features <- colSums(counts(spe) > 0)
 table(region = spe$RegionLoupe, side = spe$lesion)
-qc <- list(total_intensity = spe$total_intensity,
-    detected_features = spe$detected_features)
-qc_summary <- data.frame(
-    metric = names(qc),
-    minimum = vapply(qc, min, numeric(1)),
-    median = vapply(qc, stats::median, numeric(1)),
-    maximum = vapply(qc, max, numeric(1)))
-knitr::kable(qc_summary, digits = 1, row.names = FALSE)
+summary(spe$total_intensity)
+summary(spe$detected_features)
 ```
 
-`total_intensity` sums the measured MSI intensities at each location;
-`detected_features` counts MSI features with intensity above zero.
 The feature-level accessor `rowData(spe)$mz` stores one measured m/z per row.
 
 ## Normalized expression
@@ -167,20 +164,32 @@ and natural logarithms.
 `metadata(spe)$spamtp_normalization` records the method, source assay and scale
 factor.
 
+Almost every MSI feature is detected at every location in this dataset, so the
+normalized values are stored as an ordinary dense `matrix`. A sparse
+`dgCMatrix` would need more memory for these values; sparse input stays sparse
+when most normalized values are zero, and `DelayedArray` input stays delayed.
+
+```{r normalize}
+spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
+class(counts(spe))
+class(logcounts(spe))
+metadata(spe)$spamtp_normalization
+```
+
 Figure 2.\@ref(fig:expression-access) displays the mass nearest m/z 400.14659,
-a focal feature in the original mouse-brain tutorial. `feature` is its row ID; the title reports
-the actual measured m/z. Metabolite identification requires additional
+a focal feature in the original mouse-brain tutorial, with `plotExpression()`
+from [scater](https://bioconductor.org/packages/scater). `findNearestMZ()`
+returns its feature ID. Metabolite identification requires additional
 chemical evidence.
 
 ```{r expression-access, fig.width=7, fig.height=4.5, out.width="760px", fig.cap="A measured mouse-brain mass feature across archived anatomical regions. Each point is one paired location; colour marks the archived lesion side. Boxes pool both sides within each region and show the median and interquartile range; whiskers extend to 1.5 times that range. The displayed mass is the measured feature nearest m/z 400.14659 from the original mouse-brain tutorial. The plot describes within-specimen distributions, which depend on regional composition and spatial relationships."}
-spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
-feature_index <- which.min(abs(mz - 400.14659))
-feature <- rownames(spe)[feature_index]
-scater::plotExpression(spe, features = feature, x = "RegionLoupe",
-  colour_by = "lesion", exprs_values = "logcounts",
-  show_violin = FALSE, show_boxplot = TRUE, point_size = 0.8) +
-  ggplot2::labs(x = "Archived anatomical region", colour = "Archived side",
-    title = sprintf("Measured m/z %.4f", mz[feature_index]))
+feature <- findNearestMZ(spe, 400.14659)
+feature
+plotExpression(spe,
+    features = feature, x = "RegionLoupe",
+    colour_by = "lesion", exprs_values = "logcounts",
+    show_violin = FALSE, show_boxplot = TRUE, point_size = 0.8
+)
 ```
 
 CP dominates this archived selection; sparse regions remain visible as
@@ -188,6 +197,34 @@ individual points. The region labels connect the expression profile to anatomy.
 Regional composition should be examined before interpreting a side difference;
 the [complete workflow](End_to_End_Workflow.html) illustrates regional marker
 scoring and spatial sensitivity.
+
+## Scaling and memory use {#scaling-and-memory-use}
+
+`scaleSMData()` centres each feature and scales it to unit variance. Its
+default `scaled` assay is a `DelayedMatrix`: row statistics are computed in
+blocks, and transformed values are evaluated when read. The input assay is
+preserved, and the full scaled matrix is not allocated at this step.
+
+```{r delayed-scaling}
+scaled <- scaleSMData(spe)
+class(assay(scaled, "scaled"))
+```
+
+Memory requirements depend on the next operation:
+
+| Operation | Memory behaviour |
+|:--|:--|
+| `normalizeSMData()` | Preserves delayed input; chooses dense or sparse storage for in-memory normalized values |
+| `scaleSMData()` | Uses block processing and delayed arithmetic by default; `delayed = FALSE` allocates the result |
+| `runSpatialGraphPCA()` | Uses a sparse spatial graph but materialises the selected expression assay and the solve result |
+| `createMergedModalityAssay()` | Reuses scaled assays; otherwise converts each modality to a dense matrix for scaling |
+
+A dense double-precision matrix needs 8 bytes per entry. For 2,000 features at
+100,000 pixels, that is about 1.6 GB **per matrix**, before temporary copies and
+solver workspace. Select the features and pixels needed for the analysis before
+graph PCA. For a large modality merge, prepare each modality with
+`scaleSMData()` first; downstream functions can still materialise the merged
+values.
 
 # Coordinates and optical images
 
@@ -198,10 +235,8 @@ downwards. Its rows follow the same locations as the assay columns. Inspect
 axis names before combining data from another coordinate system.
 
 ```{r coordinate-access}
-SpatialExperiment::spatialCoordsNames(spe)
-stopifnot(identical(rownames(xy), colnames(spe)))
-data.frame(axis = colnames(xy), minimum = apply(xy, 2, min),
-  maximum = apply(xy, 2, max))
+spatialCoordsNames(spe)
+apply(spatialCoords(spe), 2, range)
 ```
 
 Coordinate names label the stored axes. Unit conversion, axis reversal and
@@ -211,51 +246,48 @@ the source coordinates.
 ## Image storage and registration
 
 `imgData()` records each image's sample ID, image ID and scale factor. The
-following artificial raster demonstrates image storage in a separate copy.
-Histology registration requires a tissue image and a coordinate transform.
-`load = TRUE` retains the raster after the temporary file is removed.
+following artificial raster, written with
+[png](https://cran.r-project.org/package=png), demonstrates image storage in a
+separate copy. Histology registration requires a tissue image and a coordinate
+transform. `load = TRUE` keeps the raster in memory, so the object no longer
+depends on the temporary file.
 
 ```{r image-access}
-image_example <- local({
-  path <- tempfile(fileext = ".png")
-  on.exit(unlink(path))
-  png::writePNG(matrix(seq(0, 1, length.out = 12), nrow = 3), path)
-  addSpatialImage(spe, imageSource = path, sampleId = unique(spe$sample_id),
-    imageId = "storage-demo", scaleFactor = 1, load = TRUE)
-})
-SpatialExperiment::imgData(image_example)[, c("sample_id", "image_id", "scaleFactor")]
-raster <- SpatialExperiment::imgRaster(image_example,
-  sample_id = unique(spe$sample_id), image_id = "storage-demo")
-stopifnot(inherits(raster, "raster"))
+library(png)
+png_file <- tempfile(fileext = ".png")
+writePNG(matrix(seq(0, 1, length.out = 12), nrow = 3), png_file)
+image_example <- addSpatialImage(spe,
+    imageSource = png_file,
+    sampleId = unique(spe$sample_id), imageId = "storage-demo",
+    scaleFactor = 1, load = TRUE
+)
+imgData(image_example)[, c("sample_id", "image_id", "scaleFactor")]
+imgRaster(image_example,
+    sample_id = unique(spe$sample_id),
+    image_id = "storage-demo"
+)
 ```
 
 # Paired modalities and standard subsetting
 
-`altExp(spe, "SPT")` contains the measured RNA at the same locations as MSI.
-RNA and MSI features have independent row sets.
-
-The existing pairing is checked before selecting the ACB locations. Column
-subsetting keeps RNA and coordinates aligned; row subsetting affects only
-the main MSI experiment.
+`altExp(spe, "SPT")` contains the measured RNA at the same locations as MSI,
+with its own feature rows. Column subsetting keeps RNA and coordinates aligned;
+row subsetting affects only the main MSI experiment. Selecting the ACB
+locations keeps the 2,075 MSI features and all RNA features at those locations.
 
 ```{r paired-access}
-rna <- SingleCellExperiment::altExp(spe, "SPT")
-stopifnot(identical(colnames(rna), colnames(spe)))
-SingleCellExperiment::altExpNames(spe)
-SummarizedExperiment::assayNames(rna)
+altExpNames(spe)
+assayNames(altExp(spe, "SPT"))
 
 accumbens <- spe[, spe$RegionLoupe == "ACB"]
-accumbens_rna <- SingleCellExperiment::altExp(accumbens, "SPT")
-data.frame(locations = ncol(accumbens), mass_features = nrow(accumbens),
-  RNA_features = nrow(accumbens_rna))
-stopifnot(identical(colnames(accumbens_rna), colnames(accumbens)),
-  nrow(SpatialExperiment::spatialCoords(accumbens)) == ncol(accumbens))
+accumbens
+altExp(accumbens, "SPT")
 ```
 
 For newly collected modalities, perform alignment and pairing first with
 `mapSpatialOmics()`. `addTranscriptome()` checks and reorders an already paired
-matrix by column names. These names must represent verified spatial matches.
-Both modalities must contain the same set of unique location names.
+matrix by column names. Both modalities need the same set of unique location
+names, each representing a verified spatial match.
 
 ## Analysis provenance
 
@@ -263,10 +295,11 @@ The resource identity, version and checksum remain in `metadata()`. Add
 analysis settings alongside them so normalization and grouping are recoverable.
 
 ```{r provenance-access}
-S4Vectors::metadata(spe)$analysis <- list(
-  input_type = "paired mouse-brain MSI and Visium RNA",
-  normalization = "LogNormalize", grouping = "RegionLoupe")
-S4Vectors::metadata(spe)$SpaMTPData
+metadata(spe)$analysis <- list(
+    input_type = "paired mouse-brain MSI and Visium RNA",
+    normalization = "LogNormalize", grouping = "RegionLoupe"
+)
+metadata(spe)$SpaMTPData
 ```
 
 The [annotation pipeline](Metabolite_Annotation_Pipeline.html) adds candidate
@@ -279,28 +312,19 @@ identities to `rowData()` and records annotation provenance in `metadata()`.
 Optional SeuratObject enables explicit conversion. SpaMTP uses Seurat 5 public
 APIs: `LayerData()` for expression, double brackets for metadata, and
 `GetTissueCoordinates()` for image/FOV coordinates. Update incompatible older
-objects with `SeuratObject::UpdateSeuratObject()` in the Seurat workflow.
+objects with `UpdateSeuratObject()` in the Seurat workflow.
 
-`seurat` is `spe` exported to Seurat; `values`, `pixel_metadata`,
-`feature_metadata` and `centres` read its counts and metadata.
-`converted` imports `counts` and `fov` coordinates.
-`full = FALSE` returns one centroid per pixel; checks
-verify pixel order and counts after the round trip.
+`spatialExperimentToSeurat()` exports `spe`; `seuratToSpatialExperiment()`
+imports the `counts` layer and `fov` coordinates, with one centroid per pixel.
+The chunk runs only when SeuratObject is installed.
 
-```{r optional-conversion}
-if (requireNamespace("SeuratObject", quietly = TRUE)) {
-  seurat <- spatialExperimentToSeurat(spe)
-  values <- SeuratObject::LayerData(seurat, assay = "Spatial", layer = "counts")
-  pixel_metadata <- seurat[[]]
-  feature_metadata <- seurat[["Spatial"]][[]]
-  centres <- SeuratObject::GetTissueCoordinates(seurat, image = "fov", full = FALSE)
-
-  converted <- seuratToSpatialExperiment(seurat, image = "fov", layer = "counts")
-  stopifnot(identical(colnames(converted), colnames(spe)))
-  stopifnot(isTRUE(all.equal(
-    as.matrix(SummarizedExperiment::assay(converted, "counts")), as.matrix(values))))
-  S4Vectors::metadata(converted)$seurat_interoperability
-}
+```{r optional-conversion, eval=requireNamespace("SeuratObject", quietly = TRUE), message=FALSE}
+library(SeuratObject)
+seurat <- spatialExperimentToSeurat(spe)
+seurat
+converted <- seuratToSpatialExperiment(seurat, image = "fov", layer = "counts")
+converted
+metadata(converted)$seurat_interoperability
 ```
 
 ## Coordinate and layer selection
@@ -313,6 +337,10 @@ Only the named layer is transferred; join split Seurat layers first to include
 the complete dataset. Unpaired assays are skipped with a warning. Optical
 rasters, graphs and reductions are omitted. Continue with native accessors
 after conversion.
+
+Continue with the [companion-resource guide](SpaMTP_Companion_Workflow.html)
+to retrieve pinned annotation references, or the
+[complete workflow](End_to_End_Workflow.html) to analyse these paired data.
 
 # Session information
 

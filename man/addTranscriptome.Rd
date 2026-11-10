@@ -42,5 +42,9 @@ object. It is stored with \code{SingleCellExperiment::altExp()} rather than as a
 second Seurat assay.
 }
 \examples{
-methods::showMethods("addTranscriptome")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+rna <- matrix(1:48, 2, dimnames = list(c("geneA", "geneB"), colnames(spe)))
+paired <- addTranscriptome(spe, rna, name = "extraRNA")
+SingleCellExperiment::altExpNames(paired)
 }

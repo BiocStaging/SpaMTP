@@ -33,9 +33,14 @@ annotateSM(
 pre-built \code{index} is supplied through \code{...}. Versioned resources are loaded
 from SpaMTPdb and may be staged locally for offline use.}
 
-\item{assay}{Character string defining the primary or alternative experiment which contains the mz counts being annotated (default = "Spatial").}
+\item{assay}{Primary or alternative experiment containing the m/z counts
+being annotated. Defaults to \code{"main"}.}
 
-\item{raw.mz.column}{Character string naming the feature-metadata column containing raw m/z values without the \verb{mz-} prefix. This is created by \code{cardinalToSpatialExperiment()} (default = "raw_mz").}
+\item{raw.mz.column}{Character string naming the feature-metadata column
+containing raw m/z values without the \verb{mz-} prefix. This is created by
+\code{cardinalToSpatialExperiment()} (default = "raw_mz"). If omitted, mass
+metadata or numeric feature names are used as a fallback. An explicitly
+named column must exist. Feature rownames must be unique and non-empty.}
 
 \item{ppm_error}{Mass tolerance in ppm. If \code{NULL}, a strict 5 ppm maximum
 is used (or a smaller value inferred from \code{tof_resolution}). Set to zero
@@ -52,9 +57,13 @@ when neither is available.}
 \item{tof_resolution}{Instrument resolving power retained for compatibility;
 it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.}
 
-\item{filepath}{Character string of the directory to store the _annotated_mz_peaks.csv. If set to NULL no dataframe will be saved (default = NULL).}
+\item{filepath}{Optional output filename prefix, including its directory.
+For example, \code{file.path("results", "sample")} writes
+\code{results/sample_annotated_mz_peaks.csv}. NULL disables export.}
 
-\item{return.only.annotated}{Boolean value indicating if the annotated Bioconductor experiment should only include m/z values that were successfully annotated (default = TRUE).}
+\item{return.only.annotated}{Boolean value indicating if the annotated
+Bioconductor experiment should only include m/z values that were
+successfully annotated (default = TRUE).}
 
 \item{save.intermediate}{Boolean indicating whether to store the scored
 annotation result and its pipeline/RaMP provenance in
@@ -66,7 +75,8 @@ table. The default \code{0} keeps all ppm-valid candidates so downstream
 pathway functions can apply a user-defined threshold without re-running
 annotation.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 
 \item{maldi_matrix}{Optional MALDI matrix or derivatization reagent name.
 When supplied, SpaMTP selects validated matrix-specific rules
@@ -82,18 +92,30 @@ search space when explicitly supplied.}
 
 \item{...}{Additional indexed annotation/scoring arguments passed to
 \code{annotateTable()}, such as \code{index}, \code{rules}, \code{ms1_spectrum},
-\code{infer_structure}, \code{structure_backend}, \code{structure_workers}, or
+\code{infer_structure}, \code{structure_backend}, \code{BPPARAM}, or
 \code{min_structure_score}.}
 }
 \value{
-A Bioconductor experiment with m/z values annotated. These annotations are stored in the selected experiment's rowData().
+A Bioconductor experiment with m/z values annotated. These
+annotations are stored in the selected experiment's rowData().
+Stored candidates include \code{FormulaStatus}: \code{"parsed"}, \code{"unavailable"},
+or \code{"not_checked"}. One warning summarizes unavailable formula-based
+evidence; inspect these records with \code{\link[=annotationCandidates]{annotationCandidates()}}.
 }
 \description{
-This function assigns each valid m/z peak with one/multiple metabolite names based on the mass difference between the observed value and the theoretical value documented in the reference database.
+This function assigns each valid m/z peak with one/multiple metabolite names
+based on the mass difference between the observed value and the theoretical
+value documented in the reference database.
 Versioned RaMP, HMDB, LIPID MAPS, ChEBI, and GNPS resources are provided by
 SpaMTPdb and can be combined with user-supplied reference tables.
 }
 \examples{
-utils::str(formals(annotateSM))
-# HMDB_db <- load("data/HMDB_1_names.rds")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
+annotated <- annotateSM(spe,
+    index = index, raw.mz.column = "mz", ppm_error = 5,
+    return.only.annotated = FALSE, verbose = FALSE
+)
+head(annotationCandidates(annotated))
 }

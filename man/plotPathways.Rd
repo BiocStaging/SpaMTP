@@ -9,7 +9,7 @@ plotPathways(
   object,
   title = NULL,
   assay = "main",
-  slot = "logcounts",
+  assayName = "logcounts",
   reduction = NULL,
   colors = c("darkblue", "lightgrey", "darkred"),
   guide = "colourbar",
@@ -29,7 +29,8 @@ plotPathways(
 )
 }
 \arguments{
-\item{pathways}{Character vector of pathwayRampId values or unambiguous database pathway names.}
+\item{pathways}{Character vector of pathwayRampId values or unambiguous
+database pathway names.}
 
 \item{object}{A SpatialExperiment with reducedDims.}
 
@@ -37,7 +38,7 @@ plotPathways(
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"logcounts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
@@ -56,7 +57,8 @@ then PCA, otherwise the first available reduction.}
 
 \item{database_local_dir}{Optional local database directory.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -93,8 +95,17 @@ sum is generally inappropriate for log-transformed expression.}
 \item{...}{Additional arguments to scater::plotReducedDim.}
 }
 \value{
-A named list of ggplots with pathway_coverage and pathway_index attributes; each plot also carries its exact pathway_scores.
+A named list of ggplots with pathway_coverage and pathway_index
+attributes; each plot also carries its exact pathway_scores.
 }
 \description{
 Plot named pathways on a dimensionality reduction
+}
+\examples{
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+if (requireNamespace("scater", quietly = TRUE)) {
+    plotPathways(c("P1", "P2"), spe, assay = "transcriptome", pathway_index = index)
+}
 }

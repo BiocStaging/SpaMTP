@@ -33,12 +33,15 @@ in Seurat before conversion when the complete dataset is needed.
 Cell/feature metadata, active identities and stored analysis metadata are
 retained. Reductions, graphs, optical images and Seurat commands are not
 converted. Stored metadata should contain portable R/Bioconductor values;
-entries containing Seurat objects/classes in lists are skipped with a warning.
+entries containing Seurat objects/classes in lists are skipped with a
+warning.
 }
 \examples{
 if (requireNamespace("SeuratObject", quietly = TRUE)) {
-    counts <- matrix(seq_len(12), nrow = 3,
-        dimnames = list(paste0("gene", 1:3), paste0("cell", 1:4)))
+    counts <- matrix(seq_len(12),
+        nrow = 3,
+        dimnames = list(paste0("gene", 1:3), paste0("cell", 1:4))
+    )
     seu <- SeuratObject::CreateSeuratObject(counts)
     sce <- seuratToSingleCellExperiment(seu)
     SummarizedExperiment::assayNames(sce)

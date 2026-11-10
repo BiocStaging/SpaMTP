@@ -8,8 +8,8 @@ calculateAnnotationStatistics(
   data,
   mz.assay = "main",
   pathway.assay = "pathway",
-  mz.slot = "counts",
-  pathway.slot = "counts",
+  mzAssayName = "counts",
+  pathwayAssayName = "counts",
   return.top = TRUE,
   corr_theshold = 0,
   corr_weight = 1,
@@ -37,10 +37,10 @@ calculateAnnotationStatistics(
 \item{pathway.assay}{Alternative experiment of RaMP analytes, or pathway
 scores when pathway.scores=TRUE.}
 
-\item{mz.slot}{Expression assay in the MSI experiment.
+\item{mzAssayName}{Expression assay in the MSI experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{pathway.slot}{Input expression assay in pathway.assay.
+\item{pathwayAssayName}{Input expression assay in pathway.assay.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{return.top}{Return one best evaluable candidate per feature; FALSE
@@ -53,12 +53,14 @@ remain as NA rows in top results and NULL entries when no table is possible.}
 
 \item{database}{Optional named list from loadSpaMTPDatabase.}
 
-\item{database_version, database_source, database_local_dir}{Database selection;
+\item{database_version, database_source, database_local_dir}{Database
+selection;
 see loadSpaMTPDatabase.}
 
 \item{pathway.scores}{Whether pathway.assay already contains pathway scores.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -109,5 +111,13 @@ columns are heuristic ranking measures, not calibrated identification
 p-values or biological-replicate inference.
 }
 \examples{
-utils::str(formals(calculateAnnotationStatistics))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+spe <- createPathwayObject(spe, assay = "transcriptome", pathway_index = index)
+result <- calculateAnnotationStatistics(spe,
+    pathwayAssayName = "pathwayScores",
+    pathway.scores = TRUE, pathway_index = index, database = spamtp_example$database
+)
+head(result)
 }

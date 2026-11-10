@@ -1,7 +1,7 @@
 Package: SpaMTP
 Type: Package
 Title: Spatial Metabolomics and Multi-Omics Analysis
-Version: 0.99.16
+Version: 0.99.17
 Authors@R: c(
     person("Andrew", "Causer",
             email = "a.causer@uq.edu.au", 
@@ -26,48 +26,45 @@ Authors@R: c(
             role = c("fnd"))
             )
 Description: Provides analysis, annotation, visualisation, and multi-omic
-    integration methods for spatial metabolomics data. SpaMTP interoperates
+    integration methods for spatial metabolomics data. It interoperates
     with Cardinal and SpatialExperiment containers, with optional Seurat
-    conversion; supports indexed accurate-mass annotation using versioned
-    RaMP resources; and implements
-    spatial feature analysis, pathway enrichment, pathway-network
-    visualisation, and alignment with spatial transcriptomics data.
+    conversion, and supports indexed accurate-mass annotation using versioned
+    RaMP resources. Methods include spatial feature analysis, pathway
+    enrichment, pathway-network visualisation, and alignment with spatial
+    transcriptomics data.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Suggests: 
+    ape,
+    pheatmap,
+    scater,
+    DropletUtils,
     BiocStyle,
-    EnhancedVolcano,
-    htmlTable,
-    htmltools,
-    kableExtra,
     knitr,
-    patchwork,
     reticulate,
     rmarkdown,
     SeuratObject (>= 5.0.0),
     SpaMTPData (>= 0.99.5),
-    testthat (>= 3.0.0),
-    viridis,
-    yaml
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Config/testthat/parallel: true
+Config/testthat/start-first: Workflow*, NativeWorkflow
 biocViews: MassSpectrometry, ImagingMassSpectrometry, Metabolomics, Spatial,
-    Transcriptomics, Alignment
+    Transcriptomics, Alignment, Network
 Imports: 
-    ape,
-    BiocSingular,
+    BiocParallel,
+    igraph,
     bluster,
     Cardinal,
     cowplot,
     data.table,
+    DelayedArray,
     digest,
     dplyr,
-    DropletUtils,
     edgeR,
     fgsea,
     FNN,
-    future,
-    future.apply,
     ggdendro,
     ggplot2,
     ggridges,
@@ -76,26 +73,22 @@ Imports:
     grid,
     httr,
     htmlwidgets,
+    htmltools,
     jsonlite,
     limma,
-    magick,
     magrittr,
     Matrix,
-    mclust,
+    MatrixGenerics,
+    MetaboCoreUtils,
     methods,
-    MSnbase,
-    naturalsort,
-    parallel,
-    pheatmap,
     plotly,
     png,
-    purrr,
     rgoslin,
     rlang,
     RSpectra,
     scales,
-    scater,
     scran,
+    scrapper,
     sf,
     shiny,
     SingleCellExperiment,
@@ -105,7 +98,6 @@ Imports:
     stats,
     stringr,
     SummarizedExperiment,
-    tibble,
     tidyr,
     tools,
     utils,

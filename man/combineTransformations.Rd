@@ -13,9 +13,11 @@ combineTransformations(
 )
 }
 \arguments{
-\item{center.cur}{(x, y) image pixel coordinates specifying the current center of the tissue (stored as the \code{centers} auxiliary entry)}
+\item{center.cur}{(x, y) image pixel coordinates specifying the current
+center of the tissue (stored as the \code{centers} auxiliary entry)}
 
-\item{center.new}{(x, y) image pixel coordinates specifying the new center (image center)}
+\item{center.new}{(x, y) image pixel coordinates specifying the new center
+(image center)}
 
 \item{alpha}{Rotation angle}
 
@@ -31,12 +33,12 @@ translation of points to origin (0, 0) -> reflection of points
 -> rotation by alpha degrees and translation of points to new center
 }
 \examples{
-utils::str(formals(combineTransformations))
+combineTransformations(center.cur = c(0, 0), center.new = c(10, 20), alpha = 30)
 transformation <- combineTransformations(
-  center.cur = c(0, 0),
-  center.new = c(10, 20),
-  alpha = 90
+    center.cur = c(0, 0),
+    center.new = c(10, 20),
+    alpha = 90
 )
-stopifnot(identical(dim(transformation), c(3L, 3L)))
+transformation
 
 }

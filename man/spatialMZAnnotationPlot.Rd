@@ -11,7 +11,7 @@ spatialMZAnnotationPlot(
   images = NULL,
   crop = TRUE,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   keep.scale = "feature",
   min.cutoff = NA,
   max.cutoff = NA,
@@ -41,10 +41,11 @@ spatialMZAnnotationPlot(
 
 \item{assay}{Primary experiment ("main") or altExp name.}
 
-\item{slot}{Expression assay name, e.g. "counts" or "logcounts".
+\item{assayName}{Expression assay name, e.g. "counts" or "logcounts".
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{keep.scale}{Colour scaling: "feature", "all" or "none"; NULL means "none".}
+\item{keep.scale}{Colour scaling: "feature", "all" or "none"; NULL means
+"none".}
 
 \item{min.cutoff, max.cutoff}{One cutoff or one per query; numeric or
 quantile strings such as "q10". NA uses the observed range.}
@@ -67,7 +68,8 @@ quantile strings such as "q10". NA uses the observed range.}
 
 \item{column.name}{Annotation column in rowData.}
 
-\item{plot.exact}{Match complete semicolon-delimited names (case-insensitive).}
+\item{plot.exact}{Match complete semicolon-delimited names
+(case-insensitive).}
 
 \item{verbose}{Retained for call compatibility.}
 }
@@ -78,5 +80,7 @@ A ggplot or Plotly widget; a list when combine=FALSE.
 Matching peaks are summed using the same rules as imageMZAnnotationPlot.
 }
 \examples{
-utils::str(formals(spatialMZAnnotationPlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+spatialMZAnnotationPlot(spe, "Glucose")
 }

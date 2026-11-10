@@ -8,19 +8,25 @@ spe <- SpatialExperiment::SpatialExperiment(
     assays = list(counts = values),
     rowData = S4Vectors::DataFrame(mz = 101:104),
     colData = S4Vectors::DataFrame(region = rep(c("a", "b"), 4)),
-    spatialCoords = cbind(x = 1:8, y = rep(0:1, 4)))
+    spatialCoords = cbind(x = 1:8, y = rep(0:1, 4))
+)
 spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
 spe <- scaleSMData(spe)
 spe <- suppressWarnings(runMetabolicPCA(spe, npcs = 2))
-spe <- runSpatialGraphPCA(spe, n_components = 2, n_neighbors = 2,
-                           platform = "ST", verbose = FALSE)
+spe <- runSpatialGraphPCA(spe,
+    n_components = 2, n_neighbors = 2,
+    platform = "ST", verbose = FALSE
+)
 spe <- getKmeanClusters(spe, clusters = 2)
 spe <- addTranscriptome(spe, values[1:3, ])
 spe <- suppressWarnings(multiOmicIntegration(spe,
-    dims.list = list(1:2, 1:2), verbose = FALSE))
+    dims.list = list(1:2, 1:2), verbose = FALSE
+))
 subset <- subsetSPM(spe, subset = region == "a")
-stopifnot(ncol(subset) == 4L,
-          ncol(SingleCellExperiment::altExp(subset, "transcriptome")) == 4L,
-          "scaled" %in% SummarizedExperiment::assayNames(spe),
-          ncol(SingleCellExperiment::reducedDim(spe, "integrated")) == 4L,
-          !any(c("Seurat", "SeuratObject") %in% loadedNamespaces()))
+stopifnot(
+    ncol(subset) == 4L,
+    ncol(SingleCellExperiment::altExp(subset, "transcriptome")) == 4L,
+    "scaled" %in% SummarizedExperiment::assayNames(spe),
+    ncol(SingleCellExperiment::reducedDim(spe, "integrated")) == 4L,
+    !any(c("Seurat", "SeuratObject") %in% loadedNamespaces())
+)

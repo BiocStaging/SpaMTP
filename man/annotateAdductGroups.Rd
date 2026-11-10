@@ -40,10 +40,14 @@ most peaks of its group; several molecules chained into one group keep
 their own identities, and remaining ties are reported as ambiguity.
 }
 \examples{
-groups <- data.frame(peak = 1:2, mz = c(149.0444, 171.0264), group = 1,
-                     group_size = 2)
-cand <- data.frame(observed_mz = c(149.0444, 171.0264),
-                   ramp_ids = "RAMP_C_1", adduct = c("M+H", "M+Na"),
-                   score = c(0.4, 0.3))
+groups <- data.frame(
+    peak = 1:2, mz = c(149.0444, 171.0264), group = 1,
+    group_size = 2
+)
+cand <- data.frame(
+    observed_mz = c(149.0444, 171.0264),
+    ramp_ids = "RAMP_C_1", adduct = c("M+H", "M+Na"),
+    score = c(0.4, 0.3)
+)
 annotateAdductGroups(cand, groups)$peaks
 }

@@ -21,11 +21,14 @@ asCardinal(x, ...)
 \item{...}{Arguments passed to the class-specific method.}
 }
 \value{
-A Cardinal \code{MSImagingExperiment}, or unchanged \code{MSImagingArrays} input.
+A Cardinal \code{MSImagingExperiment}, or unchanged \code{MSImagingArrays}
+input.
 }
 \description{
 Convert a SpatialExperiment to a Cardinal experiment
 }
 \examples{
-methods::showMethods("asCardinal")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+asCardinal(spe)
 }

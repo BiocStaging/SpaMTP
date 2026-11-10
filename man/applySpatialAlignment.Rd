@@ -60,13 +60,15 @@ estimates a six-degree-of-freedom transformation from paired landmarks in
 R. \code{"lddmm"} runs STalign's landmark-guided affine plus diffeomorphic
 registration through Python.}
 
-\item{SM.fov}{Optional imgData image ID for the moving experiment. By default,
+\item{SM.fov}{Optional imgData image ID for the moving experiment. By
+default,
 the first image in \code{SM.data} is used.}
 
 \item{ST.image}{Optional imgData image ID for the fixed experiment. By
 default, the first image in \code{ST.data} is used.}
 
-\item{SM.boundary}{Compatibility label; coordinates are always read from spatialCoords().}
+\item{SM.boundary}{Compatibility label; coordinates are always read from
+spatialCoords().}
 
 \item{SM.landmarks, ST.landmarks}{Matched landmark coordinates as two-column
 matrices or data frames in x-y order. At least three non-collinear pairs are
@@ -95,19 +97,23 @@ must already be in the same order as the moving SM centroids.}
 numeric value or a scale-factor name such as \code{"hires"} or \code{"lowres"} for
 Visium images. \code{NULL} uses full-resolution coordinates.}
 
-\item{source.scale}{Numeric scalar or x-y vector applied to moving coordinates
+\item{source.scale}{Numeric scalar or x-y vector applied to moving
+coordinates
 before fitting. This reproduces the initial SM scaling step in the SMINT
 notebooks.}
 
-\item{source.rotate}{Counter-clockwise rotation in degrees, around the origin,
+\item{source.rotate}{Counter-clockwise rotation in degrees, around the
+origin,
 applied after scaling.}
 
-\item{source.flip}{Logical x-y vector indicating reflection around the origin.}
+\item{source.flip}{Logical x-y vector indicating reflection around the
+origin.}
 
 \item{source.translate}{Numeric x-y translation applied after scaling,
 reflection, and rotation.}
 
-\item{source.origin}{Optional numeric x-y lower bound. Coordinates are shifted
+\item{source.origin}{Optional numeric x-y lower bound. Coordinates are
+shifted
 only where necessary so that their minima are at least this value. Use
 \code{c(0, 0)} to reproduce the non-negative coordinate step in the notebook.}
 
@@ -144,7 +150,8 @@ for nearest-neighbour diagnostics.}
 \item{verbose}{Logical; print progress messages.}
 }
 \value{
-The updated spatial container when \code{return = "object"}; otherwise an object of class
+The updated spatial container when \code{return = "object"}; otherwise an
+object of class
 \code{spamtp_spatial_alignment} containing the aligned object and alignment
 details.
 }
@@ -162,31 +169,12 @@ entirely in R. The backend summary records STalign's affine component as
 \code{affine_yx}; it is not the complete nonlinear LDDMM transformation.
 }
 \examples{
-\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
-utils::str(formals(applySpatialAlignment))
-# Apply coordinates already exported by the SMINT/STalign notebook.
-aligned_sm <- applySpatialAlignment(
-  SM.data = sm,
-  ST.data = st,
-  alignment = "Ven5_z2_transformed_metabolites_coordinates.csv",
-  coordinate.columns = c("x_transformed", "y_transformed")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+transform <- diag(3)
+transform[1:2, 3] <- c(10, 20)
+aligned <- applySpatialAlignment(spe,
+    alignment = list(transformation = list(matrix = transform)), verbose = FALSE
 )
-
-# Run the notebook's landmark-guided LDDMM workflow from R.
-fit <- applySpatialAlignment(
-  SM.data = sm,
-  ST.data = st,
-  method = "lddmm",
-  SM.landmarks = sm_landmarks,
-  ST.landmarks = st_landmarks,
-  landmark.order = "yx",             # point-annotator row/column order
-  SM.landmark.space = "preprocessed", # landmarks selected after rasterization
-  source.scale = 10,
-  source.rotate = 90,
-  source.origin = c(0, 0),
-  python = "/path/to/STalign_env/bin/python",
-  return = "result"
-)
-fit$diagnostics
-\dontshow{\}) # examplesIf}
+head(SpatialExperiment::spatialCoords(aligned))
 }

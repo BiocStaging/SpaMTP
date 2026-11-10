@@ -14,6 +14,12 @@ A data frame with 18 rows and 5 variables:
 \item{colour}{Edge colour.}
 }
 }
+\source{
+SpaMTP-maintained display vocabulary. The source interaction labels
+are mapped to these stable style codes in
+\code{data-raw/pathway_interaction_utils.R} in the source repository.
+This table defines visual styles rather than biological measurements.
+}
 \usage{
 data(reaction_type)
 }
@@ -21,7 +27,8 @@ data(reaction_type)
 A data frame of pathway-network reaction styles.
 }
 \description{
-A small lookup table mapping SpaMTP interaction style codes to visual properties used
+A small lookup table mapping SpaMTP interaction style codes to visual
+properties used
 by the interactive pathway-network viewer.
 }
 \keyword{datasets}

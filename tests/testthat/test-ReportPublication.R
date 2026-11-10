@@ -12,13 +12,17 @@ test_that("report publication supports an existing empty directory on Windows", 
     env <- new.env(parent = environment(publish))
     env$file.rename <- function(from, to) {
         # Model Windows: an existing destination directory blocks the rename.
-        if (file.exists(to)) return(FALSE)
+        if (file.exists(to)) {
+            return(FALSE)
+        }
         base::file.rename(from, to)
     }
     environment(publish) <- env
     expect_identical(publish(staging, destination), destination)
-    expect_identical(readLines(file.path(destination, "report.html")),
-                     "complete report")
+    expect_identical(
+        readLines(file.path(destination, "report.html")),
+        "complete report"
+    )
     expect_identical(readLines(file.path(unrelated, "keep.txt")), "keep")
     expect_false(dir.exists(staging))
 })

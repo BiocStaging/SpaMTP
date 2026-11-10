@@ -41,3 +41,11 @@ transformation = NULL, an interactive preview allows translation, rotation,
 scaling and reflection. Coordinates are always stored in their full spatial
 units; an imgData scaleFactor affects only display of the reference image.
 }
+\examples{
+data(spamtp_example)
+spe <- spamtp_example$experiment
+transform <- diag(3)
+transform[1, 3] <- 2
+aligned <- alignSpatialOmics(spe, spe, transformation = transform)
+checkAlignment(aligned, spe)
+}

@@ -46,8 +46,9 @@ cluster and salt families also form such chains, so peaks flagged by
 \code{\link[=flagMatrixPeaks]{flagMatrixPeaks()}} or \code{\link[=flagIsotopePeaks]{flagIsotopePeaks()}} should be passed as \code{exclude}.
 }
 \examples{
-set.seed(1)
-base <- abs(rnorm(50))
-x <- rbind(base, 0.6 * base + rnorm(50, sd = 0.05), abs(rnorm(50)))
+x <- withr::with_seed(1, {
+    base <- abs(stats::rnorm(50))
+    rbind(base, 0.6 * base + stats::rnorm(50, sd = 0.05), abs(stats::rnorm(50)))
+})
 groupAdductPeaks(c(149.0444, 171.0264, 300.1), x)$groups
 }

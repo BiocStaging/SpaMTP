@@ -17,14 +17,17 @@ createMergedModalityAssay(
 
 \item{assays.to.merge}{At least two distinct modality names: \code{"main"} and/or
 names in \code{SingleCellExperiment::altExpNames(SpaMTP)}. Multiple aliases for
-the same primary experiment are not distinct modalities. See \link{experimentAccess}.}
+the same primary experiment are not distinct modalities. See
+\link{experimentAccess}.}
 
 \item{new.assay}{Name of the output alternative experiment, not an expression
 matrix (default = \code{"merged"}).}
 
-\item{return.original}{TRUE adds an altExp; FALSE returns only the merged feature space.}
+\item{return.original}{TRUE adds an altExp; FALSE returns only the merged
+feature space.}
 
-\item{verbose}{Reserved compatibility argument; no progress messages are emitted.}
+\item{verbose}{Reserved compatibility argument; no progress messages are
+emitted.}
 }
 \value{
 If \code{return.original = TRUE}, the input SpatialExperiment with
@@ -33,21 +36,33 @@ SpatialExperiment with merged rows, the same pixels and a \code{scaled} assay.
 }
 \description{
 Combines selected modalities as a scaled alternative experiment.
-Useful for integrating multiple modalities (e.g. transcriptomics, proteomics, metabolomics) that have already been scaled.
+Accepts paired transcriptomic, proteomic or metabolomic measurements and
+reuses existing scaled assays where available.
 }
 \details{
 Prefers the native \code{scaled} assay, then the legacy \code{scale.data} assay;
 otherwise centres and scales \code{logcounts}, \code{normcounts} or \code{counts} across
 pixels. Constant features become zero.
 The merged values are stored as scaled, never relabelled as counts.
+
+A modality without a scaled assay is converted to a dense matrix before
+centring and scaling, even when its input is sparse or delayed. Each dense
+matrix needs 8 bytes per feature-pixel entry; the combined matrix and
+temporary copies require additional memory. For large inputs, prepare
+delayed scaled assays with \code{\link[=scaleSMData]{scaleSMData()}} for each modality before merging,
+or subset the features and pixels first. Downstream consumers may still
+materialise the merged values; see \code{\link[=runSpatialGraphPCA]{runSpatialGraphPCA()}}.
 }
 \examples{
 x <- SpatialExperiment::SpatialExperiment(
     assays = list(counts = rbind(a = 1:4, b = 4:1)),
     spatialCoords = cbind(x = 1:4, y = 0),
-    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)))
-rna <- matrix(c(1, 3, 2, 4), nrow = 1,
-    dimnames = list("gene1", colnames(x)))
+    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4))
+)
+rna <- matrix(c(1, 3, 2, 4),
+    nrow = 1,
+    dimnames = list("gene1", colnames(x))
+)
 x <- addTranscriptome(x, rna)
 x <- createMergedModalityAssay(x, c("main", "transcriptome"))
 merged <- SingleCellExperiment::altExp(x, "merged")

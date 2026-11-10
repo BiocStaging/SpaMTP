@@ -13,23 +13,33 @@ kNeighborsGraph(
 )
 }
 \arguments{
-\item{location}{A data frame or matrix with columns \code{x} and \code{y} representing spatial coordinates, and rownames match barcode/cell names.}
+\item{location}{A data frame or matrix with columns \code{x} and \code{y} representing
+spatial coordinates, and rownames match barcode/cell names.}
 
-\item{n_neighbors}{Integer value defining the number of neighbours to consider.}
+\item{n_neighbors}{Integer value defining the number of neighbours to
+consider.}
 
-\item{platform}{Character string being either \code{"Visium"} or \code{"ST"}, specifying the platform of the dataset being analysed. Determines how distance thresholds and adjacency are calculated whereby "Visium" data is handled slightly differently to compensate for the hexagon shape of the spots.}
+\item{platform}{Character string being either \code{"Visium"} or \code{"ST"},
+specifying the platform of the dataset being analysed. Determines how
+distance thresholds and adjacency are calculated whereby "Visium" data is
+handled slightly differently to compensate for the hexagon shape of the
+spots.}
 
-\item{include_self}{Boolean logical value stating whether to include self-connections (default = FALSE).}
+\item{include_self}{Boolean logical value stating whether to include
+self-connections (default = FALSE).}
 
-\item{alg}{Character string specifying the algorithm to use for nearest neighbour search. Passed to \code{FNN::get.knn()} (default = "kd_tree").}
+\item{alg}{Character string specifying the algorithm to use for nearest
+neighbour search. Passed to \code{FNN::get.knn()} (default = "kd_tree").}
 }
 \value{
 A sparse adjacency matrix (\code{dgCMatrix}) representing the k-NN graph.
 }
 \description{
-Builds a sparse adjacency matrix representing the k-nearest neighbour relationships between spots or cells, using Euclidean distance between spatial coordinates.
+Builds a sparse adjacency matrix representing the k-nearest neighbour
+relationships between spots or cells, using Euclidean distance between
+spatial coordinates.
 }
 \examples{
-utils::str(formals(kNeighborsGraph))
-### HELPER FUNCTION
+coordinates <- cbind(x = rep(1:3, 2), y = rep(1:2, each = 3))
+kNeighborsGraph(coordinates, n_neighbors = 2, platform = "ST")
 }

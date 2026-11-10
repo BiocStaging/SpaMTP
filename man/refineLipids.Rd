@@ -8,26 +8,36 @@ refineLipids(
   data,
   annotation.column = "annotations",
   database = "HMDB",
-  lipid_info = "simple"
+  lipid_info = "simple",
+  verbose = TRUE
 )
 }
 \arguments{
 \item{data}{data.frame containing a column with lipid annotations}
 
-\item{annotation.column}{Character string matching the column name containing the lipid annotations in the provided df (default = "annotations").}
+\item{annotation.column}{Character string matching the column name containing
+the lipid annotations in the provided df (default = "annotations").}
 
-\item{database}{Character string defining the database matching the lipid annotations. Possible entries include c('Shorthand2020','Goslin','FattyAcids','LipidMaps','SwissLipids','HMDB') (default = "HMDB").}
+\item{database}{Character string defining the database matching the lipid
+annotations. Possible entries include
+c('Shorthand2020','Goslin','FattyAcids','LipidMaps','SwissLipids','HMDB')
+(default = "HMDB").}
 
 \item{lipid_info}{Character string defining what level of information to return for each lipid. Options are either "all" or "simple". "Simple" returns a smaller, simplified list of annotations for each lipid. Please visit https://bioconductor.org/packages/release/bioc/vignettes/rgoslin/inst/doc/introduction.html to see all possible outputs (default = "simple")).}
+
+\item{verbose}{Logical; show a progress bar (default = TRUE).}
 }
 \value{
 Data.frame containing additional columns with simplified lipid names
 }
 \description{
-Based on rgoslin, this function has the ability to simplify lipid annotations into more general terms, groups and classes.
-This function can input a data frame containing a column storing the annotation and refine only the entries which are annotated as known lipid structures.
+Based on rgoslin, this function has the ability to simplify lipid annotations
+into more general terms, groups and classes.
+This function can input a data frame containing a column storing the
+annotation and refine only the entries which are annotated as known lipid
+structures.
 }
 \examples{
-utils::str(formals(refineLipids))
-# refineLipids(DEPs_df)
+lipids <- data.frame(annotations = c("PC 16:0/18:1", "PE 18:0/20:4"))
+refineLipids(lipids, database = "Shorthand2020", verbose = FALSE)
 }

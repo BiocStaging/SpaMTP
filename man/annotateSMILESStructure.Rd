@@ -10,7 +10,7 @@ annotateSMILESStructure(
   backend = c("auto", "native"),
   overwrite = FALSE,
   strict = FALSE,
-  workers = getOption("SpaMTP.smiles_workers", 1L)
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
@@ -26,7 +26,7 @@ missing values are filled.}
 
 \item{strict}{Passed to \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
 
-\item{workers}{Parallel workers passed to \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
+\item{BPPARAM}{BiocParallel parameters passed to \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
 }
 \value{
 \code{db} with structure-derived columns appended or completed.
@@ -35,5 +35,7 @@ missing values are filled.}
 Add SMILES-derived structural features to a metabolite database
 }
 \examples{
-utils::str(formals(annotateSMILESStructure))
+compounds <- data.frame(smiles = c("CCO", "CC(O)C(O)=O"))
+annotated <- annotateSMILESStructure(compounds)
+annotated[, c("smiles", "alcohol_hydroxyl_sites", "carboxyl_sites")]
 }

@@ -23,8 +23,8 @@ annotateBigData(
 \item{mzs}{Vector containing m/z values for annotation.}
 
 \item{db}{Reference metabolite dataset in the form of a data.frame. SpaMTP
-provides four pre-cleaned databases (\code{HMDB_db}, \code{Lipidmaps_db},
-\code{Chebi_db}, \code{GNPS_db}). May be \code{NULL} when a pre-built \code{index} is supplied
+loads versioned reference resources through SpaMTPdb when \code{db = NULL}.
+Supply a data.frame for a custom reference, or a pre-built \code{index}
 through \code{...}.}
 
 \item{ppm_error}{Mass tolerance in ppm. If \code{NULL}, a strict 5 ppm maximum
@@ -41,7 +41,8 @@ it from a supplied index or MALDI matrix profile, otherwise use positive.}
 \item{tof_resolution}{Instrument resolving power retained for compatibility;
 it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 
 \item{maldi_matrix}{Optional MALDI matrix/reagent profile used for automatic
 rule selection. The \code{adducts} argument remains an optional restriction.}
@@ -57,16 +58,21 @@ rule selection. The \code{adducts} argument remains an optional restriction.}
 \code{annotateTable()}, such as \code{index}, \code{rules}, or \code{ms1_spectrum}.}
 }
 \value{
-A data.frame containing all successfully annotated m/z values, with their corresponding annotation.
+A data.frame containing all successfully annotated m/z values, with
+their corresponding annotation.
 }
 \description{
-This function assigns each valid m/z peak with one/multiple metabolite names based on the mass difference between the observed value and the theoretical value documented in the reference database.
-This function is to be used when dealing with large datasets as a preprocessing step. Users can annotate m/z values first and then subset their data accordinly before loading it into a Bioconductor experiment.
+This function assigns each valid m/z peak with one/multiple metabolite names
+based on the mass difference between the observed value and the theoretical
+value documented in the reference database.
+This function is to be used when dealing with large datasets as a
+preprocessing step. Users can annotate m/z values first and then subset their
+data accordinly before loading it into a Bioconductor experiment.
 }
 \examples{
-utils::str(formals(annotateBigData))
-#cardinal <- readImzML("./Test_Data/Spotted/test_data1")
-#mzs <- data.frame(Cardinal::featureData(cardinal))$mz
-#results <- annotateBigData(mzs, db = HMDB_db, ppm_error = 3, adducts = c("M-H", "M+Cl"), polarity = "negative")
-#cardinal_subset <- Cardinal::subset(cardinal, mz \%in\% results$observed_mz)
+data(spamtp_example)
+annotateBigData(c(149.04445, 181.07066),
+    db = spamtp_example$metabolites,
+    adducts = "M+H", ppm_error = 5, verbose = FALSE
+)
 }

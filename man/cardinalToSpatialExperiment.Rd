@@ -23,5 +23,9 @@ The intensity matrix is stored as an assay, Cardinal \code{featureData()} become
 matrix; raw continuous data should be binned with Cardinal before conversion.
 }
 \examples{
-utils::str(formals(cardinalToSpatialExperiment))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+msi <- spatialExperimentToCardinal(spe)
+converted <- cardinalToSpatialExperiment(msi)
+dim(converted)
 }

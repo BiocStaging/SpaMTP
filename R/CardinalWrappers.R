@@ -9,46 +9,51 @@
 #' directly or require Seurat.
 #'
 #' @param data A Cardinal Object containing the raw/binned m/z count data.
-#' @param data_ssc A Cardinal Object containing the ssc segmentation results. Note: Cardinal's spatialShrunkenCentroids() must be run to generate this object.
-#' @param resolution An integer (< v3.6.0) or string (>= v3.6.0) defining the ssc segmentation resolution to add to the raw Cardinal object.
+#' @param data_ssc A Cardinal Object containing the ssc segmentation results.
+#'   Note: Cardinal's spatialShrunkenCentroids() must be run to generate this
+#'   object.
+#' @param resolution An integer (< v3.6.0) or string (>= v3.6.0) defining the
+#'   ssc segmentation resolution to add to the raw Cardinal object.
 #'
-#' @returns A Cardinal Object containing the raw m/z counts and the relative ssc segmentation annotations per pixel.
+#' @returns A Cardinal Object containing the raw m/z counts and the relative ssc
+#'   segmentation annotations per pixel.
 #' @export
 #'
 #' @examples
-#' utils::str(formals(addSSCAnnotation))
-#' # ssc_data <- Cardinal::spatialShrunkenCentroids(CardinalObj, ...)
-#' # new_CardinalObj <- addSSCAnnotation(CardinalObj, ssc_data, resolution ="r=2,k=8,s=32")
-addSSCAnnotation <- function(data, data_ssc, resolution){
+#' data(spamtp_example)
+#' spe <- spamtp_example$experiment
+#' msi <- spatialExperimentToCardinal(spe)
+#' segmentation <- withr::with_seed(1, Cardinal::spatialShrunkenCentroids(
+#'     msi,
+#'     r = 1, k = 2, s = 0, verbose = FALSE
+#' ))
+#' labelled <- addSSCAnnotation(msi, segmentation, resolution = 1)
+#' table(Cardinal::pixelData(labelled)$ssc)
+addSSCAnnotation <- function(data, data_ssc, resolution) {
+    data_bin <- data
 
-  data_bin <- data
+    if (check_cardinal_version()) {
+        if (!methods::is(data_ssc, "ResultsList")) {
+            Cardinal::pixelData(data_bin)[["ssc"]] <- data_ssc$class
+        } else {
+            message("Getting cluster segments for resolution ", resolution)
 
-  if (check_cardinal_version()){
-
-    if (!methods::is(data_ssc, "ResultsList")) {
-      Cardinal::pixelData(data_bin)[["ssc"]] <- data_ssc$class
+            Cardinal::pixelData(data_bin)[["ssc"]] <- data_ssc[[resolution]]$class
+        }
     } else {
-      message(paste0("Getting cluster segments for resolution ", resolution))
+        message("Getting cluster segments for resolution (s) = ", resolution)
+        cluster_idx <- which(Cardinal::modelData(data_ssc)[["s"]] == resolution)
 
-      Cardinal::pixelData(data_bin)[["ssc"]] <- data_ssc[[resolution]]$class
+        classes <- Cardinal::resultData(data_ssc)[[cluster_idx]][[1]]
+        pixel_data <- Cardinal::pixelData(data_bin)
+
+
+        pixel_data[["ssc"]] <- classes
+
+        Cardinal::pixelData(data_bin) <- pixel_data
     }
 
-  } else {
-    message(paste0("Getting cluster segments for resolution (s) = ", resolution))
-    cluster_idx <- which(Cardinal::modelData(data_ssc)[["s"]] == resolution)
-
-    classes <- Cardinal::resultData(data_ssc)[[cluster_idx]][[1]]
-    pixel_data <- Cardinal::pixelData(data_bin)
-
-
-    pixel_data[["ssc"]] <- classes
-
-    Cardinal::pixelData(data_bin) <- pixel_data
-
-  }
-
-  return(data_bin)
-
+    return(data_bin)
 }
 
 ########################################################################################################################################################################################################################

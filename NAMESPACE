@@ -17,6 +17,7 @@ export(annotateGeneIdentifiers)
 export(annotateMZ)
 export(annotateSM)
 export(annotateSMILESStructure)
+export(annotationCandidates)
 export(annotationDatabaseScope)
 export(annotationInfo)
 export(annotationScoreCutoff)
@@ -42,6 +43,7 @@ export(createPathwayObject)
 export(deconvolveSMILES)
 export(demsHeatmap)
 export(densityMap)
+export(embedPathwayNetwork)
 export(estimateAnnotationFDR)
 export(findAllDEMs)
 export(findCorrelatedFeatures)
@@ -71,6 +73,7 @@ export(maldiMatrixProfiles)
 export(maldiMatrixRules)
 export(mapGeneIdentifiers)
 export(mapSpatialOmics)
+export(markerRanks)
 export(massIntensityPlot)
 export(matrixIonTable)
 export(metaspaceClient)
@@ -83,12 +86,15 @@ export(normalizeSMData)
 export(pathwayNetworkPlots)
 export(pixelPlot)
 export(plot3DFeature)
+export(plotAnnotationScores)
 export(plotPathways)
 export(plotPathwaysSpatially)
 export(plotRegionalPathways)
 export(plotSinglePathway)
 export(plotSinglePathwaySpatially)
+export(plotSpaMTPWorkflow)
 export(plotSpatialFeature)
+export(plotSpatialLabels)
 export(predictAdductsFromSMILES)
 export(queryMZAnnotationIndex)
 export(readSMMatrix)
@@ -116,6 +122,7 @@ export(spectralBinning)
 export(statPlot)
 export(subsetMZFeatures)
 export(subsetSPM)
+export(summarizeAnnotationScores)
 export(tmmNormalize)
 export(visualisePathways)
 exportMethods(addSpatialImage)
@@ -126,37 +133,39 @@ exportMethods(binSpaMTP)
 exportMethods(multiOmicIntegration)
 exportMethods(normalizeSMData)
 exportMethods(plotSpatialFeature)
-import(Matrix, except = c(expand, head, pack, unpack))
-
-import(dplyr)
-import(ggplot2, except = last_plot)
-import(grid)
-import(plotly, except = last_plot)
-import(shiny, except = runExample)
-import(stringr)
-import(tidyr, except = c(expand, pack, unpack))
 importClassesFrom(Cardinal,MSImagingArrays)
 importClassesFrom(Cardinal,MSImagingExperiment)
 importClassesFrom(SingleCellExperiment,SingleCellExperiment)
 importClassesFrom(SpatialExperiment,SpatialExperiment)
 importClassesFrom(SummarizedExperiment,SummarizedExperiment)
+importFrom(Matrix,
+  "diag<-",
+  as.matrix,
+  colMeans,
+  colSums,
+  diag,
+  mean,
+  qr,
+  qr.resid,
+  rowMeans,
+  rowSums,
+  solve,
+  sparseMatrix,
+  summary,
+  t,
+  which
+)
 importFrom(data.table,
   ":=",
   as.data.table
 )
 importFrom(dplyr,
-  "%>%",
   group_by,
   mutate,
   select,
   summarise,
   ungroup
 )
-importFrom(future,
-  multisession,
-  plan
-)
-importFrom(future.apply,future_lapply)
 importFrom(grDevices,
   as.raster,
   chull,
@@ -193,8 +202,10 @@ importFrom(plotly,
   renderPlotly
 )
 importFrom(png,readPNG)
-importFrom(purrr,map_dfr)
-importFrom(rlang,"%||%")
+importFrom(rlang,
+  "%||%",
+  .data
+)
 importFrom(sf,
   st_as_sf,
   st_make_valid,
@@ -206,10 +217,12 @@ importFrom(shiny,
   actionButton,
   fluidPage,
   mainPanel,
+  observeEvent,
   plotOutput,
   radioButtons,
   reactiveVal,
   renderPlot,
+  renderText,
   runApp,
   selectInput,
   shinyApp,
@@ -244,7 +257,6 @@ importFrom(tidyr,
 importFrom(utils,
   capture.output,
   head,
-  setTxtProgressBar,
   str,
-  txtProgressBar
+  tail
 )

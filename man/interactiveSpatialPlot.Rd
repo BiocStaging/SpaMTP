@@ -7,7 +7,7 @@
 interactiveSpatialPlot(
   obj,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   image = NULL,
   sampleId = NULL
 )
@@ -17,7 +17,7 @@ interactiveSpatialPlot(
 
 \item{assay}{Primary or alternative experiment.}
 
-\item{slot}{Expression assay.
+\item{assayName}{Expression assay.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{image}{Optional image ID from imgData.}
@@ -33,5 +33,8 @@ changing the input assays or annotations. The mass-axis controls use rowData
 masses, never mean intensities. No browser is launched by this function.
 }
 \examples{
-utils::str(formals(interactiveSpatialPlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+app <- interactiveSpatialPlot(spe)
+if (interactive()) shiny::runApp(app)
 }

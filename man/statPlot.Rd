@@ -8,7 +8,7 @@ statPlot(
   data,
   group.by = NULL,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   bottom.cutoff = NULL,
   top.cutoff = NULL,
   log.data = FALSE,
@@ -22,23 +22,33 @@ statPlot(
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment.
+\item{assayName}{Expression assay name within the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{bottom.cutoff}{Numeric value defining the percent of data to exclude for the lower end of the distribution. A bottom.cutoff = 0.05 will remove the bottom 5\% of data point (default = NULL).}
+\item{bottom.cutoff}{Numeric value defining the percent of data to exclude
+for the lower end of the distribution. A bottom.cutoff = 0.05 will remove
+the bottom 5\% of data point (default = NULL).}
 
-\item{top.cutoff}{Numeric value defining the percent of data to exclude for the upper end of the distribution. A top.cutoff = 0.05 will remove the top 5\% of data point (default = NULL).}
+\item{top.cutoff}{Numeric value defining the percent of data to exclude for
+the upper end of the distribution. A top.cutoff = 0.05 will remove the top
+5\% of data point (default = NULL).}
 
-\item{log.data}{Boolean value indicating whether to log transform the y-axis values (default = FALSE).}
+\item{log.data}{Boolean value indicating whether to log transform the y-axis
+values (default = FALSE).}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = FALSE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default =
+FALSE).}
 }
 \value{
-A data.frame containing the relative transformed and sum counts required for various QC plots
+A data.frame containing the relative transformed and sum counts
+required for various QC plots
 }
 \description{
 Helper function for QC plots by generating intensity count data
 }
 \examples{
-utils::str(formals(statPlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+statPlot(spe, group.by = "region")
 }

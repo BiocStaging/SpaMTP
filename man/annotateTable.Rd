@@ -2,7 +2,8 @@
 % Please edit documentation in R/MZAnnotation.R
 \name{annotateTable}
 \alias{annotateTable}
-\title{Annotates m/z values stored in a data.frame based on reference metabolite dataset}
+\title{Annotates m/z values stored in a data.frame based on reference metabolite
+dataset}
 \usage{
 annotateTable(
   mz_df,
@@ -25,7 +26,7 @@ annotateTable(
   database_local_dir = NULL,
   infer_structure = c("auto", "never", "always"),
   structure_backend = c("auto", "native"),
-  structure_workers = getOption("SpaMTP.smiles_workers", 1L),
+  BPPARAM = BiocParallel::SerialParam(),
   min_structure_score = 0.05
 )
 }
@@ -49,16 +50,23 @@ it from a supplied index or MALDI matrix profile, otherwise use positive.}
 \item{tof_resolution}{Instrument resolving power retained for compatibility;
 it can only tighten, not widen, the default 5 ppm mass-accuracy threshold.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 
-\item{index}{Optional reusable index created by \code{buildMZAnnotationIndex()}.}
+\item{index}{Optional reusable index created by \code{buildMZAnnotationIndex()}.
+\code{adducts} may restrict its existing rules. Omit \code{db}, \code{rules} and \code{BPPARAM};
+conflicting structure settings require rebuilding the index.}
 
 \item{rules}{Optional custom adduct rule table; see \code{adductRules()}.}
 
-\item{ms1_spectrum}{Optional contextual MS1 spectrum with \code{mz} and \code{intensity}
+\item{ms1_spectrum}{Optional contextual MS1 spectrum with \code{mz} and
+\code{intensity}
 columns for isotope and adduct-family scoring.}
 
-\item{use_mass_defect}{Apply the CHO negative mass-defect penalty.}
+\item{use_mass_defect}{Check CHO formula/ion mass consistency. A mismatch
+beyond the query tolerance (at least 5 ppm for rounded reference masses)
+receives a 0.2 chemical score. Negative fractional mass defects alone
+are not penalized.}
 
 \item{check_isotopes}{Score carbon-13 and halogen isotope evidence when a
 contextual spectrum is supplied.}
@@ -80,17 +88,20 @@ rule selection. \code{adducts = NULL} keeps the complete selected rule space.}
 
 \item{infer_structure}{\code{"auto"} joins precomputed SpaMTPdb structure
 features when possible, \code{"never"} disables inference, and \code{"always"}
-parses missing structures at runtime.}
+recomputes structural fields from SMILES at runtime. The latter two
+choices do not fetch a precomputed structure table.}
 
 \item{structure_backend}{SMILES parser passed to \code{deconvolveSMILES()}.}
 
-\item{structure_workers}{Number of workers used for runtime SMILES parsing.}
+\item{BPPARAM}{BiocParallel parameters for runtime SMILES parsing.}
 
 \item{min_structure_score}{Minimum rule-specific structural prior retained
 during candidate-index construction.}
 }
 \value{
-Generates an intermediate annotated m/z dataframe
+An intermediate annotated m/z data frame. \code{FormulaStatus} records
+whether formula-based evidence was parsed, unavailable, or not checked;
+see \code{\link[=queryMZAnnotationIndex]{queryMZAnnotationIndex()}}.
 }
 \description{
 Helper function for \code{annotateSM()} and \code{fishersPathwayAnalysis()}.

@@ -2,7 +2,8 @@
 % Please edit documentation in R/MZAnnotation.R
 \name{add_backslashes_to_specialfeatures}
 \alias{add_backslashes_to_specialfeatures}
-\title{Adds in backslashes required to take into account special using grepl such as brackets and +}
+\title{Adds in backslashes required to take into account special using grepl such as
+brackets and +}
 \usage{
 add_backslashes_to_specialfeatures(input_string)
 }
@@ -10,8 +11,10 @@ add_backslashes_to_specialfeatures(input_string)
 \item{input_string}{Character string requiring additional backslashes}
 }
 \value{
-Character string containing double backslashes around special features
+Character string containing double backslashes around special
+features
 }
 \description{
-Adds in backslashes required to take into account special using grepl such as brackets and +
+Adds in backslashes required to take into account special using grepl such as
+brackets and +
 }

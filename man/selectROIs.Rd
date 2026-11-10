@@ -9,18 +9,23 @@ selectROIs(object, sampleId = NULL, launch = TRUE)
 \arguments{
 \item{object}{A SpatialExperiment with spatial coordinates and metadata.}
 
-\item{sampleId}{The sample to select regions from; required for multiple samples.}
+\item{sampleId}{The sample to select regions from; required for multiple
+samples.}
 
-\item{launch}{Launch the app; FALSE returns a Shiny app for embedding or testing.}
+\item{launch}{Launch the app; FALSE returns a Shiny app for embedding or
+testing.}
 }
 \value{
 A SpatialExperiment with ROI columns (1 = selected, 0 = unselected
 within sample, NA = other samples), or a Shiny app if launch is FALSE.
 }
 \description{
-This function opens a Shiny app to allow users to manually annotate Regions of Interest (ROIs)
-on spatial transcriptomics or metabolomics data stored in a SpatialExperiment. Users can interactively
-select regions using lasso selection, assign custom names to each ROI, and save the results as
+This function opens a Shiny app to allow users to manually annotate Regions
+of Interest (ROIs)
+on spatial transcriptomics or metabolomics data stored in a
+SpatialExperiment. Users can interactively
+select regions using lasso selection, assign custom names to each ROI, and
+save the results as
 binary (0/1) columns in colData.
 }
 \details{
@@ -36,5 +41,8 @@ The app includes options to:
 Selection uses the exact points returned by plotly's lasso tool.
 }
 \examples{
-utils::str(formals(selectROIs))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+app <- selectROIs(spe, launch = FALSE)
+if (interactive()) shiny::runApp(app)
 }

@@ -28,7 +28,8 @@ A Seurat object.
 }
 \description{
 This conversion is provided only for users who explicitly need a Seurat
-workflow. Only SeuratObject is needed for conversion; Seurat analysis is not used.
+workflow. Only SeuratObject is needed for conversion; Seurat analysis is not
+used.
 The requested layer is placed in the Seurat counts layer; choose counts
 when raw intensities are needed. Other layers, reductions and optical
 images are not converted; spatial coordinates are exported as centroids.
@@ -36,5 +37,10 @@ Alternative experiments without the requested layer are skipped with a
 warning, rather than treating a derived score assay as raw counts.
 }
 \examples{
-utils::str(formals(spatialExperimentToSeurat))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+if (requireNamespace("SeuratObject", quietly = TRUE)) {
+    converted <- spatialExperimentToSeurat(spe)
+    converted
+}
 }

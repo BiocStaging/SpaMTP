@@ -15,20 +15,28 @@ searchAnnotations(
 \arguments{
 \item{data}{Bioconductor experiment containing annotated m/z values.}
 
-\item{metabolite}{Character string of metabolite search term.}
+\item{metabolite}{One literal, case-insensitive metabolite search term.
+Punctuation is matched as text, not as a regular expression.}
 
-\item{assay}{Character string defining the primary or alternative experiment that contains the annotated metadata corresponding to the m/z values (default = "Spatial").}
+\item{assay}{Primary or alternative experiment containing the annotated
+m/z metadata. Defaults to \code{"main"}.}
 
-\item{search.exact}{Boolean value defining if to only return m/z values which contain the exact match to the metabolite search term (default = FALSE).}
+\item{search.exact}{Boolean value defining if to only return m/z values which
+contain the exact match to the metabolite search term (default = FALSE).}
 
-\item{column.name}{Character string defining the feature-metadata column where annotations are stored (default = "all_IsomerNames").}
+\item{column.name}{Character string defining the feature-metadata column
+where annotations are stored (default = "all_IsomerNames").}
 }
 \value{
-A Data.Frame containing the peak metadata corresponding to the metabolite search term provided
+A Data.Frame containing the peak metadata corresponding to the
+metabolite search term provided
 }
 \description{
-Searches through annotated m/z values to return all which contain the metabolite search term provided
+Searches through annotated m/z values to return all which contain the
+metabolite search term provided
 }
 \examples{
-utils::str(formals(searchAnnotations))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+searchAnnotations(spe, "Glucose", search.exact = TRUE)
 }

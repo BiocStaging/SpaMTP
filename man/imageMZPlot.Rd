@@ -25,7 +25,7 @@ imageMZPlot(
   combine = TRUE,
   coord.fixed = TRUE,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   plot.pixel = FALSE,
   verbose = TRUE,
   ...
@@ -70,7 +70,7 @@ queries, or "none" separately for each panel.}
 
 \item{assay}{Primary experiment ("main") or altExp name.}
 
-\item{slot}{Expression assay name, e.g. "counts" or "logcounts".
+\item{assayName}{Expression assay name, e.g. "counts" or "logcounts".
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{plot.pixel}{Draw square rather than circular point symbols.}
@@ -92,9 +92,10 @@ windows count each peak once. Multiple samples are plotted separately.
 }
 \examples{
 x <- SpatialExperiment::SpatialExperiment(
-  assays = list(counts = rbind(a = 1:4, b = 4:1)),
-  rowData = S4Vectors::DataFrame(mz = c(100, 200)),
-  colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)),
-  spatialCoords = cbind(x = 1:4, y = c(0, 1, 0, 1)))
+    assays = list(counts = rbind(a = 1:4, b = 4:1)),
+    rowData = S4Vectors::DataFrame(mz = c(100, 200)),
+    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)),
+    spatialCoords = cbind(x = 1:4, y = c(0, 1, 0, 1))
+)
 imageMZPlot(x, mzs = 100)
 }

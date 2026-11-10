@@ -11,34 +11,49 @@ tmmNormalize(
   normalisation.type = "CPM",
   CPM.scale.factor = 1e+06,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   verbose = FALSE
 )
 }
 \arguments{
-\item{combined.obj}{Bioconductor experiment that contains groups being normalized.}
+\item{combined.obj}{Bioconductor experiment that contains groups being
+normalized.}
 
-\item{ident}{Character string defining the column name or ident group to normalize between.}
+\item{ident}{Character string defining the column name or ident group to
+normalize between.}
 
-\item{refIdent}{Character string specifying one class/group type to use as a reference for TMM normalisation.}
+\item{refIdent}{Character string specifying one class/group type to use as a
+reference for TMM normalisation.}
 
-\item{normalisation.type}{Character string defining the normalization method to run. Options are either c("CPM", "TIC", "LogNormalize") which represent counts per million (CPM), Total Ion Current (TIC) normalization or Log Normalization, respectively (default = "CPM").}
+\item{normalisation.type}{Character string defining the normalization method
+to run. Options are either c("CPM", "TIC", "LogNormalize") which represent
+counts per million (CPM), Total Ion Current (TIC) normalization or Log
+Normalization, respectively (default = "CPM").}
 
-\item{CPM.scale.factor}{Numeric value that sets the scale factor for pixel/spot level normalization. Following normalization the total intensity value across each pixel will equal this value (default = 1e6).}
+\item{CPM.scale.factor}{Numeric value that sets the scale factor for
+pixel/spot level normalization. Following normalization the total intensity
+value across each pixel will equal this value (default = 1e6).}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment.
+\item{assayName}{Expression assay name within the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = FALSE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default =
+FALSE).}
 }
 \value{
-Bioconductor experiment with count values normalised and corrected for between categories
+Bioconductor experiment with count values normalised and corrected
+for between categories
 }
 \description{
-This function is mainly used for normalising a merged Bioconductor experiment containing multiple samples.
+This function is mainly used for normalising a merged Bioconductor experiment
+containing multiple samples.
 }
 \examples{
-utils::str(formals(tmmNormalize))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+normalized <- tmmNormalize(spe, ident = "region", refIdent = "left")
+SummarizedExperiment::assayNames(normalized)
 }

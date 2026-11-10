@@ -2,7 +2,8 @@
 % Please edit documentation in R/DifferentialMZPeaks.R
 \name{findAllDEMs}
 \alias{findAllDEMs}
-\title{Finds differentially expressed m/z values/metabolites between all comparison groups.}
+\title{Finds differentially expressed m/z values/metabolites between all comparison
+groups.}
 \usage{
 findAllDEMs(
   data,
@@ -13,7 +14,7 @@ findAllDEMs(
   run_name = "findAllDEMs",
   annotation.column = NULL,
   assay = "Spatial",
-  slot = "counts",
+  assayName = "counts",
   return.individual = FALSE,
   verbose = TRUE,
   seed = 1234,
@@ -32,15 +33,19 @@ SummarizedExperiment.}
 \item{ident}{Column name in \code{SummarizedExperiment::colData(data)} defining
 the groups to compare. Technical mode requires this column to be a factor.}
 
-\item{n}{An integer that defines the number of pseudo-replicates (pools) per sample (default = 3).}
+\item{n}{An integer that defines the number of pseudo-replicates (pools) per
+sample (default = 3).}
 
 \item{logFC_threshold}{Technical-mode fold-change threshold, passed as
 \code{log2(logFC_threshold)} to \code{limma::treat()} (default = 1.2).
 Not used to filter marker or biological-replicate results.}
 
-\item{DE_output_dir}{A character string defining the directory path for all output files to be stored. This path must a new directory. Else, set to NULL as default.}
+\item{DE_output_dir}{A character string defining the directory path for all
+output files to be stored. This path must a new directory. Else, set to
+NULL as default.}
 
-\item{run_name}{A character string defining the title of this DE analysis that will be used when saving DEMs to .csv file (default = 'findAllDEMs').}
+\item{run_name}{A character string defining the title of this DE analysis
+that will be used when saving DEMs to .csv file (default = 'findAllDEMs').}
 
 \item{annotation.column}{Optional column in the selected experiment's
 \code{rowData()}, such as \code{"all_IsomerNames"} from \code{annotateSM()} (default NULL).}
@@ -48,7 +53,7 @@ Not used to filter marker or biological-replicate results.}
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
 \code{"Spatial"} is a compatibility alias for the primary experiment.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}). Choose the value scale for the analysis: technical
 pooling mode requires finite non-negative unlogged values; marker and
 replicate modes use the supplied values directly, commonly \code{"logcounts"}.
@@ -57,9 +62,11 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 \item{return.individual}{In technical mode, return one result per group
 instead of a merged result. Unsupported in marker/replicate modes.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 
-\item{seed}{Numeric value used to set the seed for reproducible randomisation (default = 1234).}
+\item{seed}{Numeric value used to set the seed for reproducible randomisation
+(default = 1234).}
 
 \item{method}{\code{markers} uses scran effect-size summaries without pixel P
 values; \code{replicate} fits configured contrasts on biological-replicate means.
@@ -76,7 +83,8 @@ three complete pairs are required.}
 
 \item{min_region_size}{Minimum labelled observations in a marker group.}
 
-\item{spatial_blocks}{Number of spatial blocks per sample for a leave-one-block
+\item{spatial_blocks}{Number of spatial blocks per sample for a
+leave-one-block
 sensitivity analysis of marker effects, or zero to disable. Blocks use
 coordinates only. They are not biological replicates or confidence intervals.}
 }
@@ -90,8 +98,36 @@ limma tables and the biological-replicate design. Marker mode may return
 \code{status = "skipped"} with a reason when too few groups are eligible.
 }
 \description{
-Finds differentially expressed m/z values/metabolites between all comparison groups.
+Finds differentially expressed m/z values/metabolites between all comparison
+groups.
 }
 \examples{
-utils::str(formals(findAllDEMs))
+## Paired treatment/control design with four simulated patients
+design <- expand.grid(
+    pixel = seq_len(3), condition = c("control", "treated"),
+    patient_id = paste0("patient", seq_len(4))
+)
+expression <- withr::with_seed(1234, matrix(
+    stats::rnorm(6 * nrow(design), mean = 5, sd = 0.3),
+    nrow = 6,
+    dimnames = list(
+        paste0("feature", seq_len(6)),
+        paste0("observation", seq_len(nrow(design)))
+    )
+))
+treated <- design$condition == "treated"
+expression[1:2, treated] <- expression[1:2, treated] + 1.2
+sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(logcounts = expression),
+    colData = S4Vectors::DataFrame(design)
+)
+fit <- findAllDEMs(sce,
+    ident = "condition", assay = "main",
+    assayName = "logcounts", method = "replicate", replicate = "patient_id",
+    contrasts = list(treated_vs_control = list(
+        numerator = "treated", denominator = "control", paired = TRUE
+    )),
+    verbose = FALSE
+)
+head(fit$tests$treated_vs_control$table)
 }

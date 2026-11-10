@@ -14,7 +14,8 @@ checkAlignment(
 )
 }
 \arguments{
-\item{SM.data, ST.data}{SpatialExperiment objects in the same coordinate units.}
+\item{SM.data, ST.data}{SpatialExperiment objects in the same coordinate
+units.}
 
 \item{names}{Two labels for the source and target measurements.}
 
@@ -30,4 +31,9 @@ A ggplot; multiple samples are shown in separate panels.
 }
 \description{
 Inspect the alignment of two spatial experiments
+}
+\examples{
+data(spamtp_example)
+spe <- spamtp_example$experiment
+checkAlignment(spe, spe, names = c("source", "reference"))
 }

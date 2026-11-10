@@ -6,6 +6,7 @@ output:
     toc: true
     toc_depth: 3
     number_sections: true
+    df_print: kable
     css: spamtp-vignettes.css
 vignette: >
   %\VignetteIndexEntry{5. SpaMTP: Gene mapping and joint pathway analysis}
@@ -15,21 +16,29 @@ vignette: >
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
-  fig.align = "center", fig.width = 7, fig.height = 4.5,
-  out.width = "720px", dpi = 96
+    collapse = TRUE, comment = "##", error = FALSE, cache = FALSE,
+    fig.align = "center", fig.width = 7, fig.height = 4.5,
+    out.width = "100%", dpi = 120
 )
+options(width = 88)
 ```
 
-# Reference ownership and reproducibility
+# Map genes to a reproducible reference
 
 SpaMTP resolves gene identifiers using versioned RaMP and HUGO Gene Nomenclature
 Committee (HGNC) references from SpaMTPdb, with species metadata from SpaMTPData.
+This guide follows a human glioma MSI/Xenium example from identifier mapping
+to enrichment, spatial pathway scores, co-regulation and joint RNA/MSI networks. Inspecting
+mapping status and measured coverage at each step makes the contributors to
+each pathway result explicit.
 
-```{r registry}
+```{r registry, message=FALSE}
 library(SpaMTP)
-SpaMTPdb::spaMTPdbGeneReference(metadata = TRUE)
-SpaMTPdb::spaMTPdbVersion()
+library(SpatialExperiment)
+library(SpaMTPdb)
+library(withr)
+spaMTPdbGeneReference(metadata = TRUE)
+spaMTPdbVersion()
 ```
 
 ## Reference snapshot and species
@@ -70,18 +79,18 @@ label-assignment recipe. `sample_id` identifies this single archived section.
 `database` holds RaMP tables, `reference` holds HGNC, and `index` joins them.
 `version` pins each reference; `mapping` resolves three example IDs.
 
-```{r reference, eval=TRUE}
+```{r reference}
 database <- loadSpaMTPDatabase(
-  c("chem_props", "source_df", "analyte", "analytehaspathway", "pathway"),
-  version = "3.0.7"
+    c("chem_props", "source_df", "analyte", "analytehaspathway", "pathway",
+        "ramp_db_metadata"),
+    version = "3.0.7"
 )
-reference <- SpaMTPdb::spaMTPdbGeneReference(
-  version = "2026.7.7"
-)
+reference <- spaMTPdbGeneReference(version = "2026.7.7")
 index <- buildGeneMappingIndex(database$source_df, gene_reference = reference)
 pathway_index <- buildPathwayIndex(database, gene_index = index)
 mapping <- mapGeneIdentifiers(
-  c("gene_symbol:AATK", "entrez:9625", "gene_symbol:BANK1"), index = index
+    c("gene_symbol:AATK", "entrez:9625", "gene_symbol:BANK1"),
+    index = index
 )
 mapping
 ```
@@ -127,22 +136,22 @@ ambiguity; biological function requires separate evidence.
 `annotateGeneIdentifiers()` reads row names and checks `organism`.
 `unresolved` selects rows whose status differs from `mapped`.
 
-```{r experiment, eval=TRUE}
+```{r experiment}
 spe <- readRDS(system.file("extdata", "human_demo.rds", package = "SpaMTP"))
-SingleCellExperiment::altExpNames(spe)
-# Select the actual transcriptome altExp shown above. If identifiers live in
-# a rowData column, set id_column; otherwise row names are used.
-spe <- annotateGeneIdentifiers(
-  spe, assay = "SPT", index = index, organism = "Homo sapiens"
+altExpNames(spe)
+spe <- annotateGeneIdentifiers(spe,
+    assay = "SPT", index = index,
+    organism = "Homo sapiens"
 )
-rna <- SingleCellExperiment::altExp(spe, "SPT")
-head(SummarizedExperiment::rowData(rna))
-mapping_counts <- table(SummarizedExperiment::rowData(rna)$spamtp_gene_status)
+rna <- altExp(spe, "SPT")
+head(rowData(rna))
+mapping_counts <- table(rowData(rna)$spamtp_gene_status)
 mapping_counts
-unresolved <- SummarizedExperiment::rowData(rna)$spamtp_gene_status != "mapped"
-SummarizedExperiment::rowData(rna)[unresolved,
-  c("spamtp_gene_symbol", "spamtp_gene_status", "spamtp_gene_ramp_ids")]
-stopifnot(ncol(rna) == ncol(spe), nrow(rna) == 339L)
+unresolved <- rowData(rna)$spamtp_gene_status != "mapped"
+rowData(rna)[
+    unresolved,
+    c("spamtp_gene_symbol", "spamtp_gene_status", "spamtp_gene_ramp_ids")
+]
 ```
 
 ## Preserved measurements and unresolved genes
@@ -156,10 +165,9 @@ Of `r nrow(rna)` genes, `r unname(mapping_counts["mapped"])` map,
 `r unname(mapping_counts["conflicting_ramp_records"])` have conflicting RaMP
 records, and `r unname(mapping_counts["not_in_ramp"])` are absent from RaMP.
 The `r sum(unresolved)` unresolved genes remain in the expression object.
-The first mapping warning records these exclusions; later pathway chunks
-suppress repeated warnings for the same identifiers.
+The mapping warning records these unresolved identities.
 
-`S4Vectors::metadata(rna)$gene_mapping$inputs` retains the complete per-feature
+`metadata(rna)$gene_mapping$inputs` retains the complete per-feature
 audit, including competing identities. Save `spe` with `saveRDS()` to retain
 this audit alongside the annotated experiment.
 
@@ -175,29 +183,31 @@ count, multiplies by 10,000 and applies the natural-log transform `log1p`.
 The measured RNA panel supplies the background; `min_path_size = 5` requires
 five mapped members.
 
-```{r enrichment, eval=TRUE, warning=FALSE}
+```{r enrichment}
 spe <- normalizeSMData(spe, "LogNormalize", assay = "SPT", verbose = FALSE)
-markers <- findAllDEMs(spe, ident = "cout_labels", assay = "SPT",
-  slot = "logcounts", method = "markers", spatial_blocks = 0)
-foreground_group <- "Oligo"
-foreground <- subset(markers$DEMs,
-  cluster == foreground_group & logFC > 0)
-foreground <- foreground[order(-foreground$mean_auc,
-  -foreground$logFC, foreground$gene), ]
-genes_of_interest <- head(foreground$gene, 20)
-measured_panel_genes <- rownames(rna)
-stopifnot(length(genes_of_interest) == 20L,
-          all(genes_of_interest %in% measured_panel_genes))
-knitr::kable(head(foreground[, c("gene", "logFC", "mean_auc")], 6),
-  digits = 3, row.names = FALSE)
-result <- fishersPathwayAnalysis(
-  Analyte = list(genes = genes_of_interest),
-  universe = list(genes = measured_panel_genes),
-  pathway_index = pathway_index,
-  min_path_size = 5, pval_cutoff = NULL
+markers <- findAllDEMs(spe,
+    ident = "cout_labels", assay = "SPT",
+    assayName = "logcounts", method = "markers", spatial_blocks = 0,
+    verbose = FALSE
 )
-knitr::kable(head(result[, c("pathway_name", "analytes_in_pathways",
-  "total_in_pathways", "fdr")], 2), digits = 3, row.names = FALSE)
+foreground_group <- "Oligo"
+foreground <- subset(markers$DEMs, cluster == foreground_group & logFC > 0)
+foreground <- foreground[order(
+    -foreground$mean_auc, -foreground$logFC,
+    foreground$gene
+), ]
+genes_of_interest <- head(foreground$gene, 20)
+head(foreground[, c("gene", "logFC", "mean_auc")])
+result <- fishersPathwayAnalysis(
+    Analyte = list(genes = genes_of_interest),
+    universe = list(genes = rownames(rna)),
+    pathway_index = pathway_index,
+    min_path_size = 5, pval_cutoff = NULL
+)
+head(result[, c(
+    "pathway_name", "analytes_in_pathways", "total_in_pathways",
+    "fdr"
+)], 2)
 ```
 
 These enrichments summarize the selected markers of one archived cell-state
@@ -245,47 +255,21 @@ to preserve identity and provenance.
 A pathway score summarizes measured expression. Interpreting pathway activation
 requires additional functional evidence.
 
-## Shared memberships in a synthetic example
+## Shared memberships
 
-This offline example gives one fictional gene two RaMP records. Both
-memberships contribute, with each gene counted once. `reference_example` defines
-three genes; `database_example` links four records to two pathways.
-`E_example` holds synthetic expression. `new_assay = "gene_ids"` names the
-identity assay; `new.assay = "gene_scores"` names standardized pathway scores.
+When one gene has several RaMP records, the index unites their pathway
+memberships and counts the gene once. Comparing `database_raw_size` (original
+RaMP records) with `database_size` (reconciled identities) in the coverage
+table below shows where this reconciliation applies.
 
-```{r shared-membership-example}
-reference_example <- data.frame(
-  hgnc_id = c("HGNC:1", "HGNC:2", "HGNC:3"),
-  symbol = c("GENEA", "GENEB", "GENEC"), entrez_id = c("101", "102", "103"),
-  uniprot_ids = c("U1", "U2", "U3")
-)
-database_example <- list(
-  source_df = data.frame(rampId = paste0("RAMP_G_", c(1, 2, 3, 4)),
-    sourceId = c("entrez:101", "uniprot:U1", "entrez:102", "entrez:103")),
-  analytehaspathway = data.frame(rampId = paste0("RAMP_G_", c(1, 3, 2, 4)),
-    pathwayRampId = c("P1", "P1", "P2", "P2")),
-  pathway = data.frame(pathwayRampId = c("P1", "P2"), pathwayName = c("First", "Second")),
-  gene_reference = reference_example
-)
-pathway_index_example <- buildPathwayIndex(database_example)
-example <- SpaMTPData::spaMTPExampleData()
-E_example <- matrix(seq_len(36), 3, dimnames = list(c("GENEA", "GENEB", "GENEC"), colnames(example)))
-SingleCellExperiment::altExp(example, "transcriptome") <-
-  SingleCellExperiment::SingleCellExperiment(assays = list(logcounts = log1p(E_example)))
-example <- createPathwayAssay(example, analyte_type = "genes", assay = "transcriptome",
-  slot = "logcounts", new_assay = "gene_ids", pathway_index = pathway_index_example)
-example <- createPathwayObject(example, assay = "gene_ids", new.assay = "gene_scores",
-  pathway_index = pathway_index_example)
-SummarizedExperiment::rowData(SingleCellExperiment::altExp(example, "gene_scores"))[
-  , c("pathwayRampId", "database_size", "measured_size", "coverage_fraction", "used_members")]
-```
 
 ## Pathway assays and spatial plots
 
-The real-data example uses all 339 RNA features across 240 locations and runs
-during builds. The [end-to-end guide](End_to_End_Workflow.html) uses the same
-data for descriptive rankings. Locations provide spatial observations within
-each specimen; biological replication requires independent specimens.
+We now reuse the 339-gene panel at the same 240 paired locations to map pathway
+scores back to the tissue. The [joint analysis below](#joint-ms-and-rna-pathways)
+then adds the measured MSI features. These locations provide spatial
+observations within one specimen; biological replication requires independent
+specimens.
 
 `pathway_index` is shared across aggregation, scoring and plotting. `pathways`
 stores scores; `coverage` records measured and excluded members. The two
@@ -293,52 +277,46 @@ prespecified Reactome pathways, **Neuronal System** and **Axon guidance**,
 connect the targeted brain panel to neural function. Their exact RaMP IDs are
 selected by name and source, then checked for at least five measured genes.
 
-`plots` sums member log-normalized expression, divides by the square root of
-member count, and standardizes each pathway across locations. Figure
-5.\@ref(fig:human-pathway-closure) uses a shared z-score colour bar; each map
-shows relative spatial variation within its pathway.
+`plotPathwaysSpatially()` sums member log-normalized expression, divides by
+the square root of member count, and standardizes each pathway across
+locations. Figure 5.\@ref(fig:human-pathway-closure) displays the resulting
+`pathway_maps` with a shared z-score colour bar; each map shows relative spatial
+variation within its pathway.
 
-```{r human-pathway-closure, eval=TRUE, fig.width=9, fig.height=4.6, fig.crop=FALSE, out.width="860px", warning=FALSE, fig.cap="Prespecified Reactome Neuronal System and Axon guidance pathway scores at the same 240 aligned glioma locations. Scores use log-normalized RNA and retain the archived coordinates. A shared z-score colour scale (-3 to 3) shows relative spatial variation within each pathway; the displayed titles identify the selected pathways."}
-spe <- createPathwayAssay(spe, analyte_type = "genes", assay = "SPT",
-  slot = "logcounts", new_assay = "gene_ids", pathway_index = pathway_index)
-spe <- createPathwayObject(spe, assay = "gene_ids", new.assay = "gene_pathways",
-  pathway_index = pathway_index, min_path_size = 5, max_path_size = 500)
-pathways <- SingleCellExperiment::altExp(spe, "gene_pathways")
-coverage <- S4Vectors::metadata(pathways)$pathway_mapping$coverage
-head(coverage[, c("pathwayRampId", "database_size", "database_raw_size",
-             "measured_size", "coverage_fraction", "excluded_conflict_count")])
-head(coverage$used_members)
-head(coverage$excluded_conflict_records)
+```{r human-pathway-closure, fig.width=9, fig.height=4.6, out.width="860px", fig.cap="Prespecified Reactome Neuronal System and Axon guidance pathway scores at the same 240 aligned glioma locations. Scores use log-normalized RNA and retain the archived coordinates. A shared z-score colour scale (-3 to 3) shows relative spatial variation within each pathway; the titles identify the selected pathways."}
+spe <- createPathwayAssay(spe,
+    analyte_type = "genes", assay = "SPT",
+    assayName = "logcounts", new_assay = "gene_ids",
+    pathway_index = pathway_index, verbose = FALSE
+)
+spe <- createPathwayObject(spe,
+    assay = "gene_ids", new.assay = "gene_pathways",
+    pathway_index = pathway_index, min_path_size = 5, max_path_size = 500
+)
+pathways <- altExp(spe, "gene_pathways")
+coverage <- metadata(pathways)$pathway_mapping$coverage
+head(coverage[, c(
+    "pathwayRampId", "database_size", "database_raw_size",
+    "measured_size", "coverage_fraction", "excluded_conflict_count"
+)])
 selected <- coverage$pathwayRampId[coverage$eligible &
-  coverage$pathwayName %in% c("Neuronal System", "Axon guidance") &
-  coverage$type == "reactome"]
-stopifnot(length(selected) == 2L)
-plots <- plotPathwaysSpatially(selected, spe, assay = "SPT", slot = "logcounts",
-  pathway_index = pathway_index)
-attr(plots, "pathway_coverage")
-display_plots <- lapply(plots, function(p) p +
-  ggplot2::labs(title = paste(strwrap(p$labels$title, width = 27), collapse = "\n")) +
-  ggplot2::theme(
-    plot.title = ggplot2::element_text(size = 11, face = "bold", hjust = 0.5),
-    plot.margin = ggplot2::margin(6, 8, 6, 8), legend.position = "bottom") +
-  ggplot2::guides(colour = ggplot2::guide_colourbar(
-    title.position = "top", barwidth = grid::unit(4, "cm"),
-    barheight = grid::unit(0.3, "cm"))))
-shared_legend <- cowplot::get_legend(display_plots[[1]])
-panels <- cowplot::plot_grid(
-  plotlist = lapply(display_plots, function(p) p +
-    ggplot2::theme(legend.position = "none")),
-  ncol = 2, labels = c("A", "B"), label_size = 11)
-cowplot::plot_grid(panels, shared_legend, ncol = 1, rel_heights = c(1, 0.16))
-stopifnot(ncol(pathways) == ncol(spe), length(plots) == 2L)
+    coverage$pathwayName %in% c("Neuronal System", "Axon guidance") &
+    coverage$type == "reactome"]
+pathway_maps <- plotPathwaysSpatially(selected, spe,
+    assay = "SPT",
+    assayName = "logcounts", pathway_index = pathway_index, combine = TRUE
+)
+attr(pathway_maps, "pathway_coverage")[, c("pathwayName", "measured_size", "used_size")]
+pathway_maps
 ```
 
 ## Duplicate features and audit outputs
 
 Derived assays preserve the selected layer name, and original measurements
 remain unchanged. Identical duplicate rows are removed; different rows mapping
-to one gene error by default. Choose `duplicate_genes = "mean"` or `"sum"`
-according to measurement scale; generally avoid summing log-expression.
+to one gene require an explicit aggregation choice. Choose
+`duplicate_genes = "mean"` for log-expression or `"sum"` when additive
+measurements are appropriate for the analysis.
 Use exact `pathwayRampId` values when display names are ambiguous.
 
 Coverage is available in `attr(result, "pathway_coverage")`, pathway score
@@ -364,35 +342,49 @@ For this comparison, `LogNormalize` uses the total of the retained MS panel
 at each location, with the same 10,000 scaling and `log1p` transform as RNA.
 Each modality is normalized separately.
 
-```{r human-joint-identities, warning=FALSE}
+The annotation summary reports reference formulae whose formula-based evidence
+is unavailable; `annotationCandidates(spe)$FormulaStatus` records their status.
+
+```{r human-joint-identities}
 positive_adducts <- c("M+H", "M+Na", "M+K")
 chem_index <- buildMZAnnotationIndex(database$chem_props,
-  polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts)
-spe <- annotateSM(spe, db = database$chem_props, index = chem_index,
-  assay = "main", raw.mz.column = "mz", ppm_error = 5,
-  polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts,
-  min_score = 0, return.only.annotated = FALSE,
-  save.intermediate = TRUE, verbose = FALSE)
+    polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts
+)
+spe <- annotateSM(spe,
+    db = database$chem_props, index = chem_index,
+    assay = "main", raw.mz.column = "mz", ppm_error = 5,
+    polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts,
+    min_score = 0, return.only.annotated = FALSE,
+    save.intermediate = TRUE, verbose = FALSE
+)
 spe <- normalizeSMData(spe, "LogNormalize", assay = "main", verbose = FALSE)
-spe <- createPathwayAssay(spe, analyte_type = "metabolites",
-  assay = "main", slot = "logcounts", new_assay = "compound_ids",
-  annotation_score_threshold = 0.05, metabolite_ambiguity = "exclude",
-  database = database, pathway_index = pathway_index)
-compounds <- SingleCellExperiment::altExp(spe, "compound_ids")
-compound_audit <- S4Vectors::metadata(compounds)$pathway_mapping
+spe <- createPathwayAssay(spe,
+    analyte_type = "metabolites",
+    assay = "main", assayName = "logcounts", new_assay = "compound_ids",
+    annotation_score_threshold = 0.05, metabolite_ambiguity = "exclude",
+    database = database, pathway_index = pathway_index, verbose = FALSE
+)
+compounds <- altExp(spe, "compound_ids")
+compound_audit <- metadata(compounds)$pathway_mapping
 retained_ms <- unique(unlist(compound_audit$original_features))
-identity_summary <- data.frame(
-  stage = c("Measured features", "Retained features", "Distinct identities",
-            "Ambiguous/conflicting features", "Unmapped features"),
-  RNA = c(nrow(rna), sum(!unresolved),
-    nrow(SingleCellExperiment::altExp(spe, "gene_ids")),
-    sum(SummarizedExperiment::rowData(rna)$spamtp_gene_status ==
-          "conflicting_ramp_records"),
-    sum(SummarizedExperiment::rowData(rna)$spamtp_gene_status == "not_in_ramp")),
-  MS = c(nrow(spe), length(retained_ms), nrow(compounds),
-    length(compound_audit$excluded_conflicts),
-    nrow(spe) - length(unique(compound_audit$inputs$mz_name))))
-knitr::kable(identity_summary, row.names = FALSE)
+gene_status <- rowData(rna)$spamtp_gene_status
+data.frame(
+    stage = c(
+        "Measured features", "Retained features", "Distinct identities",
+        "Ambiguous/conflicting features", "Unmapped features"
+    ),
+    RNA = c(
+        nrow(rna), sum(gene_status == "mapped"),
+        nrow(altExp(spe, "gene_ids")),
+        sum(gene_status == "conflicting_ramp_records"),
+        sum(gene_status == "not_in_ramp")
+    ),
+    MS = c(
+        nrow(spe), length(retained_ms), nrow(compounds),
+        length(compound_audit$excluded_conflicts),
+        nrow(spe) - length(unique(compound_audit$inputs$mz_name))
+    )
+)
 ```
 
 `r length(retained_ms)` MSI features contribute `r nrow(compounds)` distinct
@@ -403,60 +395,180 @@ score floor; RNA exclusions are detailed in the mapping audit above.
 
 ## Complete ranks and modality contributions
 
-We reuse the `Oligo` contrast. `ranks_for_group()` retains every mapped
-identity's mean-expression effect, including negative effects. Joint
-`findRegionalPathways()` root-mean-square (RMS) scales each modality's complete
-rank vector before pooling. Pathways with 5–500 measured identities are tested;
-BH correction covers the whole eligible family. The table selects five
-pathways with measured members from both modalities after testing and reports
-measured members and leading-edge members separately.
+We reuse the `Oligo` contrast. `findAllDEMs()` estimates every mapped gene's
+and compound's regional effect, including negative effects, and
+`findRegionalPathways()` ranks them for the `Oligo` region (`regions`). Joint
+ranking root-mean-square (RMS) scales each modality's complete rank vector
+before pooling. Pathways with 5–500 measured identities are tested; BH
+correction covers the whole eligible family. The result reports measured and
+leading-edge members of each modality; the table selects five pathways with
+measured members from both modalities after testing.
 
-```{r human-joint-pathways, warning=FALSE}
-ranks_for_group <- function(assay) {
-  fit <- findAllDEMs(spe, ident = "cout_labels", assay = assay,
-    slot = "logcounts", method = "markers", spatial_blocks = 0)
-  tab <- fit$DEMs[fit$DEMs$cluster == foreground_group, ]
-  matrix(tab$logFC, ncol = 1,
-    dimnames = list(tab$gene, foreground_group))
-}
-ranks <- list(genes = ranks_for_group("gene_ids"),
-              metabolites = ranks_for_group("compound_ids"))
-set.seed(1234)
-joint <- findRegionalPathways(spe, ident = "cout_labels", ranks = ranks,
-  pathway_index = pathway_index, rank_scale = "rms",
-  min_path_size = 5, max_path_size = 500)
-joint_coverage <- attr(joint, "pathway_coverage")[[foreground_group]]
-used <- joint_coverage$used_members[
-  match(joint$pathwayRampId, joint_coverage$pathwayRampId)]
-count_genes <- function(ids) sum(grepl("^RAMP_G_", ids))
-joint$measured_genes <- vapply(used, count_genes, integer(1))
-joint$measured_compounds <- joint$size - joint$measured_genes
-joint$leading_genes <- vapply(joint$leadingEdge, count_genes, integer(1))
-joint$leading_compounds <- lengths(joint$leadingEdge) - joint$leading_genes
-both <- joint[joint$measured_genes > 0 & joint$measured_compounds > 0, ]
+```{r human-joint-pathways}
+gene_markers <- findAllDEMs(spe,
+    ident = "cout_labels", assay = "gene_ids",
+    assayName = "logcounts", method = "markers", spatial_blocks = 0,
+    verbose = FALSE
+)
+compound_markers <- findAllDEMs(spe,
+    ident = "cout_labels", assay = "compound_ids",
+    assayName = "logcounts", method = "markers", spatial_blocks = 0,
+    verbose = FALSE
+)
+joint <- findRegionalPathways(spe,
+    ident = "cout_labels",
+    ranks = list(genes = gene_markers, metabolites = compound_markers),
+    regions = foreground_group, pathway_index = pathway_index,
+    rank_scale = "rms", min_path_size = 5, max_path_size = 500, verbose = FALSE
+)
+both <- joint[joint$measured_genes > 0 & joint$measured_metabolites > 0, ]
 both <- both[order(both$padj, -abs(both$NES), both$pathwayRampId), ]
-knitr::kable(head(both[, c("pathwayName", "NES", "padj", "measured_genes",
-  "measured_compounds", "leading_genes", "leading_compounds")], 5),
-  digits = 3, row.names = FALSE,
-  col.names = c("Pathway", "NES", "BH FDR", "Measured RNA", "Measured MS",
-                "Leading RNA", "Leading MS"))
-stopifnot(nrow(both) > 0L, ncol(compounds) == ncol(rna),
-          all(head(both$leading_compounds, 5) == 0))
+head(both[, c(
+    "pathwayName", "NES", "padj", "measured_genes",
+    "measured_metabolites", "leading_genes", "leading_metabolites"
+)], 5)
 ```
 
 Among `r format(nrow(joint), big.mark = ",")` tested pathways,
 `r nrow(both)` contain measured members from both modalities;
 `r if (sum(both$padj <= 0.05, na.rm = TRUE) == 0L) "none" else format(sum(both$padj <= 0.05, na.rm = TRUE), big.mark = ",")`
 of these meet BH FDR <= 0.05. Of those `r nrow(both)` pathways,
-`r sum(both$leading_genes > 0 & both$leading_compounds > 0)` have leading-edge
-members from both modalities. All leading-edge members in the five displayed
-pathways are RNA identities.
+`r sum(both$leading_genes > 0 & both$leading_metabolites > 0)` have leading-edge
+members from both modalities. In the five displayed pathways,
+`r sum(head(both$leading_metabolites, 5))` of
+`r sum(head(both$leading_genes + both$leading_metabolites, 5))` leading-edge
+members are compounds.
 
 Positive normalized enrichment score (NES) indicates enrichment towards higher expression in the archived
 `Oligo` group; negative NES indicates the opposite direction. Measured-member
 and leading-edge counts show each modality's contribution after RMS rank
 scaling. These exploratory rankings describe this single section's targeted
 RNA panel and putative compound assignments.
+
+## Compare regional pathway effects {#regional-pathway-plot}
+
+`plotRegionalPathways()` displays up to eight joint Reactome pathways by
+largest absolute NES, ordered by reference-membership overlap. Selection
+leaves the BH adjustment across the full tested family unchanged.
+
+```{r human-regional-pathway-plot, fig.width=8.5, fig.height=7, out.width="860px", fig.cap="Joint RNA/MSI pathways for Oligo. Colour shows NES, point area shows tested members, and a dark outline marks BH-adjusted P <= 0.05."}
+both_reactome <- subset(both, type == "reactome")
+plotRegionalPathways(both_reactome,
+    num_display = 8, database = database, verbose = FALSE
+)
+```
+
+## Explore a joint pathway network {#pathway-network}
+
+We illustrate **Transport of small molecules** (Reactome `R-HSA-382551`),
+chosen for coverage of both modalities without using its P value.
+The network reuses the `Oligo` ranking and `pathway_index` above to place
+measured gene and compound effects on archived interactions.
+
+```{r human-network}
+network_rows <- subset(joint,
+    type == "reactome" & sourceId == "R-HSA-382551"
+)
+network_rows[, c("pathwayName", "NES", "padj",
+    "measured_genes", "measured_metabolites")]
+database$ramp_reactome <- loadSpaMTPDatabase("ramp_reactome",
+    version = "3.0.7"
+)$ramp_reactome
+network_file <- pathwayNetworkPlots(spe,
+    ident = "cout_labels", regpathway = network_rows,
+    DE.list = list(genes = gene_markers$DEMs,
+        metabolites = compound_markers$DEMs),
+    selected_pathways = "R-HSA-382551",
+    ST_assay = "gene_ids", stAssayName = "logcounts",
+    SM_assay = "compound_ids", smAssayName = "logcounts",
+    database = database, pathway_index = pathway_index,
+    metabolite_detection = "annotated",
+    max_nodes = 80, label_mode = "detected", layout_mode = "force",
+    path = tempdir(), verbose = FALSE
+)
+attr(network_file, "network_summary")
+```
+
+The pathway contains `r network_rows$measured_genes` measured genes and
+`r network_rows$measured_metabolites` putative compounds. Reference neighbours
+and equivalent gene nodes make viewer counts differ from these identities.
+`max_nodes` prioritizes leading-edge members and annotated compounds;
+other measured genes can be pruned.
+
+`embedPathwayNetwork()` displays the viewer below. **Download network HTML**
+saves an offline copy; **Export SVG** saves the current diagram.
+
+```{r human-network-viewer}
+embedPathwayNetwork(network_file, height = 760,
+    title = "Human glioma: Transport of small molecules"
+)
+```
+
+Click a measured node to see its abundance at the 240 paired locations.
+Use **Layout** and dragging to arrange the graph; **Fit view** shows all nodes.
+**Details** opens the legends and spatial panel. Toggle
+**Focused network** to change the visible reference context. This example
+contains one pathway and one region.
+
+| Display element | Interpretation |
+|:--|:--|
+| Circles and rectangles | Reference gene and metabolite nodes, respectively |
+| Node colour | Descriptive regional expression effect; unavailable effects are grey |
+| Purple outline | A member of the GSEA leading edge |
+| Dark metabolite outline | An annotated pathway compound, including members outside the leading edge |
+| Edge colour, line and arrow | Archived interaction type and direction; see the edge legend |
+| Spatial abundance panel | The selected node's assay values at tissue coordinates, with its own scale and a plain background |
+
+Node effects are descriptive contrasts within one tissue section. Pathway NES
+and adjusted P values summarize the joint ranking; replicate-level inference
+requires independent specimens. MSI identities are putative, and reference
+neighbours include unmeasured nodes. Colours and outlines summarize these
+associations; pathway activation requires functional evidence.
+
+The paired maps show APOD RNA and the putative spermidine identity at the same
+locations, providing a static view of these two network members.
+
+```{r human-network-members, fig.width=8.5, fig.height=3.8, out.width="860px", fig.cap="APOD RNA and putative spermidine abundance at the same 240 paired locations. Each panel uses its own logcount scale. These single-section maps display the selected pathway members' spatial distributions."}
+plotSpatialFeature(spe, c("RAMP_G_000005676", "RAMP_C_000000954"),
+    assayName = "logcounts", ncol = 2,
+    labels = c("APOD (RNA)", "Spermidine candidate (MSI)")
+)
+```
+
+The filtered `compound_ids` assay has fixed identities, so annotation-score
+controls are hidden. With scored mass-feature input, those controls filter
+the exported overlay without recalculating enrichment.
+
+## Find pathway co-regulation without region labels {#pathway-coregulation}
+
+`runRAMPGeseca()` tests whether pathway genes co-vary across observations,
+using RNA without region labels or spatial coordinates. We center each gene
+and retain its variance (`scale = FALSE`), so high-variance genes can contribute
+more. Pathways require 5–100 measured genes.
+
+```{r human-pathway-coregulation}
+gene_expression <- assay(altExp(spe, "gene_ids"), "logcounts")
+coregulation <- with_seed(1234, runRAMPGeseca(gene_expression,
+    pathway_index = pathway_index, minSize = 5, maxSize = 100,
+    center = TRUE, scale = FALSE, eps = 0, verbose = FALSE
+))
+coregulation <- as.data.frame(coregulation)
+coregulation$pathwayName <- database$pathway$pathwayName[
+    match(coregulation$pathway, database$pathway$pathwayRampId)
+]
+head(coregulation[, c("pathwayName", "pctVar", "padj", "size")], 5)
+```
+
+`pctVar` is the variance captured by the aggregate pathway profile; `padj`
+compares it with random sets from the measured panel after multiple-testing
+adjustment. Interpret this covariance in the context of the targeted panel
+and cell composition. Spatial autocorrelation and pathway activation require
+separate assessment. Pathway names are reference labels; identical measured
+gene sets can share results under different names.
+
+Continue with [pathway resources](Pathway_Database_Integration.html) to inspect
+the interaction evidence available for these memberships, or the
+[complete workflow](End_to_End_Workflow.html) for spatial analysis and reports.
 
 # Session information
 

@@ -11,10 +11,12 @@ ppm_error(observed_mz, reference_mz, ppm)
 
 \item{reference_mz}{Numeric value defining the reference mz value.}
 
-\item{ppm}{Numeric value defining the maximum acceptable ppm_error/threshold for searching.}
+\item{ppm}{Numeric value defining the maximum acceptable ppm_error/threshold
+for searching.}
 }
 \value{
-Numeric value defining the ppm_error between the observed and reference mz value
+Numeric value defining the ppm_error between the observed and
+reference mz value
 }
 \description{
 Calculates the ppm error as a valve

@@ -18,5 +18,7 @@ function and pass the resulting list. This function changes point symbols,
 not tissue geometry or the physical pixel footprint.
 }
 \examples{
-utils::str(formals(pixelPlot))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+pixelPlot(imageMZPlot(spe, "ion1"))
 }

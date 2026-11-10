@@ -15,23 +15,30 @@ getMZMetadata(
 \arguments{
 \item{obj}{Bioconductor experiment containing annotated m/z values.}
 
-\item{mz}{Character string specifying the m/z value to return the metadata for.}
+\item{mz}{Character string specifying the m/z value to return the metadata
+for.}
 
-\item{assay}{Character string defining the primary or alternative experiment that contains the annotated metadata corresponding to the m/z values (default = "Spatial").}
+\item{assay}{Primary or alternative experiment containing the annotated
+m/z metadata. Defaults to \code{"main"}.}
 
 \item{metadata.column}{Character string corresponding to the assay feature
 metadata column to extract (default = "all_IsomerNames").}
 
-\item{separate}{Boolean indicating whether to separate the metadata string and return a vector. Note, if \code{TRUE} the metadata column should contain values separate by "; " (default = TRUE).}
+\item{separate}{Boolean indicating whether to separate the metadata string
+and return a vector. Note, if \code{TRUE} the metadata column should contain
+values separate by "; " (default = TRUE).}
 }
 \value{
-Vector of character strings containing the metadata for a specific mz value.
+Vector of character strings containing the metadata for a specific mz
+value.
 }
 \description{
 Gets values from a single metadata column for a respective m/z value.
 }
 \examples{
-utils::str(formals(getMZMetadata))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+getMZMetadata(spe, mz = "ion1")
 # getMZMetadata(SpaMTP, mz = "mz-100", metadata.column = "all_IsomerNames")
 
 ##### Example for getting metabolite annotation IDs for a m/z value

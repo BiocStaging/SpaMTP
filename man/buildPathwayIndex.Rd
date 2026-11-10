@@ -66,7 +66,9 @@ plots to obtain the same identities and membership sets. Pathways are keyed
 by pathwayRampId; identical display names never merge distinct pathways.
 }
 \examples{
-db <- list(analytehaspathway = data.frame(rampId = "RAMP_C_1",
-           pathwayRampId = "P1"), pathway = data.frame(pathwayRampId = "P1"))
+db <- list(analytehaspathway = data.frame(
+    rampId = "RAMP_C_1",
+    pathwayRampId = "P1"
+), pathway = data.frame(pathwayRampId = "P1"))
 buildPathwayIndex(db)$members
 }

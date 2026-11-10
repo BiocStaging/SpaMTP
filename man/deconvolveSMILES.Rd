@@ -8,7 +8,7 @@ deconvolveSMILES(
   smiles,
   backend = c("auto", "native"),
   strict = FALSE,
-  workers = getOption("SpaMTP.smiles_workers", 1L)
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
@@ -21,9 +21,7 @@ chemistry toolkits.}
 \item{strict}{Stop when any SMILES cannot be parsed. When \code{FALSE}, invalid
 rows are returned with \code{structure_valid = FALSE} and missing features.}
 
-\item{workers}{Number of forked workers used for unique SMILES on platforms
-supporting \code{parallel::mclapply()}. The default is controlled by
-\code{options(SpaMTP.smiles_workers = 1)}.}
+\item{BPPARAM}{BiocParallel execution parameters; serial by default.}
 }
 \value{
 A data frame with functional-group counts, ion-mode scores, and a
@@ -47,5 +45,5 @@ chemistry calculations. Stereochemistry is accepted but does not change the
 counts.
 }
 \examples{
-utils::str(formals(deconvolveSMILES))
+deconvolveSMILES(c("CCO", "CC(O)C(O)=O"))
 }

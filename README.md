@@ -11,32 +11,20 @@ and paired modalities. Seurat conversion is optional and explicit.
 
 ## Installation
 
-SpaMTP and SpaMTPdb are under Bioconductor review. The source packages require
-**R >= 4.6.0**. The installation example uses **Bioconductor 3.24**; Pandoc
-(included with RStudio) is needed to build the vignettes.
-
-Start a fresh R session and run:
+SpaMTP requires **R >= 4.6.0**. Install it and its companion data packages
+from Bioconductor:
 
 ```r
-source("https://raw.githubusercontent.com/BiocStaging/SpaMTP/devel/inst/workflows/install_spamtp.R")
-installSpaMTP(biocVersion = "3.24")
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("SpaMTP", "SpaMTPData"))
 ```
 
-The installer raises the download timeout, installs the companion packages
-before SpaMTP, and builds all seven vignettes. It uses a personal R library
-and restores session settings afterwards. For an installation without local
-vignettes, use `buildVignettes = FALSE`.
-
-| Package | Role | Installation source during review |
-|---|---|---|
-| [SpaMTPdb](https://github.com/BCRL-tylu/SpaMTPdb) >= 0.99.4 | Versioned RaMP annotation resources and a human HGNC reference | BiocStaging `devel`, or Bioconductor when available |
-| [SpaMTPData](https://bioconductor.org/packages/SpaMTPData/) >= 0.99.5 | Experimental datasets and example data | Bioconductor |
-| SpaMTP | Analysis, annotation, visualisation and integration | BiocStaging `devel` |
-
-See the [installation and workflow guide](inst/workflows/README.md) for
-manual installation, local checkouts, Windows/Pandoc setup and installer
-options. SpaMTPdb must be installed explicitly before a manual staging
-installation of SpaMTP.
+| Package | Role |
+|---|---|
+| SpaMTP | Analysis, annotation, visualisation and integration |
+| SpaMTPdb | Versioned RaMP annotation resources and a human HGNC reference (installed with SpaMTP) |
+| [SpaMTPData](https://bioconductor.org/packages/SpaMTPData/) | Experimental datasets and example data |
 
 ## Quick start
 
@@ -46,16 +34,14 @@ SpaMTP, so it needs no data download after installation. The 79 features and
 
 ```r
 library(SpaMTP)
+library(SpatialExperiment)
 
-bladder <- readRDS(system.file(
-    "extdata", "bladder_demo.rds", package = "SpaMTP"
-))
-dim(bladder)
-SummarizedExperiment::assayNames(bladder)
+bladder <- readRDS(system.file("extdata", "bladder_demo.rds", package = "SpaMTP"))
+bladder
 
-# Display one measured ion using its archived, processed intensities.
-plotSpatialFeature(bladder, features = rownames(bladder)[1L],
-                   assayName = "counts")
+# Archived tissue compartments, then one measured ion.
+plotSpatialLabels(bladder, "compartment")
+plotSpatialFeature(bladder, findNearestMZ(bladder, 798.54114), assayName = "counts")
 ```
 
 The [introductory vignette](vignettes/SpaMTP_Bioconductor.Rmd) explains the

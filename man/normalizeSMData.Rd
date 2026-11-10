@@ -13,8 +13,9 @@ normalizeSMData(
   normalisation.type = "TIC",
   scale.factor = NULL,
   assay = "main",
-  slot = "counts",
-  verbose = TRUE
+  assayName = "counts",
+  verbose = TRUE,
+  libSizes = NULL
 )
 
 \S4method{normalizeSMData}{SingleCellExperiment}(
@@ -22,8 +23,9 @@ normalizeSMData(
   normalisation.type = "TIC",
   scale.factor = NULL,
   assay = "main",
-  slot = "counts",
-  verbose = TRUE
+  assayName = "counts",
+  verbose = TRUE,
+  libSizes = NULL
 )
 
 \S4method{normalizeSMData}{MSImagingExperiment}(
@@ -31,8 +33,9 @@ normalizeSMData(
   normalisation.type = "TIC",
   scale.factor = NULL,
   assay = "main",
-  slot = "counts",
-  verbose = TRUE
+  assayName = "counts",
+  verbose = TRUE,
+  libSizes = NULL
 )
 
 \S4method{normalizeSMData}{MSImagingArrays}(
@@ -40,8 +43,9 @@ normalizeSMData(
   normalisation.type = "TIC",
   scale.factor = NULL,
   assay = "main",
-  slot = "counts",
-  verbose = TRUE
+  assayName = "counts",
+  verbose = TRUE,
+  libSizes = NULL
 )
 
 \S4method{normalizeSMData}{ANY}(
@@ -49,8 +53,9 @@ normalizeSMData(
   normalisation.type = "TIC",
   scale.factor = NULL,
   assay = "main",
-  slot = "counts",
-  verbose = TRUE
+  assayName = "counts",
+  verbose = TRUE,
+  libSizes = NULL
 )
 }
 \arguments{
@@ -69,10 +74,17 @@ pixels remain zero. Cardinal requires NULL and uses its own TIC scaling.}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment.
+\item{assayName}{Expression assay name within the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
+
+\item{libSizes}{Optional pixel totals used instead of the column sums of
+\code{assayName}: one non-negative number per pixel, or the name of a numeric
+\code{colData()} column. Use this when the assay holds a feature subset but the
+full-spectrum total ion current (TIC) was recorded, so that subsetting does
+not change the normalization denominator.}
 }
 \value{
 An object of the same container family with normalized values.
@@ -85,6 +97,26 @@ Cardinal normalization follows Cardinal's deferred-processing model;
 queued steps are executed by Cardinal::process(), binSpaMTP(), or conversion
 of an aligned experiment to SpatialExperiment.
 }
+\details{
+Sparse input stays sparse while at most half of the normalized
+values are nonzero; otherwise the result is stored as an ordinary
+\code{matrix}, which needs less memory than a dense-valued \code{dgCMatrix}.
+\code{DelayedArray} input (for example an \code{HDF5Array}) returns a delayed
+result, so file-backed intensities are not loaded into memory.
+}
 \examples{
-utils::str(formals(normalizeSMData))
+spe <- SpatialExperiment::SpatialExperiment(
+    assays = list(counts = matrix(c(1, 0, 3, 2, 2, 0),
+        nrow = 2,
+        dimnames = list(c("mz-100", "mz-200"), paste0("p", 1:3))
+    )),
+    spatialCoords = cbind(x = 1:3, y = 1)
+)
+spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
+SummarizedExperiment::assay(spe, "logcounts")
+
+## Normalize a feature subset by recorded full-spectrum totals
+spe$tic <- c(10, 20, 5)
+spe <- normalizeSMData(spe, "RC", libSizes = "tic", verbose = FALSE)
+SummarizedExperiment::assay(spe, "normcounts")
 }

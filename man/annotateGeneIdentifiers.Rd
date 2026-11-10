@@ -39,5 +39,11 @@ rows that map to one gene are annotated, not silently summed; pathway
 enrichment performs gene-level deduplication separately.
 }
 \examples{
-utils::str(formals(annotateGeneIdentifiers))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+spe <- annotateGeneIdentifiers(spe,
+    assay = "transcriptome",
+    database = spamtp_example$database, gene_reference = spamtp_example$gene_reference
+)
+head(SummarizedExperiment::rowData(SingleCellExperiment::altExp(spe, "transcriptome")))
 }

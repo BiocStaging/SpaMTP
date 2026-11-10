@@ -49,5 +49,11 @@ are stored in \code{imgData()} and may remain path-backed by setting
 \code{load = FALSE}.
 }
 \examples{
-methods::showMethods("addSpatialImage")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+image_file <- tempfile(fileext = ".png")
+png::writePNG(matrix(seq(0, 1, length.out = 24), 4, 6), image_file)
+spe <- addSpatialImage(spe, image_file, imageId = "optical")
+SpatialExperiment::imgData(spe)
+unlink(image_file)
 }

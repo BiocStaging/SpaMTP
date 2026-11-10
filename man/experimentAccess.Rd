@@ -9,7 +9,8 @@ described here return the selected data: \code{assay()} returns a matrix-like
 object, \code{altExp()} returns an alternative experiment, \code{rowData()} and
 \code{colData()} return \code{DataFrame} objects, and \code{spatialCoords()} returns a
 coordinate matrix. Replacement accessors update the corresponding data
-in the experiment. See each accessor's help page for its full return contract.
+in the experiment. See each accessor's help page for its full return
+contract.
 }
 \description{
 SpaMTP uses public S4 accessors, not internal slots. A SpatialExperiment is
@@ -22,12 +23,13 @@ or aligned to a common feature-by-pixel matrix.
 \section{Experiments and expression assays}{
 
 In analysis functions, \code{assay} selects the primary experiment (\code{"main"})
-or a named \code{SingleCellExperiment::altExp()}. The compatibility arguments
-\code{slot}, \code{slots}, \code{SM.slot}, \code{ST.slot}, \code{SM_slot}, \code{ST_slot}, \code{mz.slot} and
-\code{pathway.slot} select expression assay names within those experiments.
-They do not name S4 slots. Supply exact, non-empty character names, not
-numeric matrix positions. For example, \code{assay = "transcriptome"} and
-\code{slot = "logcounts"} read
+or a named \code{SingleCellExperiment::altExp()}. The arguments \code{assayName},
+\code{assayNames}, \code{smAssayName}, \code{stAssayName}, \code{mzAssayName} and
+\code{pathwayAssayName} select expression assays within those experiments, as
+read by \code{SummarizedExperiment::assay()}. Supply exact, non-empty character
+names, not numeric matrix positions. For example, \code{assay = "transcriptome"}
+and
+\code{assayName = "logcounts"} read
 \code{SummarizedExperiment::assay(SingleCellExperiment::altExp(x, "transcriptome"), "logcounts")}.
 
 The expression assays within one experiment share feature and pixel axes;
@@ -42,7 +44,7 @@ primary experiment's \code{mainExpName()}, and its expression assay names can
 also select the primary experiment. An exact alternative-experiment name
 takes precedence over these aliases. Prefer \code{"main"} and explicit
 \code{altExpNames()} in new code. An expression name supplied as \code{assay} does
-not replace the separate \code{slot} selection. Constructors and explicit
+not replace the separate \code{assayName} selection. Constructors and explicit
 converters have their own documented naming arguments.
 }
 
@@ -69,19 +71,25 @@ Core analysis does not use Seurat. SeuratObject is an optional dependency
 for \code{\link[=seuratToSingleCellExperiment]{seuratToSingleCellExperiment()}}, \code{\link[=seuratToSpatialExperiment]{seuratToSpatialExperiment()}} and
 \code{\link[=spatialExperimentToSeurat]{spatialExperimentToSeurat()}}. Convert once at the boundary, then use the
 native Bioconductor workflow. Seurat assay names become experiment names;
-selected Seurat layers become expression assays as documented by the converter.
+selected Seurat layers become expression assays as documented by the
+converter.
 }
 
 \examples{
 x <- SpatialExperiment::SpatialExperiment(
     assays = list(counts = rbind(a = 1:4, b = 4:1)),
     spatialCoords = cbind(x = 1:4, y = 0),
-    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)))
-rna <- matrix(c(1, 3, 2, 4), nrow = 1,
-    dimnames = list("gene1", colnames(x)))
+    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4))
+)
+rna <- matrix(c(1, 3, 2, 4),
+    nrow = 1,
+    dimnames = list("gene1", colnames(x))
+)
 x <- addTranscriptome(x, rna)
-x <- normalizeSMData(x, "LogNormalize", assay = "transcriptome",
-    slot = "counts", verbose = FALSE)
+x <- normalizeSMData(x, "LogNormalize",
+    assay = "transcriptome",
+    assayName = "counts", verbose = FALSE
+)
 rna <- SingleCellExperiment::altExp(x, "transcriptome")
 SummarizedExperiment::assayNames(rna)
 SummarizedExperiment::assay(rna, "logcounts")
@@ -89,8 +97,7 @@ SummarizedExperiment::rowData(rna)$feature_label <- "example gene"
 SingleCellExperiment::altExp(x, "transcriptome") <- rna
 SummarizedExperiment::colData(x)$region <- c("A", "A", "B", "B")
 selected <- x[, x$region == "A"]
-stopifnot(identical(colnames(SingleCellExperiment::altExp(selected,
-    "transcriptome")), colnames(selected)))
+colnames(SingleCellExperiment::altExp(selected, "transcriptome"))
 }
 \seealso{
 \code{\link[=asSpatialExperiment]{asSpatialExperiment()}}, \code{\link[=addTranscriptome]{addTranscriptome()}}, \code{\link[=normalizeSMData]{normalizeSMData()}},

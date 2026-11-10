@@ -11,7 +11,7 @@ predictAdductsFromSMILES(
   rules = NULL,
   min_structure_score = 0.05,
   backend = c("auto", "native"),
-  workers = getOption("SpaMTP.smiles_workers", 1L)
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
@@ -28,7 +28,7 @@ use the matrix-profile default or positive mode.}
 \item{min_structure_score}{Minimum rule-specific structural prior marked as
 retained.}
 
-\item{backend, workers}{Passed to \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
+\item{backend, BPPARAM}{Passed to \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
 }
 \value{
 A ranked data frame with one row per structure/rule combination.
@@ -40,5 +40,6 @@ for auditing which protonation, deprotonation, alkali-binding, or reactive
 matrix hypotheses SpaMTP will retain for a structure.
 }
 \examples{
-utils::str(formals(predictAdductsFromSMILES))
+predicted <- predictAdductsFromSMILES("CC(O)C(O)=O", polarity = "negative")
+head(predicted[, c("adduct", "structure_score", "retained")])
 }

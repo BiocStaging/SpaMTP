@@ -10,9 +10,9 @@ pathwayNetworkPlots(
   regpathway,
   DE.list,
   selected_pathways = NULL,
-  path = getwd(),
-  SM_slot = "counts",
-  ST_slot = "counts",
+  path = tempdir(),
+  smAssayName = "counts",
+  stAssayName = "counts",
   colour_palette = NULL,
   SM_assay = "main",
   ST_assay = "transcriptome",
@@ -61,12 +61,13 @@ remain unavailable. A named list is recommended.}
 case-insensitive. When \code{NULL}, the most important pathways are selected by
 summed absolute NES.}
 
-\item{path}{Output directory for the generated HTML file.}
+\item{path}{Output directory for the generated HTML file. Defaults to the
+session's temporary directory; supply a persistent directory to retain it.}
 
-\item{SM_slot}{Expression assay name within the \code{SM_assay} experiment.
+\item{smAssayName}{Expression assay name within the \code{SM_assay} experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{ST_slot}{Expression assay name within the \code{ST_assay} experiment.
+\item{stAssayName}{Expression assay name within the \code{ST_assay} experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{colour_palette}{Colours used for the spatial abundance raster.}
@@ -84,16 +85,20 @@ explicitly.}
 
 \item{annotation_score_threshold}{Minimum indexed annotation score used for
 metabolite matching. When \code{NULL}, the threshold recorded by
-\code{findRegionalPathways()} is reused (default = \code{NULL}).}
+\code{findRegionalPathways()} is reused (default = \code{NULL}).
+An explicit compound-identity assay is already filtered; this argument
+does not filter it again and annotation-score controls are hidden.}
 
 \item{annotation_score_floor}{Lowest annotation score embedded in the HTML
 for interactive filtering. It is automatically lowered when the initial
-\code{annotation_score_threshold} is smaller (default = \code{0.01}).}
+\code{annotation_score_threshold} is smaller (default = \code{0.01}).
+Only applies to original mass-feature input with scored candidates.}
 
 \item{metabolite_detection}{Which metabolite nodes receive detected styling.
 \code{"leading_edge"} uses only GSEA leading-edge metabolites;
-\code{"annotated"} also includes every score-filtered annotation belonging to
-the selected pathway, regardless of DE significance.}
+\code{"annotated"} also includes retained compound identities, or score-filtered
+annotations for original mass-feature input, belonging to the selected
+pathway. These compounds need not be in the GSEA leading edge.}
 
 \item{image}{Optional image ID validated against imgData. Coordinates always
 come from spatialCoords; the optical raster is not embedded in this viewer.}
@@ -103,9 +108,11 @@ come from spatialCoords; the optical raster is not embedded in this viewer.}
 \item{top_n_pathways}{Number of pathways selected when \code{selected_pathways} is
 \code{NULL}.}
 
-\item{max_nodes}{Maximum number of nodes per cluster-pathway view. Detected
-leading-edge analytes are always retained, followed by their neighbours and
-high-degree nodes. Use \code{Inf} to disable pruning.}
+\item{max_nodes}{Target maximum number of reference nodes per
+cluster-pathway view. Leading-edge analytes and annotated compounds are
+retained, followed by their neighbours and high-degree nodes. Required
+members and isolated measured nodes can exceed this limit; other measured
+genes can be pruned. Use \code{Inf} to disable pruning.}
 
 \item{label_mode}{Initial node-label mode: detected nodes only, all nodes, or
 no labels. It can also be changed interactively.}
@@ -149,16 +156,23 @@ records and ambiguous symbols are excluded and recorded in the audit.}
 
 \item{gene_reference_local_dir}{Local HGNC resource directory.}
 
-\item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
-orthology map. Use a separately curated species-specific database for other
-organisms.}
+\item{organism}{Species of the input. HGNC mapping requires \code{"Homo sapiens"}.
+RaMP-only mapping (\code{gene_mapping = "ramp"}, or a pathway index without an
+HGNC index) does not perform orthology conversion. Non-human gene analysis
+requires a separately curated species-specific database; using human
+topology for compound-only context does not establish conserved interactions.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 }
 \value{
-Invisibly returns the generated HTML file path.
+Invisibly returns the generated HTML file path. Its
+\code{network_summary} attribute is a data frame with one row per non-empty
+region and pathway network (\code{region}, \code{pathway}, \code{nodes}, \code{edges},
+\code{measured_compounds}); \code{pathway_coverage} records measured pathway
+coverage.
 }
 \description{
 Builds a self-contained data payload and an interactive D3 visualization for
@@ -172,9 +186,37 @@ display, the same resolved gene value is attached to its equivalent raw
 RaMP topology nodes; this does not introduce additional enrichment tests.
 }
 \examples{
-utils::str(formals(pathwayNetworkPlots))
-# pathwayNetworkPlots(
-#   SpaMTP, ident = "Custom_ident", regpathway = regpathway,
-#   DE.list = DE.list, selected_pathways = "WP1902"
-# )
+data(spamtp_example)
+spe <- spamtp_example$experiment
+db <- spamtp_example$database
+db$ramp_db_metadata <- list(ramp_version = "example")
+db$pathway$sourceId <- paste0("WP", 1:3)
+db$pathway$type <- "WikiPathways"
+db$ramp_wikipathway <- list(list(
+    id = "WP1", title = "Example pathway 1",
+    protEdges = data.frame(
+        src = "RAMP_G_1", dest = "RAMP_G_2",
+        directed = 1L, reaction_type = 1L
+    )
+))
+regional <- data.frame(
+    pathwayRampId = "P1", pathwayName = "Example pathway 1",
+    sourceId = "WP1", type = "WikiPathways", Cluster_id = "left",
+    NES = 1.5, padj = 0.03, leadingEdge = I(list(c("RAMP_G_1", "RAMP_G_2")))
+)
+de <- data.frame(
+    gene = c("GENE1", "GENE2"), cluster = "left",
+    avg_log2FC = c(1, 0.5), p_val_adj = c(0.01, 0.02)
+)
+folder <- tempfile("network-")
+dir.create(folder)
+output <- pathwayNetworkPlots(spe, "region", regional, list(genes = de),
+    analyte_types = "genes", database = db, path = folder, verbose = FALSE
+)
+basename(output)
+unlink(folder, recursive = TRUE)
+}
+\seealso{
+\code{\link[=embedPathwayNetwork]{embedPathwayNetwork()}} to include the offline viewer in an HTML
+document with a standalone download.
 }

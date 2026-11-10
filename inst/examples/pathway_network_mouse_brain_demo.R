@@ -35,41 +35,55 @@ mouseBrainNetworks <- function(object, database, outputDir,
     }
     spectrum <- data.frame(mz = mz, intensity = Matrix::rowMeans(counts))
     # Recompute scored annotations; do not reuse the archive's mass-only cache.
-    object <- SpaMTP::annotateSM(object, db = database$chem_props,
+    object <- SpaMTP::annotateSM(object,
+        db = database$chem_props,
         assay = "main", raw.mz.column = "mz", ppm_error = 5,
         polarity = "positive", maldi_matrix = "DHB",
         ms1_spectrum = spectrum, min_score = 0,
-        return.only.annotated = FALSE, save.intermediate = TRUE)
+        return.only.annotated = FALSE, save.intermediate = TRUE
+    )
     object <- SpaMTP::normalizeSMData(object,
-        normalisation.type = "LogNormalize", verbose = FALSE)
+        normalisation.type = "LogNormalize", verbose = FALSE
+    )
     SummarizedExperiment::assay(object, "workflow") <-
         SummarizedExperiment::assay(object, "logcounts") / log(2)
 
     # Mouse genes are retained in altExp(), but are not mapped to human HGNC.
     # This demonstration tests compound sets, not mouse gene pathways.
     index <- SpaMTP::buildPathwayIndex(database,
-        gene_mapping = "ramp", organism = "Mus musculus")
-    object <- SpaMTP::createPathwayAssay(object, assay = "main",
-        slot = "workflow", new_assay = "compound", database = database,
+        gene_mapping = "ramp", organism = "Mus musculus"
+    )
+    object <- SpaMTP::createPathwayAssay(object,
+        assay = "main",
+        assayName = "workflow", new_assay = "compound", database = database,
         pathway_index = index, organism = "Mus musculus",
         annotation_source = "current", annotation_score_threshold = 0.05,
-        metabolite_ambiguity = "exclude", verbose = FALSE)
+        metabolite_ambiguity = "exclude", verbose = FALSE
+    )
     compounds <- SingleCellExperiment::altExp(object, "compound")
-    result <- list(object = object, excluded_observations = excluded,
+    result <- list(
+        object = object, excluded_observations = excluded,
         pathway_index = index$provenance,
         compound_mapping = S4Vectors::metadata(compounds)$pathway_mapping,
         annotation = SpaMTP::annotationInfo(object), networks = list(),
-        settings = list(region = ident, analyte_types = "metabolites",
+        settings = list(
+            region = ident, analyte_types = "metabolites",
             organism = "Mus musculus", min_path_size = minPathSize,
             max_path_size = maxPathSize, annotation_score_threshold = 0.05,
             metabolite_ambiguity = "exclude", ppm = 5, maldi_matrix = "DHB",
-            interpretation = paste("Single-specimen descriptive region effects;",
+            interpretation = paste(
+                "Single-specimen descriptive region effects;",
                 "competitive pathway P values are not biological-replicate tests.",
-                "RNA is retained but is not mapped to a human gene reference.")))
+                "RNA is retained but is not mapped to a human gene reference."
+            )
+        )
+    )
     if (nrow(compounds) >= 2L) {
-        markers <- SpaMTP::findAllDEMs(object, ident = ident,
-            assay = "compound", slot = "workflow", method = "markers",
-            spatial_blocks = 0, verbose = FALSE)
+        markers <- SpaMTP::findAllDEMs(object,
+            ident = ident,
+            assay = "compound", assayName = "workflow", method = "markers",
+            spatial_blocks = 0, verbose = FALSE
+        )
         result$markers <- markers
         if (identical(markers$status, "completed")) {
             # Retain every measured identity in each rank vector. Region
@@ -79,11 +93,15 @@ mouseBrainNetworks <- function(object, database, outputDir,
                 tab$logFC[match(rownames(markers$expression), tab$gene)]
             }, numeric(nrow(markers$expression)))
             dimnames(ranks) <- dimnames(markers$expression)
-            result$regional <- withr::with_seed(1234,
-                SpaMTP::findRegionalPathways(object, ident = ident,
+            result$regional <- withr::with_seed(
+                1234,
+                SpaMTP::findRegionalPathways(object,
+                    ident = ident,
                     ranks = list(metabolites = ranks), pathway_index = index,
                     min_path_size = minPathSize, max_path_size = maxPathSize,
-                    organism = "Mus musculus", verbose = FALSE))
+                    organism = "Mus musculus", verbose = FALSE
+                )
+            )
         }
     }
     if (!dir.create(outputDir, recursive = TRUE)) {
@@ -99,12 +117,13 @@ mouseBrainNetworks <- function(object, database, outputDir,
             result$networks[[mode]] <- SpaMTP::pathwayNetworkPlots(object,
                 ident = ident, regpathway = result$regional,
                 DE.list = list(metabolites = result$markers$DEMs),
-                SM_assay = "compound", SM_slot = "workflow",
+                SM_assay = "compound", smAssayName = "workflow",
                 analyte_types = "metabolites", metabolite_detection = mode,
                 database = database, pathway_index = index,
                 organism = "Mus musculus", image = NULL, path = folder,
                 top_n_pathways = 4, max_nodes = 350,
-                max_spatial_points = 10000, verbose = FALSE)
+                max_spatial_points = 10000, verbose = FALSE
+            )
         }
     } else {
         message("No eligible compound pathways; annotation and coverage audits are saved.")
@@ -115,9 +134,9 @@ mouseBrainNetworks <- function(object, database, outputDir,
 }
 
 runMouseBrainNetworkDemo <- function(nativeDir = NULL, databaseDir = NULL,
-                                    outputDir, ident = "RegionLoupe",
-                                    offline = !is.null(nativeDir) &&
-                                        !is.null(databaseDir)) {
+                                     outputDir, ident = "RegionLoupe",
+                                     offline = !is.null(nativeDir) &&
+                                         !is.null(databaseDir)) {
     if (file.exists(outputDir)) stop("Supply a new output directory.")
     for (package in c("SpaMTP", "SpaMTPData")) {
         if (!requireNamespace(package, quietly = TRUE)) {
@@ -132,18 +151,25 @@ runMouseBrainNetworkDemo <- function(nativeDir = NULL, databaseDir = NULL,
         withr::local_options(list(SpaMTPdb.resource_dir = databaseDir))
     }
     object <- SpaMTPData::spaMTPData("mouse_brain_dhb_striatum",
-        version = "1.1.0", local_dir = nativeDir, offline = offline)
-    database <- SpaMTP::loadSpaMTPDatabase(c("chem_props", "source_df",
-        "analytehaspathway", "pathway", "ramp_db_metadata",
-        "ramp_wikipathway", "ramp_reactome", "ramp_kegg", "ramp_hmdb"),
-        version = "3.0.7", local_dir = databaseDir, offline = offline)
+        version = "1.1.0", local_dir = nativeDir, offline = offline
+    )
+    database <- SpaMTP::loadSpaMTPDatabase(
+        c(
+            "chem_props", "source_df",
+            "analytehaspathway", "pathway", "ramp_db_metadata",
+            "ramp_wikipathway", "ramp_reactome", "ramp_kegg", "ramp_hmdb"
+        ),
+        version = "3.0.7", local_dir = databaseDir, offline = offline
+    )
     mouseBrainNetworks(object, database, outputDir, ident = ident)
 }
 
 mouseBrainNetworkMain <- function(args = commandArgs(trailingOnly = TRUE)) {
     if (!length(args) %in% c(3L, 4L)) {
-        stop(paste("Usage: Rscript pathway_network_mouse_brain_demo.R",
-            "NATIVE_1.1.0_DIR DB_3.0.7_DIR NEW_OUTPUT_DIR [REGION_COLUMN]"))
+        stop(paste(
+            "Usage: Rscript pathway_network_mouse_brain_demo.R",
+            "NATIVE_1.1.0_DIR DB_3.0.7_DIR NEW_OUTPUT_DIR [REGION_COLUMN]"
+        ))
     }
     ident <- if (length(args) == 4L) args[4] else "RegionLoupe"
     runMouseBrainNetworkDemo(args[1], args[2], args[3], ident)

@@ -26,26 +26,37 @@ an embedding such as the result of \code{runSpatialGraphPCA()}.}
 \item{cluster.name}{Column name in \code{SummarizedExperiment::colData(data)}
 for cluster labels (default = \code{"spatial_clusters"}).}
 
-\item{clusters}{Integer defining the number of clusters to form (default = 8).}
+\item{clusters}{Integer defining the number of clusters to form (default =
+8).}
 
-\item{iter.max}{Integer defining the maximum number of iterations allowed (default = 10).}
+\item{iter.max}{Integer defining the maximum number of iterations allowed
+(default = 10).}
 
-\item{nstart}{Integer stating the number of random sets to choose (default = 1).}
+\item{nstart}{Integer stating the number of random sets to choose (default =
+1).}
 
-\item{algorithm}{Character string defining the K-means algorithm to use. One of \code{"Hartigan-Wong"}, \code{"Lloyd"}, \code{"Forgy"}, or \code{"MacQueen"} (default = "Hartigan-Wong").}
+\item{algorithm}{Character string defining the K-means algorithm to use. One
+of \code{"Hartigan-Wong"}, \code{"Lloyd"}, \code{"Forgy"}, or \code{"MacQueen"} (default =
+"Hartigan-Wong").}
 
-\item{trace}{Logical boolean indicating whether to produce tracing information on the progress of the algorithm (default = FALSE).}
+\item{trace}{Logical boolean indicating whether to produce tracing
+information on the progress of the algorithm (default = FALSE).}
 
-\item{seed}{Integer of the random seed to use for reproducibility (default = 888).}
+\item{seed}{Integer of the random seed to use for reproducibility (default =
+888).}
 }
 \value{
 The input container with cluster assignments in
 \code{SummarizedExperiment::colData(data)[[cluster.name]]}.
 }
 \description{
-Runs K-means on an embedding read through \code{SingleCellExperiment::reducedDim()}
+Runs K-means on an embedding read through
+\code{SingleCellExperiment::reducedDim()}
 and writes pixel cluster labels to \code{SummarizedExperiment::colData()}.
 }
 \examples{
-utils::str(formals(getKmeanClusters))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+spe <- getKmeanClusters(spe, reduction = "pca", clusters = 2)
+table(spe$spatial_clusters)
 }

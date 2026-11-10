@@ -9,15 +9,16 @@ calculateSingleAnnotationStatistics(
   data,
   mz.assay = "main",
   pathway.assay = "pathway",
-  mz.slot = "counts",
-  pathway.slot = "pathwayScores",
+  mzAssayName = "counts",
+  pathwayAssayName = "pathwayScores",
   corr_theshold = 0,
   corr_weight = 1,
   n_weight = 1,
   database = NULL,
   database_version = "latest",
   database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL
+  database_local_dir = NULL,
+  mz.ppm = 5
 )
 }
 \arguments{
@@ -29,10 +30,10 @@ calculateSingleAnnotationStatistics(
 
 \item{pathway.assay}{Alternative experiment containing pathway-level scores.}
 
-\item{mz.slot}{Expression assay in the MSI experiment.
+\item{mzAssayName}{Expression assay in the MSI experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{pathway.slot}{Expression assay in the pathway experiment.
+\item{pathwayAssayName}{Expression assay in the pathway experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{corr_theshold}{Minimum signed pathway correlation (legacy spelling).}
@@ -41,11 +42,15 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{database}{Optional named list from loadSpaMTPDatabase.}
 
-\item{database_version, database_source, database_local_dir}{Database selection;
+\item{database_version, database_source, database_local_dir}{Database
+selection;
 see loadSpaMTPDatabase.}
+
+\item{mz.ppm}{Maximum ppm distance for a numeric m/z query (default 5).
+Equally close features require an exact character feature ID.}
 }
 \value{
-A tibble ordered by decreasing score, containing metabolite,
+A data frame ordered by decreasing score, containing metabolite,
 ramp_id, n_sig_path, max_cor, z_score, pval and pval_adj.
 }
 \description{
@@ -76,5 +81,11 @@ Older all_Isomers_IDs columns can be mapped via source_df$sourceId.
 Duplicate candidate IDs are counted once.
 }
 \examples{
-utils::str(formals(calculateSingleAnnotationStatistics))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+spe <- createPathwayObject(spe, assay = "transcriptome", pathway_index = index)
+calculateSingleAnnotationStatistics(149.04445, spe,
+    database = spamtp_example$database
+)
 }

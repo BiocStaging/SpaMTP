@@ -28,57 +28,96 @@ demsHeatmap(
 )
 }
 \arguments{
-\item{edgeR_output}{A list containing outputs from edgeR analysis (from findAllDEMs()). This includes pseudo-bulked counts and DEMs.}
+\item{edgeR_output}{A list containing outputs from edgeR analysis (from
+findAllDEMs()). This includes pseudo-bulked counts and DEMs.}
 
-\item{n}{A numeric integer that defines the number of UP and DOWN regulated peaks to plot (default = 25).}
+\item{n}{A numeric integer that defines the number of UP and DOWN regulated
+peaks to plot (default = 25).}
 
-\item{only.pos}{Boolean indicating if only positive markers should be returned (default = FALSE).}
+\item{only.pos}{Boolean indicating if only positive markers should be
+returned (default = FALSE).}
 
-\item{FDR.threshold}{Numeric value that defines the FDR threshold to use for defining most significant results (default = 0.05).}
+\item{FDR.threshold}{Numeric value that defines the FDR threshold to use for
+defining most significant results (default = 0.05).}
 
-\item{logfc.threshold}{Numeric value that defines the logFC threshold to use for filtering significant results (default = 0.5).}
+\item{logfc.threshold}{Numeric value that defines the logFC threshold to use
+for filtering significant results (default = 0.5).}
 
 \item{order.by}{Ranking column: \code{FDR}, \code{logFC}, \code{mean_auc} or \code{mean_cohen}.
 Descriptive native marker results default to \code{mean_auc}; other inputs use
 \code{FDR}. FDR ranking is unavailable for descriptive marker results.}
 
-\item{scale}{A character string indicating if the values should be centered and scaled in either the row direction or the column direction, or none. Corresponding values are "row", "column" and "none"}
+\item{scale}{A character string indicating if the values should be centered
+and scaled in either the row direction or the column direction, or none.
+Corresponding values are "row", "column" and "none"}
 
-\item{color}{A vector of colors used in heatmap (default = grDevices::colorRampPalette(c("navy", "white", "red"))(50)).}
+\item{color}{A vector of colors used in heatmap (default =
+grDevices::colorRampPalette(c("navy", "white", "red"))(50)).}
 
-\item{cluster_cols}{Boolean value determining if columns should be clustered or hclust object (default = FALSE).}
+\item{cluster_cols}{Boolean value determining if columns should be clustered
+or hclust object (default = FALSE).}
 
-\item{cluster_rows}{Boolean value determining if rows should be clustered or hclust object (default = TRUE).}
+\item{cluster_rows}{Boolean value determining if rows should be clustered or
+hclust object (default = TRUE).}
 
-\item{fontsize_row}{A numeric value defining the fontsize of rownames (default = 15).}
+\item{fontsize_row}{A numeric value defining the fontsize of rownames
+(default = 15).}
 
-\item{fontsize_col}{A numeric value defining the fontsize of colnames (default = 15).}
+\item{fontsize_col}{A numeric value defining the fontsize of colnames
+(default = 15).}
 
-\item{cutree_cols}{A numeric value defining the number of clusters the columns are divided into, based on the hierarchical clustering(using cutree), if cols are not clustered, the argument is ignored (default = 9).}
+\item{cutree_cols}{A numeric value defining the number of clusters the
+columns are divided into, based on the hierarchical clustering(using
+cutree), if cols are not clustered, the argument is ignored (default = 9).}
 
-\item{silent}{Boolean value indicating if the plot should not be draw (default = TRUE).}
+\item{silent}{Boolean value indicating if the plot should not be draw
+(default = TRUE).}
 
-\item{plot_annotations_column}{Character string indicating the column name that contains the metabolite annotations to plot. Annotations = TRUE must be used in findAllDEMs() for edgeR output to include annotations. If plot_annotations_column = NULL, m/z vaues will be plotted (default = NULL).}
+\item{plot_annotations_column}{Character string indicating the column name
+that contains the metabolite annotations to plot. Annotations = TRUE must
+be used in findAllDEMs() for edgeR output to include annotations. If
+plot_annotations_column = NULL, m/z vaues will be plotted (default = NULL).}
 
-\item{save_to_path}{Character string defining the full filepath and name of the plot to be saved as.}
+\item{save_to_path}{Character string defining the full filepath and name of
+the plot to be saved as.}
 
-\item{plot.save.width}{Integer value representing the width of the saved pdf plot (default = 20).}
+\item{plot.save.width}{Integer value representing the width of the saved pdf
+plot (default = 20).}
 
-\item{plot.save.height}{Integer value representing the height of the saved pdf plot (default = 20).}
+\item{plot.save.height}{Integer value representing the height of the saved
+pdf plot (default = 20).}
 
-\item{nlabels.to.show}{Numeric value defining the number of annotations to show per m/z (default = NULL).}
+\item{nlabels.to.show}{Numeric value defining the number of annotations to
+show per m/z (default = NULL).}
 
-\item{annotation_colors}{List for specifying annotation_row and annotation_col track colors manually. Check pheatmap R-Package documentation for details. If set to 'NA', default coloring will be used (default = NA).}
+\item{annotation_colors}{List for specifying annotation_row and
+annotation_col track colors manually. Check pheatmap R-Package
+documentation for details. If set to 'NA', default coloring will be used
+(default = NA).}
 }
 \value{
-A heatmap plot of significantly differentially expressed metabolites defined in the edgeR ouput object.
+A heatmap plot of significantly differentially expressed metabolites
+defined in the edgeR ouput object.
 }
 \description{
-Generates a heatmap of DEMs generated from edgeR analysis run using \code{findAllDEMs()}.
+Generates a heatmap of DEMs generated from edgeR analysis run using
+\code{findAllDEMs()}.
 This function uses \code{pheatmap} to plot data.
 }
 \examples{
-utils::str(formals(demsHeatmap))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+markers <- findAllDEMs(spe,
+    ident = "region", method = "markers",
+    min_region_size = 3, spatial_blocks = 0, verbose = FALSE
+)
+if (requireNamespace("pheatmap", quietly = TRUE)) {
+    heatmap <- demsHeatmap(markers,
+        n = 2, order.by = "mean_auc",
+        logfc.threshold = 0, silent = TRUE
+    )
+    heatmap
+}
 
 # demsHeatmap(DEMs)
 }

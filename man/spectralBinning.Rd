@@ -2,7 +2,8 @@
 % Please edit documentation in R/BinSMData.R
 \name{spectralBinning}
 \alias{spectralBinning}
-\title{Spectral binning of intensity values stored in a Matrix object, converted from matter.}
+\title{Spectral binning of intensity values stored in a Matrix object, converted
+from matter.}
 \usage{
 spectralBinning(
   matrix,
@@ -13,23 +14,34 @@ spectralBinning(
 )
 }
 \arguments{
-\item{matrix}{matter matrix object containing the intensity values to be binned.}
+\item{matrix}{matter matrix object containing the intensity values to be
+binned.}
 
-\item{ref}{A vector of reference mass-to-charge (m/z) values for binning. If left unspecified, mass range will be used to generate reference peaks.}
+\item{ref}{A vector of reference mass-to-charge (m/z) values for binning. If
+left unspecified, mass range will be used to generate reference peaks.}
 
-\item{index}{Character string specifying the column name for the m/z values (default = "mz").}
+\item{index}{Character string specifying the column name for the m/z values
+(default = "mz").}
 
-\item{method}{A character vector specifying the binning method. Options include \code{"sum"}, \code{"mean"}, \code{"max"}, \code{"min"}. If not specified default method used is "sum".}
+\item{method}{A character vector specifying the binning method. Options
+include \code{"sum"}, \code{"mean"}, \code{"max"}, \code{"min"}. If not specified default
+method used is "sum".}
 
-\item{tolerance}{Numeric value specifying the tolerance for m/z matching (default = \code{NA}).}
+\item{tolerance}{Numeric value specifying the tolerance for m/z matching
+(default = \code{NA}).}
 }
 \value{
-Matrix object containing the binned intensity values matching the provided reference list.
+Matrix object containing the binned intensity values matching the
+provided reference list.
 }
 \description{
-Spectral binning of intensity values stored in a Matrix object, converted from matter.
+Spectral binning of intensity values stored in a Matrix object, converted
+from matter.
 }
 \examples{
-utils::str(formals(spectralBinning))
-#Helper function for binning data in Matrix format
+intensity <- matrix(1:12, nrow = 3)
+spectralBinning(intensity,
+    ref = c(100, 200), index = c(100, 100.01, 200),
+    method = "sum", tolerance = c(absolute = 0.02)
+)
 }

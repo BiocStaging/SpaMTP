@@ -1,26 +1,7 @@
-#' Common adduct constants
-#'
-#' A small table of legacy adduct definitions retained for compatibility with
-#' earlier SpaMTP workflows. New annotation code should use [adductRules()],
-#' which includes charge, stoichiometry, ion-mode, and chemical-validity fields.
-#'
-#' @format A data frame with 47 rows and 6 variables:
-#' \describe{
-#'   \item{adduct_name}{Adduct notation.}
-#'   \item{ion.mass}{Legacy ion-mass expression.}
-#'   \item{charge}{Ion charge.}
-#'   \item{mult}{Analyte stoichiometric multiplier.}
-#'   \item{add_mass}{Exact mass shift.}
-#'   \item{pol}{Ion polarity.}
-#' }
-#' @return A data frame of legacy adduct definitions.
-#' @seealso [adductRules()], [maldiMatrixRules()]
-#' @keywords datasets
-"adduct_file"
-
 #' Pathway-network reaction styles
 #'
-#' A small lookup table mapping SpaMTP interaction style codes to visual properties used
+#' A small lookup table mapping SpaMTP interaction style codes to visual
+#' properties used
 #' by the interactive pathway-network viewer.
 #'
 #' @format A data frame with 18 rows and 5 variables:
@@ -32,5 +13,9 @@
 #'   \item{colour}{Edge colour.}
 #' }
 #' @return A data frame of pathway-network reaction styles.
+#' @source SpaMTP-maintained display vocabulary. The source interaction labels
+#'   are mapped to these stable style codes in
+#'   `data-raw/pathway_interaction_utils.R` in the source repository.
+#'   This table defines visual styles rather than biological measurements.
 #' @keywords datasets
 "reaction_type"

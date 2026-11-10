@@ -9,11 +9,14 @@ savePheatmapAsPDF(pheatmap, filename, width = 20, height = 20)
 \arguments{
 \item{pheatmap}{A pheatmap plot object that is being saved.}
 
-\item{filename}{Character string defining the full filepath and name of the plot to be saved as.}
+\item{filename}{Character string defining the full filepath and name of the
+plot to be saved as.}
 
-\item{width}{Integer value representing the width of the saved pdf plot (default = 20).}
+\item{width}{Integer value representing the width of the saved pdf plot
+(default = 20).}
 
-\item{height}{Integer value representing the height of the saved pdf plot (default = 20).}
+\item{height}{Integer value representing the height of the saved pdf plot
+(default = 20).}
 }
 \value{
 The generated PDF path, invisibly.
@@ -22,6 +25,11 @@ The generated PDF path, invisibly.
 Saves a demsHeatmap as a PDF
 }
 \examples{
-utils::str(formals(savePheatmapAsPDF))
-# savePheatmapAsPDF(pheatmap, filename = "/Documents/plots/pheatmap1")
+if (requireNamespace("pheatmap", quietly = TRUE)) {
+    heatmap <- pheatmap::pheatmap(matrix(1:12, 3), silent = TRUE)
+    output <- tempfile(fileext = ".pdf")
+    savePheatmapAsPDF(heatmap, output, width = 5, height = 4)
+    file.info(output)$size
+    unlink(output)
+}
 }

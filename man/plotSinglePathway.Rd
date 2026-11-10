@@ -9,7 +9,7 @@ plotSinglePathway(
   object,
   title = NULL,
   assay = "main",
-  slot = "logcounts",
+  assayName = "logcounts",
   reduction = NULL,
   colors = c("darkblue", "lightgrey", "darkred"),
   guide = "colourbar",
@@ -27,7 +27,7 @@ plotSinglePathway(
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"logcounts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
@@ -38,7 +38,8 @@ then PCA, otherwise the first available reduction.}
 
 \item{guide}{Colour guide type.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
@@ -59,9 +60,12 @@ scores are shown as zero. Plotting uses scater::plotReducedDim.
 }
 \examples{
 x <- SpatialExperiment::SpatialExperiment(
-  assays = list(logcounts = rbind(a = 1:4, b = 4:1)),
-  spatialCoords = cbind(x = 1:4, y = 0),
-  colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4)))
+    assays = list(logcounts = rbind(a = 1:4, b = 4:1)),
+    spatialCoords = cbind(x = 1:4, y = 0),
+    colData = S4Vectors::DataFrame(row.names = paste0("p", 1:4))
+)
 SingleCellExperiment::reducedDim(x, "PCA") <- cbind(1:4, c(1, 3, 2, 4))
-plotSinglePathway("a", x)
+if (requireNamespace("scater", quietly = TRUE)) {
+    plotSinglePathway("a", x)
+}
 }

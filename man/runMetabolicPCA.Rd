@@ -2,14 +2,14 @@
 % Please edit documentation in R/DimensionalityReduction.R
 \name{runMetabolicPCA}
 \alias{runMetabolicPCA}
-\title{Compute PCA with scater on a selected experiment}
+\title{Compute PCA on a selected experiment}
 \usage{
 runMetabolicPCA(
   SpaMTP,
   npcs = 30,
   variance_explained_threshold = 0.9,
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   show_variance_plot = FALSE,
   bin_resolution = NULL,
   resolution_units = "ppm",
@@ -17,54 +17,72 @@ runMetabolicPCA(
   reduction.name = "pca",
   verbose = TRUE,
   features = NULL,
-  scale = FALSE
+  scale = FALSE,
+  ntop = 500
 )
 }
 \arguments{
 \item{SpaMTP}{A SingleCellExperiment, including SpatialExperiment, containing
 the selected primary or alternative experiment.}
 
-\item{npcs}{Positive number of PCs, capped by matrix dimensions. NULL uses the variance threshold.}
+\item{npcs}{Positive number of PCs, capped by matrix dimensions. NULL uses
+the variance threshold.}
 
-\item{variance_explained_threshold}{Cumulative variance fraction in (0, 1], used only when npcs is NULL.}
+\item{variance_explained_threshold}{Cumulative variance fraction in (0, 1],
+used only when npcs is NULL.}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
 
-\item{slot}{Expression assay name within the selected experiment
+\item{assayName}{Expression assay name within the selected experiment
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{show_variance_plot}{Boolean indicating weather to display the variance plot output by this analysis (default = FALSE).}
+\item{show_variance_plot}{Whether to store a variance plot in
+\code{metadata(SpaMTP)$reduction_plots[[reduction.name]]} (default = FALSE).
+The plot is returned with the object and is never printed automatically.}
 
-\item{bin_resolution}{Numeric value defining the resolution to use for binning m/z peaks. If set to \code{NULL}, no binning will be performed (default = NULL).}
+\item{bin_resolution}{Numeric value defining the resolution to use for
+binning m/z peaks. If set to \code{NULL}, no binning will be performed (default
+= NULL).}
 
-\item{resolution_units}{Character string specifying the units of the \code{bin_resolution}. Either 'ppm' or 'mz' can be provided. \code{bin_resolution} must be provided for this parameter to be implemented (default = "ppm").}
+\item{resolution_units}{Character string specifying the units of the
+\code{bin_resolution}. Either 'ppm' or 'mz' can be provided. \code{bin_resolution}
+must be provided for this parameter to be implemented (default = "ppm").}
 
-\item{bin_method}{Character string defining the method to use for binning respective m/z peaks that fall within a bin. Options for this parameter can be one of "sum", "mean", "max" or "min". \code{bin_resolution} must be provided for this parameter to be implemented (default = "sum").}
+\item{bin_method}{Character string defining the method to use for binning
+respective m/z peaks that fall within a bin. Options for this parameter can
+be one of "sum", "mean", "max" or "min". \code{bin_resolution} must be provided
+for this parameter to be implemented (default = "sum").}
 
 \item{reduction.name}{Name in \code{SingleCellExperiment::reducedDimNames(SpaMTP)}
 for the resulting embedding (default = \code{"pca"}). Even when the input
 expression is in an alternative experiment, the embedding is stored in
 the parent object's \code{reducedDim()}.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 
 \item{features}{Optional exact feature identifiers. When supplied, all and
-only these rows enter PCA; the scater top-500 default is bypassed.}
+only these rows enter PCA and \code{ntop} is ignored.}
 
 \item{scale}{Scale features to unit variance before PCA.}
+
+\item{ntop}{Number of most variable features used when \code{features} is NULL.}
 }
 \value{
 The input with PCA embeddings in reducedDim().
 }
 \description{
-Uses scater::runPCA() and stores embeddings in reducedDim().
-The user can provide a bin/resolution size to increase the bin size and reduce the dimensionality/noise of the SM dataset prior to calculating PCAs.
+Uses \code{\link[scrapper:runPca]{scrapper::runPca()}} (IRLBA on the centred, optionally scaled, matrix
+without materialising it) and stores embeddings in reducedDim(). Dense,
+sparse and \code{DelayedArray} assays are supported.
+The user can provide a bin/resolution size to increase the bin size and
+reduce the dimensionality/noise of the SM dataset prior to calculating PCAs.
 }
 \examples{
 counts <- matrix(seq_len(30), nrow = 5)
 sce <- SingleCellExperiment::SingleCellExperiment(assays = list(counts = counts))
-sce <- runMetabolicPCA(sce, npcs = 2)
+sce <- runMetabolicPCA(sce, npcs = 2, verbose = FALSE)
 SingleCellExperiment::reducedDimNames(sce)
 ## For running PCA on un-adjusted peak bin sizes
 # spamtp_obj <- runMetabolicPCA(spamtp_obj, npcs = 50)

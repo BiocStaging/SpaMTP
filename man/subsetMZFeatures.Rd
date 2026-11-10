@@ -9,16 +9,21 @@ subsetMZFeatures(data, features, assay = "main")
 \arguments{
 \item{data}{A Bioconductor experiment for subsetting.}
 
-\item{features}{A list of character strings defining the features/mz values to subset against.}
+\item{features}{A list of character strings defining the features/mz values
+to subset against.}
 
-\item{assay}{A character string identifying the primary or alternative experiment which contains the count data being subset.}
+\item{assay}{A character string identifying the primary or alternative
+experiment which contains the count data being subset.}
 }
 \value{
-A subset Bioconductor experiment containing only m/z values that were specified
+A subset Bioconductor experiment containing only m/z values that
+were specified
 }
 \description{
 Subset a Bioconductor experiment by a list of m/z's
 }
 \examples{
-utils::str(formals(subsetMZFeatures))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+subsetMZFeatures(spe, c("ion1", "ion3"))
 }

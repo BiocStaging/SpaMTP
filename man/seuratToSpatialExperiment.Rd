@@ -50,8 +50,10 @@ are archival and must not replace \code{spatialCoords(x)} in native analysis.
 }
 \examples{
 if (requireNamespace("SeuratObject", quietly = TRUE)) {
-    counts <- matrix(seq_len(12), nrow = 3,
-        dimnames = list(paste0("mz-", 101:103), paste0("pixel", 1:4)))
+    counts <- matrix(seq_len(12),
+        nrow = 3,
+        dimnames = list(paste0("mz-", 101:103), paste0("pixel", 1:4))
+    )
     seu <- SeuratObject::CreateSeuratObject(counts)
     xy <- cbind(x = 1:4, y = c(0, 1, 0, 1))
     rownames(xy) <- colnames(seu)

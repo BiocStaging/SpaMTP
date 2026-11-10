@@ -2,28 +2,35 @@
 % Please edit documentation in R/PlottingSpaMTP.R
 \name{findNearestMZ}
 \alias{findNearestMZ}
-\title{Finds the nearest m/z peak to a given value in a SpaMTP Object}
+\title{Find the measured features nearest to target m/z values}
 \usage{
-findNearestMZ(data, target_mz, assay = NULL)
+findNearestMZ(data, mz, assay = NULL)
 }
 \arguments{
 \item{data}{A SummarizedExperiment, including SingleCellExperiment or
 SpatialExperiment, with feature m/z values in \code{rowData()} or feature names.}
 
-\item{target_mz}{Numeric value defining the target m/z peak}
+\item{mz}{Numeric vector of target m/z values.}
 
 \item{assay}{Primary (\code{"main"} or NULL) or alternative experiment name.
 The mass lookup uses the selected experiment's \code{rowData()}, not an
 expression layer; see \link{experimentAccess}.}
 }
 \value{
-The exact character feature identifier for the nearest measured
-m/z, not a numeric mass. Ties select the first feature in the stored order.
+A character vector with the feature identifier of the nearest
+measured m/z for each target, not a numeric mass. Ties select the first
+feature in the stored order.
 }
 \description{
-Finds the nearest m/z peak to a given value in a SpaMTP Object
+Find the measured features nearest to target m/z values
 }
 \examples{
-utils::str(formals(findNearestMZ))
-# findNearestMZ(spe, target_mz = 400.01)
+spe <- SpatialExperiment::SpatialExperiment(
+    assays = list(counts = matrix(1, 3, 2,
+        dimnames = list(c("mz-100.01", "mz-200.02", "mz-300.03"), c("p1", "p2"))
+    )),
+    rowData = S4Vectors::DataFrame(mz = c(100.01, 200.02, 300.03)),
+    spatialCoords = cbind(x = 1:2, y = 1)
+)
+findNearestMZ(spe, c(200, 299.9))
 }

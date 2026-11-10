@@ -10,31 +10,55 @@ addCustomMZAnnotations(
   assay = "main",
   return.only.annotated = FALSE,
   mass.threshold = 0.05,
-  annotation.column = "all_IsomerNames"
+  annotation.column = "all_IsomerNames",
+  append = TRUE
 )
 }
 \arguments{
 \item{data}{Bioconductor experiment containing m/z intensity values.}
 
-\item{annotations}{data.frame containing two columns named 'annotation' and 'mass'. These columns should contain the custom metabolite annotation and the relative m/z mass respectively.}
+\item{annotations}{data.frame containing two columns named 'annotation' and
+'mass'. These columns should contain the custom metabolite annotation and
+the relative m/z mass respectively.}
 
 \item{assay}{Primary or alternative experiment whose \code{rowData()} receives
 the annotations (default = "main").}
 
-\item{return.only.annotated}{Boolean defining whether to return a Bioconductor experiment containing only successfully annotated m/z values (default = FALSE).}
+\item{return.only.annotated}{Boolean defining whether to return a
+Bioconductor experiment containing only successfully annotated m/z values
+(default = FALSE).}
 
-\item{mass.threshold}{Numeric value defining the acceptable threshold (plus-minus) between the custom annotations and the actual m/z values contained within the SpaMTP object (default = 0.05).}
+\item{mass.threshold}{Numeric value defining the acceptable threshold
+(plus-minus) between the custom annotations and the actual m/z values
+contained within the SpaMTP object, in Da (default = 0.05). The boundary
+is inclusive; zero keeps exact matches and NULL disables the distance limit.}
 
 \item{annotation.column}{Name of the \code{rowData()} column receiving annotations
 (default = "all_IsomerNames").}
+
+\item{append}{Append distinct labels and metadata values on matched features
+(default TRUE). FALSE replaces values only on matched features.}
 }
 \value{
-Bioconductor experiment containing the custom annotations stored in the feature metadata dataframe.
+Bioconductor experiment containing the custom annotations stored in
+the feature metadata dataframe. \code{mass_diff_da} is the absolute mass
+difference in Da; \code{ppm_diff} is that difference divided by reference mass
+and multiplied by one million.
 }
 \description{
-Adds custom metabolite annotations to respective m/z values (ideal for specific matrices such as FMP10).
+Adds custom metabolite annotations to respective m/z values (ideal for
+specific matrices such as FMP10).
+If several features are exactly tied for the nearest mass, all receive the
+annotation. Features at unequal distances retain the nearest-mass rule.
+Existing labels are preserved by default, including on unmatched features.
+Custom labels are display metadata: they do not add scored candidates or
+change pathway evidence. Use a separate \code{annotation.column} to keep manual
+labels apart from the candidate summaries produced by \code{annotateSM()}.
 }
 \examples{
-utils::str(formals(addCustomMZAnnotations))
-# annotated_data <- addCustomMZAnnotations(SpaMTP.obj, annotation.df)
+data(spamtp_example)
+spe <- spamtp_example$experiment
+custom <- data.frame(annotation = "candidate A", mass = 500)
+annotated <- addCustomMZAnnotations(spe, custom)
+SummarizedExperiment::rowData(annotated)["ion7", ]
 }

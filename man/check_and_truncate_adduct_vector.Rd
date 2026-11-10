@@ -2,7 +2,8 @@
 % Please edit documentation in R/MZAnnotation.R
 \name{check_and_truncate_adduct_vector}
 \alias{check_and_truncate_adduct_vector}
-\title{Checks if the complete adduct is in the data base, else returns a truncated adduct}
+\title{Checks if the complete adduct is in the data base, else returns a truncated
+adduct}
 \usage{
 check_and_truncate_adduct_vector(adduct, db, verbose = TRUE)
 }
@@ -11,13 +12,15 @@ check_and_truncate_adduct_vector(adduct, db, verbose = TRUE)
 
 \item{db}{DataFrame of the current reference database.}
 
-\item{verbose}{Boolean indicating whether to show the message. If TRUE the message will be show, else the message will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show the message. If TRUE the
+message will be show, else the message will be suppressed (default = TRUE).}
 }
 \value{
 Character string of the complete or truncated adduct
 }
 \description{
-Checks if the complete adduct is in the data base, else returns a truncated adduct
+Checks if the complete adduct is in the data base, else returns a truncated
+adduct
 }
 \examples{
 # HMDB_db <- load("data/HMDB_1_names.rds")

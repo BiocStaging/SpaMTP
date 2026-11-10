@@ -11,8 +11,8 @@ findRegionalPathways(
   analyte_types = c("genes", "metabolites"),
   SM_assay = "main",
   ST_assay = "transcriptome",
-  SM_slot = "counts",
-  ST_slot = "counts",
+  smAssayName = "counts",
+  stAssayName = "counts",
   min_path_size = 5,
   max_path_size = 500,
   pval_cutoff_mets = 0.05,
@@ -33,39 +33,54 @@ findRegionalPathways(
   pathway_index = NULL,
   ranks = NULL,
   rank_scale = c("rms", "none"),
-  nPermSimple = 1000
+  nPermSimple = 1000,
+  regions = NULL,
+  seed = 1234,
+  BPPARAM = BiocParallel::SerialParam(progressbar = verbose)
 )
 }
 \arguments{
-\item{SpaMTP}{A Bioconductor experiment contains spatial metabolomics(SM)/transcriptomics(ST) data or both, if contains SM data, it should be annotated via SpaMTP::annotateSM function.}
+\item{SpaMTP}{A Bioconductor experiment contains spatial
+metabolomics(SM)/transcriptomics(ST) data or both, if contains SM data, it
+should be annotated via SpaMTP::annotateSM function.}
 
-\item{ident}{A character scalar specifying the region column in cell metadata.}
+\item{ident}{A character scalar specifying the region column in cell
+metadata.}
 
-\item{DE.list}{A list consisting of differential expression data.frames for each input modality. Within each data.frame column names MUST include 'cluster', 'gene', ('avg_log2FC' or 'logFC') and ('p_val_adj' or 'FDR').}
+\item{DE.list}{A list consisting of differential expression data.frames for
+each input modality. Within each data.frame column names MUST include
+'cluster', 'gene', ('avg_log2FC' or 'logFC') and ('p_val_adj' or 'FDR').}
 
-\item{analyte_types}{Vector of character strings defining which analyte types to use. Options can be c("genes"), c("metabolites") or both (default = c("genes", "metabolites")).}
+\item{analyte_types}{Vector of character strings defining which analyte types
+to use. Options can be c("genes"), c("metabolites") or both (default =
+c("genes", "metabolites")).}
 
 \item{SM_assay}{Primary MSI experiment name (default = "main").}
 
 \item{ST_assay}{Paired transcriptome altExp name (default = "transcriptome").}
 
-\item{SM_slot}{Expression assay name within the metabolomics experiment
+\item{smAssayName}{Expression assay name within the metabolomics experiment
 selected by \code{SM_assay} (default = \code{"counts"}).
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{ST_slot}{Expression assay name within the transcriptomics experiment
+\item{stAssayName}{Expression assay name within the transcriptomics
+experiment
 selected by \code{ST_assay} (default = \code{"counts"}).
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{min_path_size}{The min number of metabolites in a specific pathway (default = 5).}
+\item{min_path_size}{The min number of metabolites in a specific pathway
+(default = 5).}
 
-\item{max_path_size}{The max number of metabolites in a specific pathway (default = 500).}
+\item{max_path_size}{The max number of metabolites in a specific pathway
+(default = 500).}
 
 \item{pval_cutoff_mets}{Adjusted p-value cutoff used when constructing
 metabolite ranks. Set to \code{1} to include annotated metabolites regardless
 of DE significance (default = 0.05).}
 
-\item{pval_cutoff_genes}{A numerical value defining the adjusted p value cutoff for significant differentially expressed genes. If \code{NULL} cutoff = \code{0.05} (default = 0.05).}
+\item{pval_cutoff_genes}{A numerical value defining the adjusted p value
+cutoff for significant differentially expressed genes. If \code{NULL} cutoff =
+\code{0.05} (default = 0.05).}
 
 \item{annotation_score_threshold}{Minimum indexed annotation score used for
 pathway mapping. It can be changed without re-running \code{annotateSM()} when
@@ -76,7 +91,8 @@ the object was annotated with \code{min_score = 0} (default = 0.05).}
 pipeline. \code{"auto"} permits a warned fallback to a legacy stored \code{db_3},
 while \code{"legacy"} explicitly requests that compatibility path.}
 
-\item{verbose}{Boolean indicating whether to show informative messages. If FALSE these messages will be suppressed (default = TRUE).}
+\item{verbose}{Boolean indicating whether to show informative messages. If
+FALSE these messages will be suppressed (default = TRUE).}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
@@ -112,27 +128,44 @@ records and ambiguous symbols are excluded and recorded in the audit.}
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When supplied,
+\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
-\item{ranks}{Alternative to DE.list: named genes/metabolites matrices with
-features in rows and regions in columns. Uses complete, unfiltered ranks.
-Metabolite rows must be explicit RaMP compound IDs. Map expression with
-createPathwayAssay before calculating identity-level effects.}
+\item{ranks}{Alternative to DE.list: a list named \code{genes} and/or
+\code{metabolites}, each either a feature-by-region matrix of complete,
+unfiltered ranks or a \code{\link[=findAllDEMs]{findAllDEMs()}} result (converted with
+\code{\link[=markerRanks]{markerRanks()}}). Metabolite rows must be explicit RaMP compound IDs. Map
+expression with createPathwayAssay before calculating identity-level effects.}
 
 \item{rank_scale}{RMS-scale each modality's rank vector before concatenating,
-or none. Pathways can still be dominated by the more densely measured modality.}
+or none. Pathways can still be dominated by the more densely measured
+modality.}
 
 \item{nPermSimple}{Preliminary permutations for the ranks interface.}
+
+\item{regions}{Optional subset of regions (rank columns) to test with the
+ranks interface; NULL tests all regions.}
+
+\item{seed}{Random seed for fgsea's permutations. It is applied with
+\code{\link[withr:local_seed]{withr::local_seed()}}, so the caller's random number stream is unchanged.}
+
+\item{BPPARAM}{BiocParallel execution parameters. The default uses one
+worker and shows progress only when \code{verbose = TRUE}. An explicit
+parameter object controls its own workers and progress display.}
 }
 \value{
 A data frame of regional pathway enrichment results, not a modified
-experiment. The complete-ranks interface also attaches the ranks, pathway
-coverage, mapping and multiple-testing provenance as attributes.
+experiment. The complete-ranks interface adds the number of measured and
+leading-edge genes and metabolites per pathway (\code{measured_genes},
+\code{measured_metabolites}, \code{leading_genes}, \code{leading_metabolites}) and
+attaches the ranks, pathway coverage, mapping and multiple-testing
+provenance as attributes.
 }
 \description{
-This the function used to compute the gene/metabolites set enrichment for multi-omics spatial data
+This the function used to compute the gene/metabolites set enrichment for
+multi-omics spatial data
 }
 \details{
 Gene mapping uses the same identity index as
@@ -143,5 +176,15 @@ features before differential analysis; the function does not select an
 arbitrary statistic.
 }
 \examples{
-utils::str(formals(findRegionalPathways))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+index <- buildPathwayIndex(spamtp_example$database)
+ranks <- matrix(c(3, 2, 1, -1, -2, -3, 0.5, -0.5),
+    dimnames = list(paste0("GENE", 1:8), "left")
+)
+enrichment <- findRegionalPathways(spe,
+    ident = "region", ranks = list(genes = ranks),
+    pathway_index = index, min_path_size = 2, max_path_size = 6, verbose = FALSE
+)
+enrichment[, c("pathwayName", "NES", "padj")]
 }

@@ -13,7 +13,7 @@ binSpaMTP(
   resolution,
   units = "ppm",
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   method = c("sum", "mean", "max", "min"),
   return.only.mtx = FALSE
 )
@@ -23,7 +23,7 @@ binSpaMTP(
   resolution,
   units = "ppm",
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   method = c("sum", "mean", "max", "min"),
   return.only.mtx = FALSE
 )
@@ -33,7 +33,7 @@ binSpaMTP(
   resolution,
   units = "ppm",
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   method = c("sum", "mean", "max", "min"),
   return.only.mtx = FALSE
 )
@@ -43,7 +43,7 @@ binSpaMTP(
   resolution,
   units = "ppm",
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   method = c("sum", "mean", "max", "min"),
   return.only.mtx = FALSE
 )
@@ -53,21 +53,23 @@ binSpaMTP(
   resolution,
   units = "ppm",
   assay = "main",
-  slot = "counts",
+  assayName = "counts",
   method = c("sum", "mean", "max", "min"),
   return.only.mtx = FALSE
 )
 }
 \arguments{
-\item{data}{A \code{SpatialExperiment}, Cardinal \code{MSImagingArrays} or \code{MSImagingExperiment}.}
+\item{data}{A \code{SpatialExperiment}, Cardinal \code{MSImagingArrays} or
+\code{MSImagingExperiment}.}
 
 \item{resolution}{Positive bin resolution.}
 
 \item{units}{Resolution units, either \code{"ppm"} or \code{"mz"}.}
 
-\item{assay}{Primary MSI experiment name; alternative modalities cannot be binned.}
+\item{assay}{Primary MSI experiment name; alternative modalities cannot be
+binned.}
 
-\item{slot}{Matrix layer or SpatialExperiment assay to bin.
+\item{assayName}{Matrix layer or SpatialExperiment assay to bin.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{method}{Aggregation method.}
@@ -78,7 +80,8 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 A binned \code{SpatialExperiment} or matrix.
 }
 \description{
-\code{MSImagingArrays} or \code{MSImagingExperiment} input delegates binning to Cardinal and is converted
+\code{MSImagingArrays} or \code{MSImagingExperiment} input delegates binning to
+Cardinal and is converted
 to SpatialExperiment only after a common feature axis exists.
 SpatialExperiment input returns a new binned SpatialExperiment.
 For aligned matrices, bins start at the minimum observed m/z and use

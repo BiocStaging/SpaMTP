@@ -1,3 +1,167 @@
+# SpaMTP 0.99.17
+
+Changes in response to the Bioconductor review of 30 October 2026.
+
+* Annotation accuracy and usability review: CHO scoring checks formula/ion
+  mass consistency instead of penalizing negative fractional mass defects.
+  FMP10 product masses include the electron correction; isotope scoring
+  includes multimer, solvent and derivatization atoms. Native SMILES group
+  counts distinguish amines from nitro, sulfonamide and quaternary nitrogen,
+  and alcohols from phosphate OH groups.
+  Rebuild saved indexes to apply corrected rules. Use
+  `infer_structure = "always"` to refresh older precomputed structure columns;
+  `"never"` and `"always"` no longer fetch a precomputed structure table.
+* Equal-mass features no longer multiply candidate rows. Index reuse honors
+  adduct restrictions and rejects conflicting construction settings. Stored
+  provenance comes from the reference actually used and never downloads an
+  unrelated RaMP release during storage or inspection.
+* Custom annotations append by default and preserve unmatched labels;
+  `append = FALSE` replaces only matched values. These remain unscored display
+  labels. FMP10 candidate links retain numeric reference identities, including
+  masses that do not round-trip through text. Error summaries are in ppm;
+  custom labels also retain `mass_diff_da`. Zero Da tolerance accepts exact
+  matches and all thresholds are inclusive.
+* METASPACE preserves nested isotope metadata and unavailable image URLs.
+  Image conversion warns when omitting unavailable images, and rounded mass
+  collisions retain unique feature names and full-precision numeric masses.
+  Downloads reuse annotation image metadata, grayscale PNGs are supported,
+  and hotspot clipping follows the Python client's 99th-percentile rule.
+* Annotation search treats punctuation literally, refinement counts stored
+  candidates when available and excludes unannotated features, and single-pixel
+  QC profiles no longer fail. Numeric pathway-statistics queries require a
+  match within `mz.ppm` (default 5) and reject ambiguous nearest features.
+  Explicitly missing mass columns and unnamed features give actionable errors.
+
+* Compound pathway assays follow preserved feature identities after renaming,
+  subsetting or padded mass-name imports. Older stores with equal-mass rows
+  and no preserved feature keys require reannotation for pathway analysis
+  and candidate lookup. Annotation search uses the selected experiment's
+  feature keys when display-label columns are absent.
+  Normalization validates sparse
+  inputs without creating a dense logical matrix.
+* Removed six unused suggested packages. HTML network and density exporters
+  default to the session's temporary directory; supply an output directory
+  to retain the files. Analysis warnings remain visible in the gene guide,
+  and bundled-resource provenance and development assistance are documented.
+* Annotation parses each matched reference formula once per query and reports
+  unavailable formula evidence in one warning. `FormulaStatus` identifies
+  these candidates; partial element counts are excluded from formula-based
+  scoring and water-loss eligibility. Scores for complete formulas are
+  unchanged; affected candidates can rank higher when a penalty based on
+  incomplete counts is removed. Missing evidence is recorded as `NA` and
+  omitted from the score product. Target/decoy checks consolidate these warnings.
+* CSV import selects dense or sparse storage from the observed density and
+  preserves single-feature tables. Annotation help now states the current
+  experiment defaults; installation text and vignette examples are shorter.
+* The pathway viewer fits its container on resize, keeps zoom separate from
+  layout, and provides a collapsible details panel. Node sizes and labels adapt
+  to the view; spatial previews preserve coordinate aspect ratios. SVG export
+  includes the full graph. A paired RNA/MSI map complements the live example.
+* `embedPathwayNetwork()` embeds the complete offline network viewer in HTML
+  documents and provides a standalone download. The pathway guides now show
+  a live human RNA/MSI network, regional enrichment plots and label-free
+  co-regulation; the annotation guide adds isotope and matrix-ion checks.
+  Network views preserve filtered compound identities without inventing scores,
+  reconcile leading-edge genes to equivalent topology records, and export
+  spatial values for all coloured nodes. Missing values remain missing in
+  colour scales; the viewer adapts to embedded and narrow layouts.
+* Annotation candidate tables, score summaries and score plots now follow
+  retained data rows after subsetting, reordering and renaming. A preserved
+  feature key distinguishes equal-mass features; older ambiguous stores require
+  reannotation. Custom and FMP10 annotations retain all exact nearest-mass ties
+  and keep feature names, RaMP IDs, scores and stored candidates consistent.
+* Vignettes have clearer introductions, corrected cross-references, formatted
+  result tables and a shared responsive layout. Memory guidance distinguishes
+  delayed scaling from dense allocations during graph PCA and modality merging.
+* Spatial feature plots accept unnamed pixels and preserve column alignment.
+* Enrichment, SMILES parsing and METASPACE image downloads use `BPPARAM`.
+  Serial execution is the default; progress follows `verbose` unless an
+  explicit parameter object is supplied. This replaces `nproc`, `workers`
+  and `structure_workers` and never changes the session's future plan.
+* The variance plot requested by `runMetabolicPCA(show_variance_plot = TRUE)`
+  is stored in `metadata()$reduction_plots` instead of printed.
+* `densityMap()` exports an offline viewer using the plotly R package and
+  bundled d3. Copy its HTML and `density_map_files` directory together.
+  d3's copyright and ISC license are recorded in `inst/COPYRIGHTS` and
+  `inst/vendor/d3/LICENSE`; only the minified distribution is shipped.
+* Formula masses and element counts use MetaboCoreUtils; adduct groups use
+  igraph connected components. Removed the unused legacy `adduct_file`.
+  Annotation edges are assembled in batches, SMILES parser storage is
+  preallocated, and workflow callbacks use private record collectors.
+* Examples now execute small offline analyses using `spamtp_example`, with
+  explicit interactive guards for the remote METASPACE service. The shipped
+  GitHub installer and its installation test have been removed.
+* Removed unused or replaceable dependencies (`purrr`, `mclust`, `future`,
+  `future.apply`, `parallel`, `magick`, `tibble`, `naturalsort`). DropletUtils,
+  scater, pheatmap and ape are optional and checked where they are needed.
+* Pathway coverage matches memberships in batches; m/z queries locate all
+  mass windows in one pass. The annotation vignette queries a deterministic
+  feature subset against the complete reference, keeping full-panel MS1
+  context and normalization totals.
+
+* Breaking: arguments that name an expression assay are now called
+  `assayName` (previously `slot`), with `smAssayName`, `stAssayName`,
+  `mzAssayName` and `pathwayAssayName` replacing `SM_slot`/`SM.slot`,
+  `ST_slot`/`ST.slot`, `mz.slot` and `pathway.slot`, and `assayNames`
+  replacing `slots` in `plot3DFeature()`. `convertSeuratToCardinal()` takes
+  `layer`, matching the Seurat 5 term.
+* New plotting and inspection functions, so analyses no longer need
+  hand-written plotting or helper code:
+  - `plotSpatialLabels()` draws categorical pixel annotations at their spatial
+    positions.
+  - `plotSpaMTPWorkflow()` returns the figures of a `runSpaMTPWorkflow()`
+    result as ggplot objects.
+  - `annotationCandidates()`, `summarizeAnnotationScores()` and
+    `plotAnnotationScores()` rank, summarize and plot stored annotation
+    candidates.
+  - `markerRanks()` arranges `findAllDEMs()` statistics as a feature-by-region
+    rank matrix.
+* `plotSpatialFeature()` has a readable default theme and a `legendTitle`
+  argument, and finds features in paired alternative experiments, so ion and
+  transcript maps can be drawn together.
+* `plotPathwaysSpatially(combine = TRUE)` arranges pathway maps with a shared
+  colour bar.
+* `findNearestMZ()` accepts several target masses (`mz`, previously
+  `target_mz`).
+* `findRegionalPathways()` gains `seed`, applied with `withr::local_seed()` so
+  the caller's random number stream is unchanged, and `regions`. Its `ranks`
+  argument accepts `findAllDEMs()` results, and the result reports measured
+  and leading-edge genes and metabolites per pathway.
+* `pathwayNetworkPlots()` attaches a `network_summary` table to its result.
+* PCA uses `scrapper::runPca()` in `runMetabolicPCA()` and
+  `multiOmicIntegration()`, and UMAP displays use `scrapper::runUmap()`.
+  BiocSingular is no longer imported. The 500 most variable features are
+  still used by default (`ntop`).
+* Matrix storage:
+  - `normalizeSMData()` stores mostly nonzero results as an ordinary
+    `matrix` rather than a dense-valued `dgCMatrix`, keeps sparse results
+    sparse, and keeps `DelayedArray` input delayed.
+  - Its new `libSizes` argument normalizes by recorded totals, such as the
+    full-spectrum TIC of a feature subset.
+  - `scaleSMData()` returns a lazily evaluated `DelayedMatrix` by default,
+    using block-processed row statistics, and documents the memory needed for
+    a materialised result.
+* Adduct ion masses come from `MetaboCoreUtils::adducts()`. SpaMTP adds its
+  rule priors and structural constraints, and records the source definition in
+  `adductRules()$metabocoreutils_name`.
+* Removed `utils::globalVariables()`: data-frame columns in ggplot2 and dplyr
+  code use the `.data` pronoun or quoted names, so no workspace variable can
+  be picked up by mistake. NAMESPACE no longer imports whole packages; every
+  import is selective and no symbol is imported twice.
+* Reworked result-building loops in `findRegionalPathways()`, pathway networks,
+  Fisher input mapping and the workflow report to combine intermediate records
+  once. Two unused internal functions were removed, so MSnbase is no longer
+  imported.
+* `getMetaspace()` and `refineLipids()` gain `verbose`; enrichment progress
+  follows the default `BPPARAM` settings described above.
+* `bladder_demo.rds` includes the archived `compartment` labels.
+* Vignettes:
+  - They call package functions instead of building plots or helper functions.
+  - They attach packages instead of using `pkg::` calls.
+  - They contain no unit checks, loops or global seeds.
+  - All figures are generated at run time.
+  - Installation instructions use Bioconductor only.
+
 # SpaMTP 0.99.16
 
 * Shortened the README and clarified the introduction, staging installation,

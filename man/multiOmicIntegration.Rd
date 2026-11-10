@@ -43,7 +43,8 @@ alternative experiments in \code{SingleCellExperiment::altExps()}.}
 \item{reduction.list}{Reduction names for the primary MSI and alternative
 modalities (default = list("spm.pca", "spt.pca")).}
 
-\item{dims.list}{List containing the numeric range of principle component dimension to include for each modality (default = list(1:30,1:30)).}
+\item{dims.list}{List containing the numeric range of principle component
+dimension to include for each modality (default = list(1:30,1:30)).}
 
 \item{return.intermediate}{Retain per-modality PCA results in reducedDims().}
 
@@ -53,7 +54,8 @@ modalities (default = list("spm.pca", "spt.pca")).}
 experiments to integrate. Derived pathway and merged experiments are not
 included automatically.}
 
-\item{...}{Additional arguments passed to scater::runPCA().}
+\item{...}{Additional arguments passed to \code{\link[scrapper:runPca]{scrapper::runPca()}}, such as
+\code{scale}.}
 }
 \value{
 The input container with an integrated representation. For
@@ -61,10 +63,13 @@ SpatialExperiment this is \code{reducedDim(x, "integrated")}.
 }
 \description{
 SpatialExperiment input uses paired alternative experiments and combines
-equal-weight PCA embeddings generated with scater. This is not Seurat WNN;
+equal-weight PCA embeddings generated with \code{\link[scrapper:runPca]{scrapper::runPca()}}. This is not
+Seurat WNN;
 the historical WNN workflow remains in the published-workflow branch.
 }
 \examples{
-utils::str(formals(multiOmicIntegration))
-# SpaMTP.obj <- multiOmicIntegration(SpaMTP.obj, reduction.list =  list("spt.pca", "spm.pca"), dims.list = list(1:30, 1:30))
+data(spamtp_example)
+spe <- spamtp_example$experiment
+integrated <- multiOmicIntegration(spe, dims.list = list(1:2, 1:2))
+head(SingleCellExperiment::reducedDim(integrated, "integrated"))
 }

@@ -16,26 +16,35 @@ loadSM(
 )
 }
 \arguments{
-\item{file}{Character string defining the directory path of the file and the file name.}
+\item{file}{Character string defining the directory path of the file and the
+file name.}
 
 \item{mass.range}{Optional two-element mass range for binning. Requires
 resolution; raw spectral filtering should be performed in Cardinal.}
 
-\item{resolution}{Numeric value defining the the accuracy to which the m/z values will be binned after reading. This value can be in either "ppm" or "mz" depending on the units type specified (default = 10).}
+\item{resolution}{Numeric value defining the the accuracy to which the m/z
+values will be binned after reading. This value can be in either "ppm" or
+"mz" depending on the units type specified (default = 10).}
 
-\item{units}{Character string defining the resolution value unit type, either c("ppm", "mz") (default = "ppm")}
+\item{units}{Character string defining the resolution value unit type, either
+c("ppm", "mz") (default = "ppm")}
 
-\item{verbose}{Boolean indicating whether to show informative processing messages. If TRUE the message will be show, else the message will be suppressed (default = TRUE)}
+\item{verbose}{Boolean indicating whether to show informative processing
+messages. If TRUE the message will be show, else the message will be
+suppressed (default = TRUE)}
 
-\item{assay}{Label stored in mainExpName(); intensities are in the counts assay.}
+\item{assay}{Label stored in mainExpName(); intensities are in the counts
+assay.}
 
 \item{multi.run}{Retained for compatibility; Cardinal run IDs are preserved.}
 
 \item{returnType}{Output container. \code{"auto"} returns Cardinal for raw data
-and SpatialExperiment after binning. SpatialExperiment output requires resolution.}
+and SpatialExperiment after binning. SpatialExperiment output requires
+resolution.}
 }
 \value{
-A Cardinal \code{MSImagingArrays}/\code{MSImagingExperiment}, or a \code{SpatialExperiment}.
+A Cardinal \code{MSImagingArrays}/\code{MSImagingExperiment}, or a
+\code{SpatialExperiment}.
 }
 \description{
 Raw spectra remain in Cardinal's file-backed \code{MSImagingArrays}, without
@@ -45,6 +54,15 @@ produced a common binned feature axis, the default return value is a
 \code{SpatialExperiment}. Seurat conversion is explicit and optional.
 }
 \examples{
-utils::str(formals(loadSM))
-# data <-loadSM(name = "run1", folder = "/Documents/SpaMTP_test_data/", mass.range = c(160,1500), resolution = 10, assay = "Spatial")
+data(spamtp_example)
+spe <- spamtp_example$experiment
+msi <- spatialExperimentToCardinal(spe)
+folder <- tempfile("imzml-")
+dir.create(folder)
+file <- file.path(folder, "example.imzML")
+Cardinal::writeImzML(msi, file = file, verbose = FALSE)
+raw <- loadSM(file, returnType = "Cardinal", verbose = FALSE)
+dim(raw)
+rm(raw)
+unlink(folder, recursive = TRUE)
 }
