@@ -35,8 +35,8 @@ resources, and `SpaMTPData` supplies experimental datasets.
 Start here to load measured tissue data, draw spatial maps and compare tissue
 compartments. The bladder example follows two ions through normalization and
 regional summaries; the pig example places three ion windows in anatomical
-context. Together they show how the input scale, spatial coverage and chemical
-ambiguity shape interpretation. The [reading guide](#continue-the-analysis)
+context. The examples show the input scales, spatial coverage and candidate
+annotations alongside the plots. The [reading guide](#continue-the-analysis)
 links to annotation, pathways and a complete paired MSI/RNA analysis.
 
 ## Installation
@@ -87,10 +87,10 @@ urinary-bladder section, also used in the
 [Cardinal case study](https://github.com/Vitek-Lab/Cardinal3-vignettes/blob/main/Vignettes/Vignette1/case-study1-vignette.rmd).
 That source workflow applies total ion current (TIC) normalization before
 integrating peaks.
-The archived `counts` assay contains processed panel intensities. Its original
-full-spectrum totals are unavailable in this object; the separate
-[raw-spectrum archive](https://zenodo.org/records/17246684) covers a subset
-of the section's locations.
+The archived `counts` assay contains processed panel intensities. The examples
+below use these values and their 79-feature panel totals. The separate
+[raw-spectrum archive](https://zenodo.org/records/17246684) contains spectra
+for a subset of the section's locations.
 
 The stored `ssc` values are spatial shrunken-centroid classes. The
 [archived SpaMTP tutorial](https://genomicsmachinelearning.github.io/SpaMTP/articles/Mouse_Urinary_Bladder.html)
@@ -199,14 +199,12 @@ The urothelium-minus-muscle difference is
 log2 scale, `r round(sensitivity[2, "urothelium_minus_muscle"], 3)` after
 panel normalization and
 `r round(sensitivity[3, "urothelium_minus_muscle"], 3)` after excluding
-m/z 741.53058 from the panel total. The direction persists across these scales;
-the magnitude depends on the denominator. Compartment differences therefore
-support a spatial distribution hypothesis within this section.
+m/z 741.53058 from the panel total. The difference has the same direction
+across all three scales, with its magnitude changing with the denominator.
 
 The archive lists
 SM/PA alternatives for m/z 741.53058 and PC/PE alternatives for m/z 798.54114.
-These patterns motivate lipid-localization hypotheses; exact lipid species
-require additional chemical evidence. The comparison describes one bladder section.
+These candidate labels accompany the measured masses in the feature metadata.
 
 The [companion workflow](SpaMTP_Companion_Workflow.html) queries these same
 ions against a versioned RaMP database and retains candidate ambiguity.
@@ -221,14 +219,14 @@ desorption electrospray ionization (DESI) on a Thermo LTQ instrument.
 It retains all 4,959 source tissue locations.
 The [Cardinal segmentation tutorial](https://bioconductor.org/packages/release/data/experiment/vignettes/CardinalWorkflows/inst/doc/MSI-segmentation.html)
 associates m/z 187.36 with heart, 537.08 with liver, and 840.43 with brain and
-spinal cord. These associations describe source-reported ion-localization
-patterns; organ labels and chemical identities require independent validation.
+spinal cord. The plots below display the three ion windows at their source
+tissue coordinates.
 
 Each row sums original profile bins within **±0.5 m/z** of one target.
 The stored `logcounts` assay is `log2(1 + window intensity / TIC × 10,000)`, where
 `total_ion_current` was calculated from all 10,200 original mass bins before
-subsetting. Dividing by the three selected windows instead would change the
-biological comparison. `source_bins` reports how many original profile bins
+subsetting. Each window therefore uses the full-spectrum TIC as its normalization
+denominator. `source_bins` reports how many original profile bins
 contribute to each window.
 
 ```{r pig-data}
@@ -239,7 +237,7 @@ rowData(pig)[, c(
 )]
 ```
 
-## Spatial interpretation
+## Spatial maps
 
 All three panels in Figure 1.\@ref(fig:pig-spatial) use the same 4,959 source
 tissue coordinates. The source-selected
@@ -257,10 +255,9 @@ plotSpatialFeature(pig, rownames(pig),
 )
 ```
 
-This three-window panel demonstrates spatial interpretation. Peak discovery,
-clustering and enrichment require the broader source spectra and appropriate
-feature coverage, available from `SpaMTPData` as the `pig_fetus_cardinal`
-resource.
+The three-window panel displays the selected signals across the tissue.
+For peak discovery, clustering and enrichment, load the full source spectra
+from `SpaMTPData` using the `pig_fetus_cardinal` resource.
 
 # Mouse brain: paired MSI and RNA
 

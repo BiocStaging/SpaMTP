@@ -72,9 +72,8 @@ the mean registered MSI intensity within 20 micrometres of each cell to that
 cell; this vignette retains the cell-level RNA counts and selects 240 paired
 positions without further RNA pooling.
 The archived `cout_labels` column groups locations as Astro, Mesenchymal,
-Neuronal, Oligo or Progenitor. These source labels provide cell-state groups
-for descriptive contrasts; the packaged archive does not retain the exact
-label-assignment recipe. `sample_id` identifies this single archived section.
+Neuronal, Oligo or Progenitor. The contrasts below use these archived groups.
+`sample_id` identifies the tissue section.
 
 `database` holds RaMP tables, `reference` holds HGNC, and `index` joins them.
 `version` pins each reference; `mapping` resolves three example IDs.
@@ -125,8 +124,8 @@ Inspect `status`, `method`, `candidate_gene_ids` and `candidate_ramp_ids`:
 
 `candidate_ramp_ids` exposes raw candidates. Unresolved or conflicting
 competitors keep a shared crossreference ambiguous, even with only one known
-HGNC candidate. Unresolved mappings describe reference coverage and identity
-ambiguity; biological function requires separate evidence.
+HGNC candidate. These fields record reference coverage and identity ambiguity
+for each input.
 
 # Annotate experiment features without altering expression
 
@@ -210,10 +209,9 @@ head(result[, c(
 )], 2)
 ```
 
-These enrichments summarize the selected markers of one archived cell-state
-group. Foreground selection and testing use the same section, so the false
-discovery rate (FDR) values describe this exploratory selection and require
-independent validation.
+The table summarizes enrichment of the selected `Oligo` markers against the
+measured RNA panel. The false discovery rate (FDR) values adjust the pathway
+tests for multiple comparisons.
 
 ## Identity counting and multiple testing
 
@@ -252,8 +250,7 @@ to preserve identity and provenance.
 - `measured_size` and `coverage_fraction`: assay or measured-universe coverage.
 - `used_size` and `used_members`: contributors after score or ranking filters.
 
-A pathway score summarizes measured expression. Interpreting pathway activation
-requires additional functional evidence.
+A pathway score summarizes expression of the measured members at each location.
 
 ## Shared memberships
 
@@ -267,9 +264,7 @@ table below shows where this reconciliation applies.
 
 We now reuse the 339-gene panel at the same 240 paired locations to map pathway
 scores back to the tissue. The [joint analysis below](#joint-ms-and-rna-pathways)
-then adds the measured MSI features. These locations provide spatial
-observations within one specimen; biological replication requires independent
-specimens.
+then adds the measured MSI features at these locations.
 
 `pathway_index` is shared across aggregation, scoring and plotting. `pathways`
 stores scores; `coverage` records measured and excluded members. The two
@@ -334,8 +329,8 @@ singly charged adducts: proton, sodium and potassium addition. Positive polarity
 is recorded in the [original processing script](https://github.com/GenomicsMachineLearning/SpaMTP/blob/main/inst/Publication_Files/FigS6_script.Rmd).
 The 5 ppm window and score floor of 0.05 define an exploratory candidate set.
 `metabolite_ambiguity = "exclude"` removes features with competing RaMP compound
-identities. Unique matches remain putative assignments requiring chemical
-validation; the chosen adduct set defines the scope of that uniqueness.
+identities. Each retained putative assignment has one RaMP compound identity
+under the selected adduct set and score threshold.
 
 The archived MS `counts` layer holds processed, spatially aligned abundances.
 For this comparison, `LogNormalize` uses the total of the retained MS panel
@@ -459,8 +454,8 @@ plotRegionalPathways(both_reactome,
 
 ## Explore a joint pathway network {#pathway-network}
 
-We illustrate **Transport of small molecules** (Reactome `R-HSA-382551`),
-chosen for coverage of both modalities without using its P value.
+We display **Transport of small molecules** (Reactome `R-HSA-382551`),
+selected for its measured coverage in both modalities.
 The network reuses the `Oligo` ranking and `pathway_index` above to place
 measured gene and compound effects on archived interactions.
 
@@ -518,11 +513,9 @@ contains one pathway and one region.
 | Edge colour, line and arrow | Archived interaction type and direction; see the edge legend |
 | Spatial abundance panel | The selected node's assay values at tissue coordinates, with its own scale and a plain background |
 
-Node effects are descriptive contrasts within one tissue section. Pathway NES
-and adjusted P values summarize the joint ranking; replicate-level inference
-requires independent specimens. MSI identities are putative, and reference
-neighbours include unmeasured nodes. Colours and outlines summarize these
-associations; pathway activation requires functional evidence.
+Node colours show the `Oligo` expression contrasts, and the outlines mark
+leading-edge members and annotated compounds. Pathway NES and adjusted P values
+summarize the joint ranking.
 
 The paired maps show APOD RNA and the putative spermidine identity at the same
 locations, providing a static view of these two network members.
@@ -559,10 +552,8 @@ head(coregulation[, c("pathwayName", "pctVar", "padj", "size")], 5)
 
 `pctVar` is the variance captured by the aggregate pathway profile; `padj`
 compares it with random sets from the measured panel after multiple-testing
-adjustment. Interpret this covariance in the context of the targeted panel
-and cell composition. Spatial autocorrelation and pathway activation require
-separate assessment. Pathway names are reference labels; identical measured
-gene sets can share results under different names.
+adjustment. Pathways with identical measured gene sets can share results under
+different names.
 
 Continue with [pathway resources](Pathway_Database_Integration.html) to inspect
 the interaction evidence available for these memberships, or the

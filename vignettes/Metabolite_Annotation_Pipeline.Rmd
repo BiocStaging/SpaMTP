@@ -32,9 +32,8 @@ chemical priors and optional first-stage mass spectrometry (MS1) evidence.
 The guide starts with one compound and simulated masses so each scoring step
 can be inspected. It then searches the complete chemical reference for a
 declared subset of measured mouse-brain features, compares score thresholds
-and carries the retained identities into pathway analysis. The resulting
-scores prioritize chemical hypotheses; their interpretation depends on the
-acquisition context and the evidence available for each candidate.
+and carries the retained identities into pathway analysis. The scores rank
+candidates under the selected ion-mode, adduct and MS1 settings.
 
 ## Annotation stages
 
@@ -144,8 +143,8 @@ Labels such as `O1` refer to positions in the supplied SMILES atom order.
 
 ## Predicted adduct families
 
-`predictAdductsFromSMILES()` lists plausible adducts before peak matching;
-no explicit `adducts` list is needed. The leading positive- and negative-mode
+`predictAdductsFromSMILES()` derives plausible adducts from the supplied
+structure before peak matching. The leading positive- and negative-mode
 families are:
 
 ```{r predict-adduct-space}
@@ -312,9 +311,8 @@ can reduce the score.
 `check_formula_mass = TRUE` checks CHO formula/ion mass consistency. The formula's
 monoisotopic mass and the selected ion rule predict an m/z; a discrepancy beyond
 the query tolerance, with a minimum of 5 ppm to allow rounded reference masses,
-gives `chemical_score = 0.2`. Negative fractional mass defects alone are valid
-for oxygen-rich acids and large lipids and receive no penalty. Other parsed
-formulae receive a factor of 1. Unavailable formula evidence is recorded as
+gives `chemical_score = 0.2`. CHO candidates within this tolerance and other
+parsed formulae receive a factor of 1. Unavailable formula evidence is recorded as
 `NA` and omitted from the score product. Setting
 `check_formula_mass = FALSE` disables this factor for sensitivity comparisons.
 
@@ -395,8 +393,8 @@ Use the unsliced object to annotate all 2,075 measured features.
 The source is a mouse section from a 6-hydroxydopamine (6-OHDA) lesion model
 (mouse 3, V11L12-038_B1;
 [GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
-The archived striatum was selected in the original analysis; no further spatial
-crop is applied here. See the [workflow guide](End_to_End_Workflow.html) for
+The example uses the striatal locations retained in the source archive.
+See the [workflow guide](End_to_End_Workflow.html) for
 anatomy, lesion-side labels and paired molecular maps.
 
 Pinned data and references are cached after download. `ms1` pools mean
@@ -454,9 +452,8 @@ data.frame(
 
 Matrix flags identify mass coincidences; isotope flags use mass spacing and
 mean-intensity ratios. Supplying a feature-by-location intensity matrix also
-checks profile correlation. Use flags to prioritize candidates for inspection;
-chemical identification requires complementary evidence. All measured features
-are retained here.
+checks profile correlation. The flags mark candidates for inspection while
+retaining all measured features.
 
 ## Inspect stored candidates and score thresholds
 
@@ -525,9 +522,6 @@ excluded from the compound pathway assay below. At m/z
 `r sprintf("%.4f", difloxacin$observed_mz)`, difloxacin `[M+H]+`
 ranks `r difloxacin$rank`, with score
 `r sprintf("%.3f", difloxacin$Score)`.
-Difloxacin is a [veterinary fluoroquinolone antibiotic](https://www.ema.europa.eu/en/documents/mrl-report/difloxacin-extension-all-food-producing-species-summary-report-5-committee-veterinary-medicinal-products_en.pdf).
-Assigning this identity to the mouse section requires exposure information and
-orthogonal chemical evidence.
 
 ## Sphingosine within the complete candidate search
 
@@ -550,8 +544,7 @@ sphingosine[, c(
 )]
 ```
 
-Several leading candidates share the same score and mass error. Resolving
-these tied identities requires additional spectral or experimental evidence.
+Several leading candidates share the same score and mass error.
 
 The same feature retains
 `r at_cutoff$identities[at_cutoff$feature == findNearestMZ(object, 264.2686)][1]`
@@ -566,8 +559,7 @@ rebuilding the complete index.
 
 Select compound candidates, exclude ambiguous identities, and rank **all**
 retained identities by descriptive regional effects within this specimen.
-Mouse RNA remains unchanged in `altExp()`. Interpreting human network topology
-in mouse requires species-specific supporting evidence.
+This example uses compound measurements; mouse RNA remains in `altExp()`.
 
 `pathway_index` uses RaMP identities without human HGNC conversion.
 `annotation_score_threshold = 0.05` applies the exploratory cutoff examined
@@ -577,8 +569,8 @@ compound by its regional log fold change (see `markerRanks()`); pathway tests
 require 3–100 ranked members.
 `LogNormalize` uses the base-2 logarithm, computing
 `log2(1 + 10000 * intensity / location_total)` before compound aggregation. The
-recorded total uses all 2,075 input features, so feature selection does not
-change the normalization denominator. The MS1 context also uses the full panel.
+normalization denominator is the recorded total across all 2,075 input features.
+The MS1 context also uses the full panel.
 
 `pathwayNetworkPlots()` writes the HTML network to the temporary directory.
 `top_n_pathways` and `max_nodes` limit display size; `SM_assay`/`smAssayName` select compound logcounts. `DE.list`
@@ -666,29 +658,24 @@ measured compounds among
 `r min(network_summary$nodes)`–`r max(network_summary$nodes)` nodes.
 Most nodes therefore provide reference topology around the measured compounds.
 The measured-node overlay identifies the signals contributing experimental
-coverage to each pathway; pathway activity requires further biological evidence.
+coverage to each pathway.
 
 See the [human RNA/MSI network](Gene_Identifier_Mapping.html#pathway-network)
 for a live viewer, controls and an `embedPathwayNetwork()` example.
 
-# Interpreting and following up annotations
+# Reviewing candidate annotations
 
 ## Candidate ranking and identity
 
 Scores combine mass agreement, chemical priors and available MS1 context to
-prioritize candidate identities. Confirm key assignments with authentic
-standards or complementary measurements such as retention time, ion mobility
-and tandem mass spectrometry (MS/MS). Structural isomers and water-loss
-fragments particularly benefit from precursor-resolved fragmentation.
-Calibrating score thresholds to an identification error rate requires an
-independently validated reference set.
+rank candidate identities. `annotationCandidates()` reports these candidates
+and their score components; `summarizeAnnotationScores()` shows how the chosen
+cutoff changes feature coverage and the number of retained identities.
 
 ## Structure and acquisition context
 
-Use standardized neutral SMILES and inspect `structure_evidence` for key
-assignments, since tautomer and protonation choices affect inferred sites.
-SMILES priors describe common functional groups; pKa, gas-phase chemistry,
-solvent, salt, matrix and instrumentation can further influence ion formation.
+Use standardized neutral SMILES and inspect `structure_evidence` for the
+functional groups and reaction sites used in scoring.
 For unparsed structures, ordinary adducts retain mass-rule scoring; water-loss
 rules require a structure-derived dehydration capacity. Supply isotope and
 adduct-family checks with spectra from a matching retention-time window, pixel

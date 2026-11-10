@@ -28,8 +28,7 @@ options(width = 88)
 SpaMTP uses identifiers and pathway memberships from a versioned snapshot of
 the RaMP database, and archived topology from
 [graphite](https://bioconductor.org/packages/graphite/). The Bioconductor data
-package SpaMTPdb distributes these snapshots with checksums; neither the
-RaMP-DB R package nor a connection to the RaMP database is needed. Memberships
+package SpaMTPdb distributes these snapshots with checksums. Memberships
 define enrichment and score calculations; network edges supply interaction
 context for displaying those results. This guide connects the analysis and
 plotting interfaces, explains how to explore the worked human RNA/MSI network,
@@ -54,8 +53,8 @@ shows how scored compound identities enter a network.
 
 RaMP 3.0.7 memberships and graphite archive-19 topology (2022-11-01) have separate
 provenance. Source-specific pathway IDs and memberships are retained during
-identifier reconciliation. A pathway can have substantial measured membership
-and sparse available topology. Inspect both before interpreting a network.
+identifier reconciliation. Membership coverage counts the measured pathway
+members; topology coverage records the available interactions between nodes.
 `pathwayNetworkPlots()` accepts pathway names or source IDs, but its exported
 views are keyed by pathway name. Filter to one database when names recur
 across sources.
@@ -78,9 +77,9 @@ Choose the display for your question. The linked examples share the same
 
 ## A complete membership analysis
 
-This small included dataset needs no downloads. It demonstrates the measured
-universe, enrichment and display together; replace the resource bundle with a
-versioned SpaMTPdb bundle for an analysis of experimental data.
+This small included dataset demonstrates the measured universe, enrichment
+and display together; replace the resource bundle with a versioned SpaMTPdb
+bundle for an analysis of experimental data.
 
 ```{r membership-workflow, message=FALSE, fig.cap="Pathway enrichment for the included three-compound example."}
 library(SpaMTP)
@@ -133,9 +132,8 @@ head(edges[, c("src", "dest", "directed", "source_reaction_type")])
 
 The `r format(nrow(edges), big.mark = ",")` rows describe recorded interactions.
 Repeated endpoint pairs can have distinct labels or directions. Generic
-processes retain their source
-labels, and undirected edges have no arrowhead. These records support biological
-context; causal conclusions require experimental evidence.
+processes retain their source labels. Arrowheads mark directed interactions;
+undirected interactions appear as plain edges.
 
 ## Interaction coverage
 

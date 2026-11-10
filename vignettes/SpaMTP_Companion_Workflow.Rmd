@@ -90,9 +90,8 @@ Figure 3.\@ref(fig:preprocess) displays the measured mass nearest m/z 400.14659,
 a focal feature in the original mouse-brain tutorial. Compare its distribution
 with the archived anatomy and side labels in the
 [complete workflow](End_to_End_Workflow.html).
-Assigning a metabolite identity requires additional chemical evidence.
 
-```{r preprocess, fig.width=7, fig.height=5, message=FALSE, out.width="450px", fig.cap="Measured m/z 400.14659 across all archived mouse-brain striatal locations. Each point retains its original image coordinates, with y increasing downwards; colour shows LogNormalize intensity. All locations come from one specimen; comparisons describe variation within that specimen."}
+```{r preprocess, fig.width=7, fig.height=5, message=FALSE, out.width="450px", fig.cap="Measured m/z 400.14659 across all archived mouse-brain striatal locations. Each point retains its original image coordinates, with y increasing downwards; colour shows LogNormalize intensity."}
 spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
 spe <- runMetabolicPCA(spe, npcs = 2, assayName = "logcounts", verbose = FALSE)
 feature <- findNearestMZ(spe, 400.14659)
@@ -166,14 +165,13 @@ head(candidates[, c("feature", "rank", "IsomerNames", "Adduct", "Error", "Score"
 annotationInfo(annotated)
 ```
 
-## Candidate interpretation
+## Candidate records
 
 The archived alternatives are SM 34:1 / PA 37:1 and PC 34:1 / PE 37:1;
 SM, PA, PC and PE denote sphingomyelin, phosphatidic acid, phosphatidylcholine
 and phosphatidylethanolamine. These labels preserve the archive's candidate
 assignments. Each ion matches multiple RaMP records under the stated adduct
-and mass tolerance; individual records can group several isomers. Resolving
-these lipid identities requires additional chemical evidence. The
+and mass tolerance; individual records can group several isomers. The
 [annotation tutorial](Metabolite_Annotation_Pipeline.html) shows candidate
 scores, their heuristic interpretation and index reuse.
 

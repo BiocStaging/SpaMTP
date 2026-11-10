@@ -77,9 +77,8 @@ altExp(spe, "SPT")
 
 `RegionLoupe` includes ACB (nucleus accumbens), CP (caudoputamen), OT
 (olfactory tubercle) and aco (anterior commissure, olfactory limb). `lesion`
-retains the source side labels. Regional and side differences describe spatial
-variation within this single specimen. Biological replication requires
-independent specimens.
+retains the source side labels. These columns supply the grouping and colours
+in the plots below.
 
 # Read a binned MSI table
 
@@ -152,10 +151,9 @@ metadata(spe)$spamtp_normalization
 Figure 2.\@ref(fig:expression-access) displays the mass nearest m/z 400.14659,
 a focal feature in the original mouse-brain tutorial, with `plotExpression()`
 from [scater](https://bioconductor.org/packages/scater). `findNearestMZ()`
-returns its feature ID. Metabolite identification requires additional
-chemical evidence.
+returns its feature ID.
 
-```{r expression-access, fig.width=7, fig.height=4.5, out.width="760px", fig.cap="A measured mouse-brain mass feature across archived anatomical regions. Each point is one paired location; colour marks the archived lesion side. Boxes pool both sides within each region and show the median and interquartile range; whiskers extend to 1.5 times that range. The displayed mass is the measured feature nearest m/z 400.14659 from the original mouse-brain tutorial. The plot describes within-specimen distributions, which depend on regional composition and spatial relationships."}
+```{r expression-access, fig.width=7, fig.height=4.5, out.width="760px", fig.cap="A measured mouse-brain mass feature across archived anatomical regions. Each point is one paired location; colour marks the archived lesion side. Boxes pool both sides within each region and show the median and interquartile range; whiskers extend to 1.5 times that range. The displayed mass is the measured feature nearest m/z 400.14659 from the original mouse-brain tutorial."}
 feature <- findNearestMZ(spe, 400.14659)
 feature
 plotExpression(spe,
@@ -167,9 +165,8 @@ plotExpression(spe,
 
 CP dominates this archived selection; sparse regions remain visible as
 individual points. The region labels connect the expression profile to anatomy.
-Regional composition should be examined before interpreting a side difference;
-the [complete workflow](End_to_End_Workflow.html) illustrates regional marker
-scoring and spatial sensitivity.
+The [complete workflow](End_to_End_Workflow.html) compares lesion sides within
+the CP region and illustrates regional marker scoring and spatial sensitivity.
 
 ## Scaling and memory use {#scaling-and-memory-use}
 

@@ -113,10 +113,8 @@ plotSpatialLabels(x, "RegionLoupe",
 Use `normalization = "none"` for already transformed inputs. Complete spectral
 processing and RNA quality control beforehand.
 
-Lesion sides, pixels and spatial blocks belong to one section. We preserve the
-archived spatial coverage and compare both sides within the same archived CP
-region. Results describe this specimen; population-level
-inference requires independent biological samples.
+The regional comparison retains the archived spatial coverage and compares
+lesion sides within the CP region.
 
 # Individual, spatial and joint representations {#individual-spatial-and-joint-representations}
 
@@ -214,7 +212,7 @@ experiment. Their `workflow` values use log2(1 + 10,000 × value / total), with
 totals calculated from all features in each modality. Each panel retains its
 own colour scale and the ion is labelled by measured m/z.
 
-```{r brain-molecular-maps, fig.width=10.5, fig.height=4.7, message=FALSE, out.width="100%", fig.cap="Paired ion and transcript maps across all 876 archived striatal locations. Point positions are shared across panels; axes show original image coordinates, with y increasing downwards. Each colour bar shows log2 library-size-normalized values on a feature-specific scale. The ion panel retains the measured m/z label; compound identification requires independent chemical evidence."}
+```{r brain-molecular-maps, fig.width=10.5, fig.height=4.7, message=FALSE, out.width="100%", fig.cap="Paired ion and transcript maps across all 876 archived striatal locations. Point positions are shared across panels; axes show original image coordinates, with y increasing downwards. Each colour bar shows log2 library-size-normalized values on a feature-specific scale. The ion panel is labelled by measured m/z."}
 brain <- fit$object
 plotSpatialFeature(brain, c("mz-400.14659", "Penk", "Tac1"),
     assayName = "workflow", labels = c("m/z 400.14659", "Penk", "Tac1"),
@@ -239,8 +237,7 @@ aggregate(cp_values, by = list(lesion = cp$lesion), FUN = mean)
 ```
 
 `Penk` and m/z 400.14659 are higher on the lesioned side of CP, whereas `Tac1`
-is higher on the intact side. This comparison uses CP locations on both sides
-and describes variation within this specimen.
+is higher on the intact side. The comparison uses CP locations on both sides.
 
 # Regional marker characterization {#regional-marker-characterization}
 
@@ -308,12 +305,10 @@ replicate_de$tests$treatment_control$table
 This mode fits limma to equally weighted replicate means and requires at least
 three complete pairs, or three replicates per arm for an unpaired design. `replicate_de` retains
 the design, all tests, moderated intervals and BH-adjusted P values per modality
-and contrast. `logFC` uses the supplied scale; RNA count inference may require a
-separate pseudobulk model.
+and contrast. `logFC` uses the supplied expression scale.
 
-Single-section examples support descriptive spatial comparisons. Replicate
-inference requires independent biological samples recorded in `patient_id` or
-an equivalent sample identifier.
+Record biological sample identifiers in `patient_id` or an equivalent
+`colData()` column and pass its name to `replicate`.
 
 # Regional composition and feature associations {#regional-composition-and-feature-associations}
 
@@ -346,14 +341,12 @@ For m/z 264.268615 and the myelin-associated genes
 each correlation by at most
 `r sprintf("%.3f", max(abs(myelin_associations$correlation - myelin_associations$correlation_raw)))`.
 The sample label is constant in this single section, so the adjustment here
-removes differences between archived region labels. The positive associations
-persist after that adjustment, supporting a spatial association with the myelin
-expression program within this section. Spatial association alone does not
-establish that the ion and the transcripts share a cellular source.
+removes differences between archived region labels. The ion's correlations
+with all three transcripts remain positive after adjustment.
 
 ## Structure-constrained chemical follow-up
 
-The spatial association motivates examining sphingoid-base chemistry.
+Next, we compare candidates in the sphingosine formula family.
 [Sphingosine](https://www.kegg.jp/entry/C00319) has formula C18H37NO2.
 [MassBank RP014702](https://massbank.eu/MassBank/RecordDisplay?id=MSBNK-BGC_Munich-RP014702)
 records a fragment near m/z 264.2682 from a sphingosine standard.
@@ -390,8 +383,7 @@ family_candidates <- family_matches[
 
 The formula family contains `r nrow(structure_family)` database records and
 `r nrow(family_structures)` distinct SMILES strings. `max_water_losses` counts
-structurally supported dehydration steps; spectra are needed to establish which
-fragments form under the acquisition conditions. The table below shows the
+structurally supported dehydration steps. The table below shows the
 engine's mass-matched hypotheses for the actual
 m/z `r sprintf("%.6f", observed_mz)` feature. `min_score = 0` exposes every
 returned hypothesis before downstream score filtering. Repeated RaMP
@@ -408,17 +400,12 @@ These scores compare candidates within the selected molecular-formula family.
 The annotation guide reports their positions among the
 [complete database candidates](Metabolite_Annotation_Pipeline.html#sphingosine-within-the-complete-candidate-search),
 including alternative formulae and adducts, and applies the pathway threshold.
-The structural result and myelin association motivate targeted validation.
-Related sphingolipids can yield the same fragment, so precursor-resolved MS/MS
-and standards are needed to distinguish free sphingosine from other sources.
 
 ## Matched spatial views
 
 The static report draws paired association figures for selected feature pairs.
 Reports built with `interactive = TRUE` add standalone `plot3DFeature()` views
-of the same features (see [report generation](#report-generation)). Read these
-alongside the recorded covariates: spatial dependence and unmeasured structure
-can also contribute to adjusted correlations.
+of the same features (see [report generation](#report-generation)).
 
 # Identity mapping and pathway analysis {#identity-mapping-and-pathway-analysis}
 
@@ -517,7 +504,7 @@ assigns its own cluster numbers.
 plotSpaMTPWorkflow(fit, which = "structure_embedding")
 ```
 
-```{r report-spatial, fig.width=12, fig.height=8, out.width="960px", fig.cap="Spatial partitions of the same 876 locations in original image coordinates. Colours indicate clusters fitted separately for each representation. Cluster numbers are local to each panel. Anatomical accuracy requires comparison with independent anatomical annotations."}
+```{r report-spatial, fig.width=12, fig.height=8, out.width="960px", fig.cap="Spatial partitions of the same 876 locations in original image coordinates. Colours indicate clusters fitted separately for each representation. Cluster numbers are local to each panel."}
 plotSpaMTPWorkflow(fit, which = "structure_spatial")
 ```
 
