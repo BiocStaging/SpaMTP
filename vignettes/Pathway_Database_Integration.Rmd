@@ -44,7 +44,7 @@ and inspects the KEGG Cell Cycle interaction records and their provenance.
 | `ramp_wikipathway` | Human WikiPathways interactions |
 | `ramp_hmdb` | Human Small Molecule Pathway Database (SMPDB) interactions, under the historical SpaMTP resource name |
 
-Load only the required collections. The [joint-pathway guide](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
+Load the collections needed for your analysis. The [joint-pathway guide](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
 uses memberships for measured genes and metabolites. The
 [annotation guide](Metabolite_Annotation_Pipeline.html#carry-the-annotation-threshold-into-real-pathway-analysis)
 shows how scored compound identities enter a network.
@@ -70,7 +70,7 @@ Choose the display for your question. The linked examples share the same
 | Which pathways have positive or negative regional ranks? | `findRegionalPathways()`, then `plotRegionalPathways()` | [Joint regional effects](Gene_Identifier_Mapping.html#regional-pathway-plot) |
 | Where does measured pathway expression vary? | `createPathwayObject()`, `plotPathwaysSpatially()` | [Pathway assays and spatial plots](Gene_Identifier_Mapping.html#pathway-assays-and-spatial-plots) |
 | How do measured members relate to known interactions? | `pathwayNetworkPlots()`, then `embedPathwayNetwork()` | [Interactive RNA/MSI network](Gene_Identifier_Mapping.html#pathway-network) |
-| Which gene sets co-vary without region labels? | `runRAMPGeseca()` | [RNA co-regulation](Gene_Identifier_Mapping.html#pathway-coregulation) |
+| Which gene sets co-vary across locations? | `runRAMPGeseca()` | [RNA co-regulation](Gene_Identifier_Mapping.html#pathway-coregulation) |
 
 `createPathwayAssay()` creates **identity-level** gene or compound rows;
 `createPathwayObject()` creates **pathway-level** scores.
@@ -108,10 +108,8 @@ tabular summaries.
 
 ## Interaction availability
 
-Network export requires at least one pathway with archived edges. Use
-`verbose = TRUE` to inspect source IDs and collection coverage. The exporter
-writes pathways with archived edges; measured identities absent from the
-topology can appear as isolated nodes.
+Use `verbose = TRUE` to inspect source IDs and available interactions.
+The network combines recorded edges with measured pathway members.
 
 # Inspect a pathway and its interactions
 
@@ -147,60 +145,16 @@ sort(table(edges$source_reaction_type), decreasing = TRUE)
 
 # Inspect resource provenance
 
-SpaMTPdb owns the graph conversion, source manifests and preparation recipes.
-Its staging recipe stores the source interaction label and direction for every
-edge, including parallel interactions. For immutable RaMP 3.0.7 downloads,
-SpaMTPdb restores the same fields only when the complete snapshot fingerprint
-matches its pinned input. New resource builds store corrected tables directly.
-`spamtp_database` identifies the verified file and checksum;
-`spamtp_interaction_repair` records the conversion provenance. Saving the returned
-collection with `saveRDS()` retains both.
+The `spamtp_database` attribute records the resource version, source URL and
+checksum. Save the collection with `saveRDS()` to keep these details with the
+reference tables.
 
 ```{r inspect-provenance}
 attr(db$ramp_kegg, "spamtp_database")[c(
     "resource", "version", "source",
     "expected_md5", "source_url"
 )]
-attr(db$ramp_kegg, "spamtp_interaction_repair")
-provenance_file <- system.file("extdata", "pathway_interactions_provenance.csv",
-    package = "SpaMTPdb"
-)
-audit_file <- system.file("extdata", "pathway_interactions_audit.csv",
-    package = "SpaMTPdb"
-)
-read.csv(audit_file)
 ```
-
-The audit summarizes all four collections. `edges_after` exceeds `edges_before`
-because the correction restores parallel edges that the original conversion
-merged. Published files retain their original checksums; SpaMTPdb records
-corrections separately when loading verified snapshots. These edge corrections
-leave RaMP memberships and membership-based enrichment unchanged.
-
-## Maintainer recipe
-
-<details>
-<summary>Rebuild the pinned interaction correction from a source checkout</summary>
-
-The [source-checkout recipe](https://github.com/BCRL-tylu/SpaMTPdb/blob/main/data-raw/rebuild_pathway_interactions.R)
-uses the identifier and interaction helpers in the same `data-raw` directory.
-These development scripts operate on a source checkout. Installed-package users
-can inspect the input URLs and checksums in `provenance_file` above.
-
-Download the graphite archive-19 files and original RaMP source mapping listed
-in that CSV, stage the pinned SpaMTPdb 3.0.7 resources, then run from the checkout:
-
-```sh
-Rscript data-raw/rebuild_pathway_interactions.R \
-  /path/to/graphite-19 /path/to/initial-source_df.rda \
-  /path/to/SpaMTPdb-resources/3.0.7
-```
-
-The recipe checks input fingerprints and reconstructs archived mappings before
-restoring source interaction labels. New resource releases require new
-fingerprints and provenance records.
-
-</details>
 
 Continue with the [complete workflow](End_to_End_Workflow.html) for paired
 spatial analysis and report generation. For a worked compound network, return

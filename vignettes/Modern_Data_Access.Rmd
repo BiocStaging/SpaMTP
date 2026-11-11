@@ -111,8 +111,8 @@ rowData(imported)$mz
 # Pixel and feature metadata
 
 Rows identify measured MSI features; columns identify paired locations.
-`colLabels()` sets the default grouping to the archived anatomy without
-changing `RegionLoupe`. Two per-location quality control (QC) measurements are
+`colLabels()` sets the default grouping from `RegionLoupe`.
+Two per-location quality control (QC) measurements are
 added to `colData()`: `total_intensity` sums the measured MSI intensities and
 `detected_features` counts MSI features with intensity above zero.
 
@@ -129,17 +129,15 @@ The feature-level accessor `rowData(spe)$mz` stores one measured m/z per row.
 
 ## Normalized expression
 
-`normalizeSMData(..., "LogNormalize")` adds `logcounts` while retaining raw
-`counts`. For locations with positive total intensity, the default transformation is
+`normalizeSMData(..., "LogNormalize")` adds the `logcounts` assay.
+For locations with positive total intensity, the default transformation is
 `log2(1 + 10000 * intensity / total_intensity)`, using the supplied MSI features
 and base-2 logarithms.
 `metadata(spe)$spamtp_normalization` records the method, source assay and scale
 factor.
 
-Almost every MSI feature is detected at every location in this dataset, so the
-normalized values are stored as an ordinary dense `matrix`. A sparse
-`dgCMatrix` would need more memory for these values; sparse input stays sparse
-when most normalized values are zero, and `DelayedArray` input stays delayed.
+The normalized values in this dataset are stored as a dense `matrix`.
+Use `class()` to inspect the assay's storage type.
 
 ```{r normalize}
 spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
@@ -168,33 +166,19 @@ individual points. The region labels connect the expression profile to anatomy.
 The [complete workflow](End_to_End_Workflow.html) compares lesion sides within
 the CP region and illustrates regional marker scoring and spatial sensitivity.
 
-## Scaling and memory use {#scaling-and-memory-use}
+## Scale each feature {#scaling-and-memory-use}
 
-`scaleSMData()` centres each feature and scales it to unit variance. Its
-default `scaled` assay is a `DelayedMatrix`: row statistics are computed in
-blocks, and transformed values are evaluated when read. The input assay is
-preserved, and the full scaled matrix is not allocated at this step.
+`scaleSMData()` centres each feature and scales it to unit variance. It adds
+a `scaled` assay as a lazily evaluated `DelayedMatrix`.
 
 ```{r delayed-scaling}
 scaled <- scaleSMData(spe)
 class(assay(scaled, "scaled"))
 ```
 
-Memory requirements depend on the next operation:
-
-| Operation | Memory behaviour |
-|:--|:--|
-| `normalizeSMData()` | Preserves delayed input; chooses dense or sparse storage for in-memory normalized values |
-| `scaleSMData()` | Uses block processing and delayed arithmetic by default; `delayed = FALSE` allocates the result |
-| `runSpatialGraphPCA()` | Uses a sparse spatial graph but materialises the selected expression assay and the solve result |
-| `createMergedModalityAssay()` | Reuses scaled assays; otherwise converts each modality to a dense matrix for scaling |
-
-A dense double-precision matrix needs 8 bytes per entry. For 2,000 features at
-100,000 pixels, that is about 1.6 GB **per matrix**, before temporary copies and
-solver workspace. Select the features and pixels needed for the analysis before
-graph PCA. For a large modality merge, prepare each modality with
-`scaleSMData()` first; downstream functions can still materialise the merged
-values.
+Use `delayed = FALSE` to create an in-memory matrix. For large datasets,
+select the features and locations for the analysis before running graph PCA.
+See `help("scaleSMData")` for storage options.
 
 # Coordinates and optical images
 
@@ -209,18 +193,14 @@ spatialCoordsNames(spe)
 apply(spatialCoords(spe), 2, range)
 ```
 
-Coordinate names label the stored axes. Unit conversion, axis reversal and
-image registration require explicit transformations. This example retains
-the source coordinates.
+The coordinate names now label the two image axes.
 
 ## Image storage and registration
 
 `imgData()` records each image's sample ID, image ID and scale factor. The
 following artificial raster, written with
 [png](https://cran.r-project.org/package=png), demonstrates image storage in a
-separate copy. Histology registration requires a tissue image and a coordinate
-transform. `load = TRUE` keeps the raster in memory, so the object no longer
-depends on the temporary file.
+separate copy. `load = TRUE` stores the raster in the experiment.
 
 ```{r image-access}
 library(png)
@@ -275,18 +255,15 @@ metadata(spe)$SpaMTPData
 The [annotation pipeline](Metabolite_Annotation_Pipeline.html) adds candidate
 identities to `rowData()` and records annotation provenance in `metadata()`.
 
-# Optional Seurat boundary
+# Convert Seurat objects {#optional-seurat-boundary}
 
 ## Explicit conversion
 
-Optional SeuratObject enables explicit conversion. SpaMTP uses Seurat 5 public
-APIs: `LayerData()` for expression, double brackets for metadata, and
-`GetTissueCoordinates()` for image/FOV coordinates. Update incompatible older
-objects with `UpdateSeuratObject()` in the Seurat workflow.
+Install SeuratObject to use the conversion functions. For older Seurat objects,
+run `UpdateSeuratObject()` before conversion.
 
 `spatialExperimentToSeurat()` exports `spe`; `seuratToSpatialExperiment()`
 imports the `counts` layer and `fov` coordinates, with one centroid per pixel.
-The chunk runs only when SeuratObject is installed.
 
 ```{r optional-conversion, eval=requireNamespace("SeuratObject", quietly = TRUE), message=FALSE}
 library(SeuratObject)
@@ -299,14 +276,10 @@ metadata(converted)$seurat_interoperability
 
 ## Coordinate and layer selection
 
-A single image/FOV supplies coordinates by default; metadata is used only
-when no image exists. With multiple images, specify `image` or named
-`coordinates`. Conversion represents each pixel by its centroid.
-
-Only the named layer is transferred; join split Seurat layers first to include
-the complete dataset. Unpaired assays are skipped with a warning. Optical
-rasters, graphs and reductions are omitted. Continue with native accessors
-after conversion.
+Use `layer` to select the expression matrix and `image` to select an image/FOV.
+Alternatively, supply named `coordinates`. Join split Seurat layers before
+conversion to include the complete dataset. Use the accessors above to inspect
+the resulting experiment.
 
 Continue with the [companion-resource guide](SpaMTP_Companion_Workflow.html)
 to retrieve pinned annotation references, or the

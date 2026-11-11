@@ -43,21 +43,18 @@ spaMTPdbVersion()
 
 ## Reference snapshot and species
 
-HGNC uses a fixed quarterly archive, versioned independently of RaMP 3.0.7 and
-experiment resources 1.1.0. Mapping supports **Homo sapiens**; mouse-to-human
-orthology conversion requires a separate step. SpaMTPData stores species in
-`metadata(x)$SpaMTPData`, including nested experiments, so checks also apply
-after `altExp()` extraction.
+Use the HGNC reference for **Homo sapiens** gene identifiers. This guide pins a
+quarterly HGNC archive alongside RaMP 3.0.7 and experiment resources 1.1.0.
+For other species, supply a species-specific or orthology reference.
 
 # Gene mapping index and identifier resolution
 
 ## Demonstration data and pinned inputs
 
-The examples run during builds on 240 aligned human glioma locations nearest the
-coordinate-wise median, selected independently of expression or mapping. All
-339 RNA features and paired mass spectrometry imaging (MSI) features are retained;
-see `help("vignetteData")`
-for the recipe and checksums. Missing references download automatically;
+The example uses 240 aligned human glioma locations near the centre of the
+section, with 339 RNA features and paired mass spectrometry imaging (MSI)
+features. See `help("vignetteData")` for the data preparation recipe.
+References download automatically;
 `offline = TRUE` uses local files or verified caches.
 
 The [original integrated archive](https://doi.org/10.5281/zenodo.18282678)
@@ -69,8 +66,7 @@ with alpha-cyano-4-hydroxycinnamic acid (CHCA) matrix and provides the paired da
 [BioImage Archive S-BIAD1426](https://doi.org/10.6019/S-BIAD1426).
 Each paired location is an archived Xenium cell position. The study assigned
 the mean registered MSI intensity within 20 micrometres of each cell to that
-cell; this vignette retains the cell-level RNA counts and selects 240 paired
-positions without further RNA pooling.
+cell. The example uses these paired MSI values and cell-level RNA counts.
 The archived `cout_labels` column groups locations as Astro, Mesenchymal,
 Neuronal, Oligo or Progenitor. The contrasts below use these archived groups.
 `sample_id` identifies the tissue section.
@@ -94,25 +90,16 @@ mapping <- mapGeneIdentifiers(
 mapping
 ```
 
-## Index fingerprints
-
-The index fingerprints gene identifiers and names. Changed identity assignments
-invalidate cached indices. Reordering rows or repeating identical source rows
-preserves the fingerprint.
-Rebuild older indices with `buildGeneMappingIndex()`.
-
 ## Identifier resolution
 
 Supported inputs include current or previous symbols, aliases, Entrez, HGNC,
 UniProt and versioned Ensembl gene IDs. Approved symbols take priority over
-aliases. A compatible gene-specific ID can resolve a shared protein ID;
-conflicting specific IDs quarantine the RaMP record.
+aliases.
 
 `gene_id` stores HGNC identity, `ramp_ids` its non-conflicting RaMP records, and
 `canonical_ramp_id` a representative for counting each gene once. For AATK,
 the UniProt and Entrez records therefore contribute a union of memberships.
-The returned table preserves input order and repeated identifiers, with one
-row per supplied ID.
+The returned table contains one row per supplied ID, in input order.
 
 ## Mapping status and ambiguity
 
@@ -122,12 +109,9 @@ Inspect `status`, `method`, `candidate_gene_ids` and `candidate_ramp_ids`:
 - `ambiguous` or `conflicting_ramp_records`: competing identities require review.
 - `mapped_ramp_only`: a RaMP record lacks a resolved HGNC identity.
 
-`candidate_ramp_ids` exposes raw candidates. Unresolved or conflicting
-competitors keep a shared crossreference ambiguous, even with only one known
-HGNC candidate. These fields record reference coverage and identity ambiguity
-for each input.
+Use `candidate_ramp_ids` to inspect the RaMP records considered for each input.
 
-# Annotate experiment features without altering expression
+# Annotate experiment features
 
 ## Feature annotation
 
@@ -153,18 +137,12 @@ rowData(rna)[
 ]
 ```
 
-## Preserved measurements and unresolved genes
-
-Annotation preserves counts, names, coordinates and paired modalities.
-Expression rows that map to the same gene remain separate; resolve these
-duplicates before differential analysis. Regional and network workflows
-reject conflicting differential statistics for one gene within a cluster.
+## Review mapped identifiers
 
 Of `r nrow(rna)` genes, `r unname(mapping_counts["mapped"])` map,
 `r unname(mapping_counts["conflicting_ramp_records"])` have conflicting RaMP
 records, and `r unname(mapping_counts["not_in_ramp"])` are absent from RaMP.
 The `r sum(unresolved)` unresolved genes remain in the expression object.
-The mapping warning records these unresolved identities.
 
 `metadata(rna)$gene_mapping$inputs` retains the complete per-feature
 audit, including competing identities. Save `spe` with `saveRDS()` to retain
@@ -228,13 +206,9 @@ are reported and excluded, so U counts resolved identities in the panel.
 
 ## Custom and species-specific references
 
-Official resources harmonize human genes automatically. Custom bundles can
-supply `geneReference` or an explicit index; without a reference, they retain
-RaMP-only mapping without downloading one. `geneMapping = "ramp"` supports
-historical or curated species-specific mapping. Orthology conversion requires
-a separate step.
-Identity reconciliation can change saved mappings and P values without
-changing Fisher's calculation.
+For custom bundles, supply `geneReference` or an explicit index.
+Use `geneMapping = "ramp"` for curated RaMP mappings, including
+species-specific references.
 
 Share `pathwayIndex` between `findRegionalPathways()` and `pathwayNetworkPlots()`
 to preserve identity and provenance.
@@ -305,19 +279,14 @@ attr(pathway_maps, "pathway_coverage")[, c("pathwayName", "measured_size", "used
 pathway_maps
 ```
 
-## Duplicate features and audit outputs
+## Combine duplicate features and inspect coverage
 
-Derived assays preserve the selected layer name, and original measurements
-remain unchanged. Identical duplicate rows are removed; different rows mapping
-to one gene require an explicit aggregation choice. Choose
-`duplicateGenes = "mean"` for log-expression or `"sum"` when additive
-measurements are appropriate for the analysis.
+When several features map to one gene, choose `duplicateGenes = "mean"` for
+log-expression or `"sum"` for additive measurements.
 Use exact `pathwayRampId` values when display names are ambiguous.
 
-Coverage is available in `attr(result, "pathway_coverage")`, pathway score
-rowData/metadata, and plot attributes. Outputs retain reference fingerprints;
-plots also return the displayed score vector. Complete audits include
-unmeasured and conflict-only pathways even when no score is drawn.
+Inspect `attr(result, "pathway_coverage")` for the measured and used members of
+each pathway. Pathway plots also return the displayed score vector.
 
 # Joint MS and RNA pathways {#joint-ms-and-rna-pathways}
 
@@ -385,8 +354,7 @@ data.frame(
 `r length(retained_ms)` MSI features contribute `r nrow(compounds)` distinct
 compound identities; `r length(compound_audit$excluded_conflicts)` features
 have competing compound identities at the stated threshold. Multiple retained
-features assigned to one compound are averaged before ranking. The unmatched MS count includes features with no RaMP candidate passing the
-score floor; RNA exclusions are detailed in the mapping audit above.
+features assigned to one compound are averaged before ranking.
 
 ## Complete ranks and modality contributions
 
@@ -437,14 +405,12 @@ members are compounds.
 Positive normalized enrichment score (NES) indicates enrichment towards higher expression in the archived
 `Oligo` group; negative NES indicates the opposite direction. Measured-member
 and leading-edge counts show each modality's contribution after RMS rank
-scaling. These exploratory rankings describe this single section's targeted
-RNA panel and putative compound assignments.
+scaling.
 
 ## Compare regional pathway effects {#regional-pathway-plot}
 
 `plotRegionalPathways()` displays up to eight joint Reactome pathways by
-largest absolute NES, ordered by reference-membership overlap. Selection
-leaves the BH adjustment across the full tested family unchanged.
+largest absolute NES, ordered by reference-membership overlap.
 
 ```{r human-regional-pathway-plot, fig.width=8.5, fig.height=7, out.width="860px", fig.cap="Joint RNA/MSI pathways for Oligo. Colour shows NES, point area shows tested members, and a dark outline marks BH-adjusted P <= 0.05."}
 both_reactome <- subset(both, type == "reactome")
@@ -484,10 +450,9 @@ attr(network_file, "network_summary")
 ```
 
 The pathway contains `r network_rows$measured_genes` measured genes and
-`r network_rows$measured_metabolites` putative compounds. Reference neighbours
-and equivalent gene nodes make viewer counts differ from these identities.
-`maxNodes` prioritizes leading-edge members and annotated compounds;
-other measured genes can be pruned.
+`r network_rows$measured_metabolites` putative compounds.
+Use `maxNodes` to set the display size; leading-edge members and annotated
+compounds receive priority.
 
 `embedPathwayNetwork()` displays the viewer below. **Download network HTML**
 saves an offline copy; **Export SVG** saves the current diagram.
@@ -527,14 +492,10 @@ plotSpatialFeature(spe, c("RAMP_G_000005676", "RAMP_C_000000954"),
 )
 ```
 
-The filtered `compound_ids` assay has fixed identities, so annotation-score
-controls are hidden. With scored mass-feature input, those controls filter
-the exported overlay without recalculating enrichment.
+## Find co-regulated pathway genes {#pathway-coregulation}
 
-## Find pathway co-regulation without region labels {#pathway-coregulation}
-
-`runRAMPGeseca()` tests whether pathway genes co-vary across observations,
-using RNA without region labels or spatial coordinates. We center each gene
+`runRAMPGeseca()` tests whether pathway genes co-vary across observations.
+We center each gene
 and retain its variance (`scale = FALSE`), so high-variance genes can contribute
 more. Pathways require 5–100 measured genes.
 

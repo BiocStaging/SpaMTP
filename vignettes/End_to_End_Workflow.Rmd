@@ -53,9 +53,8 @@ The source is a coronal section from a 6-hydroxydopamine (6-OHDA)-lesioned mouse
 [GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
 The original analysis selected these striatal locations from the source section.
 
-This is a single section; the replicate-design section provides a call template
-for studies with independent samples. The pinned
-mouse resource downloads once (about 48 MB) and is cached. The
+For studies with independent samples, use the template in the replicate-design
+section. The pinned mouse resource downloads once (about 48 MB) and is cached. The
 [gene and joint-pathway guide](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
 contains the complementary human MSI/Xenium example and its acquisition and
 identity-mapping details.
@@ -91,7 +90,7 @@ nucleus accumbens; OT, olfactory tubercle; cc, corpus callosum; CTX, cortex;
 LSX, lateral septal complex; and aco, anterior commissure, olfactory limb.
 `lesion` labels the two sides. CP contains `r region_side_counts["CP", "intact"]`
 intact-side and `r region_side_counts["CP", "lesioned"]` lesioned-side locations.
-Groups with fewer than three locations are excluded from marker scoring.
+Marker scoring uses groups with at least three locations.
 
 `plotSpatialLabels()` reads these labels from `colData(x)` and positions each
 location using `spatialCoords(x)`. Figure 7.\@ref(fig:input-spatial-layout)
@@ -107,8 +106,9 @@ plotSpatialLabels(x, "RegionLoupe",
 
 ## Normalization and replication
 
-`runSpaMTPWorkflow()` preserves input layers. Its default MSI/RNA transform is
-`log2(1 + 10000 * value / column_sum)`; protein values use `log2(1 + value)`.
+`runSpaMTPWorkflow()` adds a `workflow` assay with normalized values. Its default
+MSI/RNA transform is `log2(1 + 10000 * value / column_sum)`; protein values use
+`log2(1 + value)`.
 `normalizeSMData(..., "LogNormalize")` uses the same log2 transform.
 Use `normalization = "none"` for already transformed inputs. Complete spectral
 processing and RNA quality control beforehand.
@@ -164,23 +164,19 @@ PCA and graph PCA use the same centred, scaled features, recorded by
 Laplacian per sample. `multiOmicIntegration()` concatenates standardized
 embeddings with equal modality weights.
 
-Graph PCA uses a sparse spatial graph and materialises the selected expression
-matrix and solver output, including when the input assay is delayed.
 Here `maxFeatures = 1000` limits representation construction to 1,000 features
 per modality; regional marker scoring uses all retained features.
-See [scaling and memory use](Modern_Data_Access.html#scaling-and-memory-use)
-for sizing larger analyses.
+See [feature scaling](Modern_Data_Access.html#scaling-and-memory-use) for
+preparing larger datasets.
 
-## Metric interpretation
+## Compare representation metrics
 
 Approximate silhouette measures separation within each representation; spatial-neighbor
 agreement measures smoothness. [Adjusted Rand index (ARI)](https://mclust-org.github.io/mclust/reference/adjustedRandIndex.html)
 compares clusters with `RegionLoupe`, with expected value zero for random partitions.
 Here ARI ranges from `r sprintf("%.3f", min(metrics$reference_ARI))` to
-`r sprintf("%.3f", max(metrics$reference_ARI))`, indicating low concordance with
-archived anatomical labels in this section. CP accounts for
-`r sum(x$RegionLoupe == "CP")` of `r ncol(x)` locations; smaller regions contribute
-fewer observations. ARI remains chance-adjusted with unequal class sizes.
+`r sprintf("%.3f", max(metrics$reference_ARI))`.
+CP accounts for `r sum(x$RegionLoupe == "CP")` of `r ncol(x)` locations.
 
 At the primary `k = 3`, joint PCA has silhouette
 `r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "Joint / PCA" & metrics$k == 3])`,
@@ -188,11 +184,8 @@ compared with
 `r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "main / PCA" & metrics$k == 3])`
 for MSI and
 `r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "SPT / PCA" & metrics$k == 3])`
-for RNA. The joint representation has lower silhouette separation in this
-dataset. Consider separation and spatial-neighbor agreement together when
-selecting a representation. ARI evaluates correspondence with the declared
-anatomical reference; the molecular maps below describe feature-level spatial
-patterns within those regions.
+for RNA. Compare separation and spatial-neighbor agreement when selecting a
+representation, and use ARI to compare clusters with the anatomical reference.
 
 Block omission refits clustering on fixed full-data embeddings to assess spatial
 sensitivity. See the [report panels](#report-panels) for embeddings and partitions.
@@ -267,12 +260,11 @@ demsHeatmap(markers,
 
 ## Spatial-block sensitivity
 
-Leave-one-spatial-block-out fits keep region labels fixed and record effect
-ranges, rank changes, effect-direction agreement (`direction_stability`) and
-ineligible small-region fits.
+Leave-one-spatial-block-out fits record effect ranges, rank changes and
+effect-direction agreement (`direction_stability`) for the same region labels.
 These summaries describe sensitivity to the omission of individual spatial blocks.
 A `direction_stability` of 1 means that every evaluable block-omission fit
-preserved the full-data mean Cohen effect's sign.
+gave the same sign as the full-data mean Cohen effect.
 
 # Inference across biological replicates {#inference-across-biological-replicates}
 
@@ -439,7 +431,7 @@ The full-data recipe below is shown unevaluated. It downloads the resources and
 writes a complete analysis. `prepareMouseBrain()` resolves pinned SpaMTPData
 1.1.0 resources into `input_dir`, and `runMouseBrain(case = "dhb")` runs the DHB
 analysis from that directory into `report_dir`. Replace both placeholders with
-new filesystem paths; existing output directories are protected from overwrite.
+filesystem paths for new output directories.
 
 ```{r reference-recipes-run, eval=FALSE}
 source(prepare)
@@ -455,12 +447,12 @@ An explicit `nativeDir` selects verified local files and defaults to offline mod
 
 ## Spatial calibration and subset regeneration
 
-FMP-10/Visium preparation requires a measured target radius in original image
-coordinates via `spatialConfig`. For the registered V11L12-109_B1 pair only,
+For FMP-10/Visium preparation, supply the measured target radius in original
+image coordinates through `spatialConfig`. For the registered V11L12-109_B1 pair,
 `extdata/mouse_brain_scalefactors.json` records Space Ranger's
 `spot_diameter_fullres = 376.942` from [Vicari et al.](https://doi.org/10.17632/w7nw4km7xd.1).
-Set `target_radius` to half that value for this pair. Other specimens require
-their own calibration. Optional optical images need checked scale and orientation.
+Set `target_radius` to half that value. For another specimen, use its measured
+spot diameter and image coordinates.
 
 Both runners use pinned positive-mode DHB or FMP-10 annotation and exclude
 ambiguous compound assignments. To regenerate the vignette subsets, source

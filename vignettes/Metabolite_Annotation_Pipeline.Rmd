@@ -61,7 +61,7 @@ library(SpaMTPData)
 `SpaMTPdb` supplies versioned RaMP chemical and pathway tables. Chemical
 records retain structures, formulae, masses, names, source IDs and `RAMP_C_*`
 IDs. `source = "auto"` resolves these resources; a staged directory supports
-offline use. The registry below describes `chem_props` without downloading it.
+offline use. The registry below describes the `chem_props` resource.
 
 ```{r load-ramp-resources}
 ramp_registry <- spaMTPDatabaseInfo(version = "3.0.7")
@@ -99,14 +99,13 @@ t(target_db[, c(
 
 ## Functional-group interpretation
 
-The parser uses connectivity to distinguish acids, esters and ketones.
-It preserves curated values and fills missing fields from SMILES.
+The returned columns describe functional groups such as acids, esters and
+ketones, using curated values and SMILES-derived annotations.
 
 # From functional groups to ion-mode behaviour
 
-`annotateSMILESStructure()` calls `deconvolveSMILES()` internally to derive
-functional groups and mode-specific chemical-prior scores. These bounded
-heuristics express the structural support for each ion mode.
+`annotateSMILESStructure()` returns functional groups and chemical-prior scores
+for each ion mode. Inspect the mode-specific columns below.
 
 ```{r structure-priors}
 t(target_db[, c(
@@ -197,14 +196,13 @@ m/z_{expected} =
 Here M is the neutral monoisotopic mass, n the molecular multiplier, z the
 signed charge, and the two mass increments describe added and lost groups.
 
-The stored `mass_shift` already contains the signed sum of additions and losses.
-Custom rule tables must satisfy charge balance before candidate generation.
+The `mass_shift` column contains the signed sum of additions and losses.
 
 # Build the reusable index
 
-`buildMZAnnotationIndex()` applies structural bounds and rule-specific priors,
-then sorts retained ions for binary interval searches. Reuse `positive_index`
-for the same database, polarity and adduct set.
+`buildMZAnnotationIndex()` prepares the reference compounds and adduct rules
+for mass matching. Reuse `positive_index` for queries with the same database,
+polarity and adduct set.
 
 ```{r build-index}
 positive_index <- buildMZAnnotationIndex(target_db,
@@ -301,23 +299,19 @@ S = S_{mass} \times P_{rule} \times S_{chemical} \times S_{structure}
     \times S_{adduct\ family}.
 \]
 
-Absent optional MS1 context receives a neutral scoring factor. When a
-contextual spectrum is supplied, missing expected isotope or base-adduct peaks
-can reduce the score.
+Supply `ms1Spectrum` to include isotope and adduct-family support in the score.
 
 `checkFormulaMass = TRUE` checks CHO formula/ion mass consistency. The formula's
 monoisotopic mass and the selected ion rule predict an m/z; a discrepancy beyond
 the query tolerance, with a minimum of 5 ppm to allow rounded reference masses,
 gives `chemical_score = 0.2`. CHO candidates within this tolerance and other
-parsed formulae receive a factor of 1. Unavailable formula evidence is recorded as
-`NA` and omitted from the score product. Setting
-`checkFormulaMass = FALSE` disables this factor for sensitivity comparisons.
+parsed formulae receive a factor of 1. Use `checkFormulaMass = FALSE` to compare
+rankings based on the other score components.
 
 ## Adduct-family support
 
-A complex ion is more credible when a corresponding base monomer is present in
-the same spectrum. Here isotope scoring is disabled so that only adduct-network
-support changes.
+This example compares the score of a dimer peak on its own and alongside its
+base monomer. `checkIsotopes = FALSE` holds isotope scoring fixed for the comparison.
 
 ```{r adduct-network}
 dimer_mz <- ion_table$expected_mz[ion_table$adduct == "2M+H"]
@@ -350,7 +344,7 @@ data.frame(
 # Annotate individual mass values
 
 `annotateMZ()` is a convenience wrapper for individual or small batches of
-observed values. Supply a pre-built index to avoid rebuilding it.
+observed values. Supply `index` to reuse a prepared reference.
 
 ```{r annotate-mz}
 single_result <- annotateMZ(observed_mz[["M+H"]],
@@ -375,10 +369,9 @@ families.
 
 SpaMTPdb's `spaMTPdbResource("smiles_features")` supplies precomputed features,
 joined to `chem_props` by `iso_smiles`. For custom databases,
-`inferStructure = "auto"` parses up to 5,000 unique structures. Larger inputs
-with missing structural features warn; precompute with `annotateSMILESStructure()`
-or explicitly choose
-`inferStructure = "always"` and a `BPPARAM` execution parameter.
+`inferStructure = "auto"` parses up to 5,000 unique structures. For larger
+inputs, precompute with `annotateSMILESStructure()` or choose
+`inferStructure = "always"` with a `BPPARAM` execution parameter.
 
 ## Complete-reference annotation of selected measured features
 
@@ -425,15 +418,12 @@ object <- annotateSM(object,
 annotationInfo(object)
 ```
 
-`FormulaStatus` in `annotationCandidates(object)` records whether the reference
-formula supports formula-based scoring. Variable groups and notation outside
-the parser's supported syntax are summarized once; their formula-based scores
-are `NA`, while exact-mass matching remains available.
+Use `annotationCandidates(object)` to inspect candidate identities, score
+components and `FormulaStatus` for each measured feature.
 
 ## Inspect isotope and matrix-ion candidates
 
-Check for isotope and MALDI matrix-ion candidates using the full `ms1`
-peak list, preserving possible parents omitted by the feature subset.
+Check for isotope and MALDI matrix-ion candidates using the full `ms1` peak list.
 
 ```{r annotation-qc}
 matrix_flags <- flagMatrixPeaks(ms1$mz,
@@ -455,16 +445,14 @@ retaining all measured features.
 ## Inspect stored candidates and score thresholds
 
 Retain all ppm-valid candidates with `minScore = 0`, then compare score
-thresholds without rebuilding the index or repeating annotation.
+thresholds using the stored results.
 `summarizeAnnotationScores()` counts candidate hypotheses (`candidates`; one
 observed mass can contribute several rows), features with at least one
 candidate, and features with one or several distinct RaMP identities. Save the annotated `object` with `saveRDS()` to retain
 the intensities, candidate table and annotation settings for later reuse.
 
-These summaries, `annotationCandidates()` and `plotAnnotationScores()` all
-refer to the features currently present in the object. After row subsetting,
-candidates for removed features are excluded from their results; the original
-annotation store remains in `metadata()` for provenance.
+These summaries, `annotationCandidates()` and `plotAnnotationScores()` describe
+the features currently present in the object.
 
 ```{r score-thresholds}
 threshold_summary <- summarizeAnnotationScores(object,
@@ -480,12 +468,11 @@ Single-identity feature counts can initially rise as weaker competing identities
 fall below the cutoff. At a stricter cutoff, the last candidate for many features
 also falls below the threshold, reducing coverage.
 
-```{r annotation-score-distribution, fig.width=7, fig.height=3.6, out.width="760px", fig.cap="Best candidate score per selected measured mass feature in the mouse striatal section. Each bar counts features; the dashed line marks the exploratory 0.05 cutoff. Features without a ppm-valid candidate are reported in the text."}
+```{r annotation-score-distribution, fig.width=7, fig.height=3.6, out.width="760px", fig.cap="Best candidate score per selected measured mass feature in the mouse striatal section. Each bar counts features; the dashed line marks the exploratory 0.05 cutoff."}
 plotAnnotationScores(object, threshold = 0.05)
 ```
 
-Figure 4.\@ref(fig:annotation-score-distribution) summarizes the score range;
-`r nrow(object) - threshold_summary$matched_features[1]` measured features have no ppm-valid candidate.
+Figure 4.\@ref(fig:annotation-score-distribution) summarizes the score range.
 
 ## Candidate identities for selected mass features
 
@@ -549,8 +536,7 @@ RaMP identities at the exploratory 0.05 cutoff. Its competing candidates
 include ammonium adducts of other compounds. The water-loss rule brings
 sphingosine into the ranked results with explicit structural support. The
 [formula-specific comparison](End_to_End_Workflow.html#structure-constrained-chemical-follow-up)
-in guide 7 inspects the corresponding structural alternatives without
-rebuilding the complete index.
+in guide 7 inspects the corresponding structural alternatives.
 
 # Carry the annotation threshold into real pathway analysis
 
@@ -558,7 +544,7 @@ Select compound candidates, exclude ambiguous identities, and rank **all**
 retained identities by descriptive regional effects within this specimen.
 This example uses compound measurements; mouse RNA remains in `altExp()`.
 
-`pathwayIndex` uses RaMP identities without human HGNC conversion.
+`pathwayIndex` uses RaMP compound identities.
 `annotationScoreThreshold = 0.05` applies the exploratory cutoff examined
 above. `metaboliteAmbiguity = "exclude"` removes multi-identity peaks before
 computing regional `markers`. `findRegionalPathways()` ranks every retained
@@ -673,10 +659,8 @@ cutoff changes feature coverage and the number of retained identities.
 
 Use standardized neutral SMILES and inspect `structure_evidence` for the
 functional groups and reaction sites used in scoring.
-For unparsed structures, ordinary adducts retain mass-rule scoring; water-loss
-rules require a structure-derived dehydration capacity. Supply isotope and
-adduct-family checks with spectra from a matching retention-time window, pixel
-or region.
+Supply isotope and adduct-family checks with spectra from a matching
+retention-time window, pixel or region.
 
 Continue to [pathway resources](Pathway_Database_Integration.html) and the
 [evaluated workflow](End_to_End_Workflow.html) for pathway coverage, spatial

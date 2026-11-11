@@ -36,10 +36,8 @@ versions records which data and references were used.
 | SpaMTPdb | Versioned annotation and pathway resources | Independent tables/lists with checksums and provenance |
 | SpaMTP | Analysis, annotation, plotting and explicit conversion | Existing Bioconductor S4 containers and public accessors |
 
-SpaMTP imports SpaMTPdb and suggests SpaMTPData. Both data packages expose
-resource interfaces that can be used independently of SpaMTP and Seurat. The
-examples require SpaMTPdb >= 0.99.4 and SpaMTPData >= 0.99.5; package, RaMP
-and experiment-data releases have separate versions.
+Package, RaMP and experiment-data releases have separate versions. The calls
+below specify the resource versions used in this guide.
 
 ## Installation and example scope
 
@@ -106,10 +104,9 @@ Retrieve the embedding with `reducedDim(spe, "pca")`.
 `metadata(spe)$reduction_inputs$pca` records the expression layer and features
 used for PCA.
 
-# Database discovery without network access
+# Find database resources
 
-`spaMTPDatabaseInfo()` returns the SpaMTPdb registry of packaged resource
-metadata without downloading resources.
+`spaMTPDatabaseInfo()` lists available database resources and their versions.
 
 ```{r database-registry}
 registry <- spaMTPDatabaseInfo(version = "3.0.7")
@@ -119,9 +116,9 @@ registry[
 ]
 ```
 
-## Verified resource retrieval
+## Load reference tables
 
-`loadSpaMTPDatabase()` validates file size and checksum and retains provenance.
+`loadSpaMTPDatabase()` loads the selected reference tables.
 Use `offline = TRUE` to reuse verified local files or cached downloads.
 Set `localDir` to the directory containing the published RDS files when
 staging resources on a shared system.
@@ -169,11 +166,11 @@ annotationInfo(annotated)
 
 The archived alternatives are SM 34:1 / PA 37:1 and PC 34:1 / PE 37:1;
 SM, PA, PC and PE denote sphingomyelin, phosphatidic acid, phosphatidylcholine
-and phosphatidylethanolamine. These labels preserve the archive's candidate
-assignments. Each ion matches multiple RaMP records under the stated adduct
+and phosphatidylethanolamine. Each ion matches multiple RaMP records under the
+stated adduct
 and mass tolerance; individual records can group several isomers. The
 [annotation tutorial](Metabolite_Annotation_Pipeline.html) shows candidate
-scores, their heuristic interpretation and index reuse.
+scores, ranking and index reuse.
 
 # Published native datasets and historical archives
 
@@ -182,7 +179,7 @@ datasets with URLs and hashes in
 [Zenodo record 22733262](https://zenodo.org/records/22733262).
 Historical Seurat files remain explicitly available in release `1.0.0`.
 
-`metadata = TRUE` returns registry records without downloading data.
+`metadata = TRUE` returns resource names, versions and data classes.
 `native_metadata` describes release 1.1.0; `archive` describes the same
 resource's historical 1.0.0 Seurat file.
 
@@ -198,9 +195,6 @@ archive[, c("resource", "version", "r_data_class", "requires_conversion")]
 
 ## Direct native-data retrieval
 
-SpaMTPData's preparation recipe produces one native RDS per historical archive.
-Retrieve these published files directly, without Seurat conversion.
-
 The call below retrieves the same mouse-brain dataset acquired with
 2,5-dihydroxybenzoic acid (DHB) matrix and paired Visium RNA in `SPT`.
 It reuses the verified local or cached resource from the first retrieval.
@@ -211,15 +205,9 @@ native <- spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
 altExpNames(native)
 ```
 
-Native files have separate checksums and provenance; original archives remain
-unchanged. Counts and complete `data` layers are preserved without relabelling
-`data` as `logcounts`. Optical rasters, polygons and Seurat graphs, weights and
-reductions are omitted. Historical annotations, including `db_3`, retain their
-original candidate assignments and provenance.
-
 ## Explicit archive conversion
 
-Only this archive conversion requires SeuratObject. `legacy` is the historical
+Use SeuratObject for archive conversion. `legacy` is the historical
 FMP-10 object: `assay = "Spatial"` selects MSI and `image = "fov"` selects
 coordinates. `converted_archive` has 1,538 features and 3,005 locations.
 
@@ -229,9 +217,8 @@ converted_archive <- seuratToSpatialExperiment(legacy, assay = "Spatial", image 
 converted_archive
 ```
 
-Select coordinates, layers and images explicitly; optical rasters, graphs and
-reductions are omitted. See [modern data access](Modern_Data_Access.html) for
-conversion details and [the native workflow](SpaMTP_Bioconductor.html) for
+See [modern data access](Modern_Data_Access.html) for coordinate and layer
+selection and [the native workflow](SpaMTP_Bioconductor.html) for
 analysis. The [migration table](Modern_Data_Access.html#migrating-existing-scripts)
 lists common historical calls and their native replacements.
 

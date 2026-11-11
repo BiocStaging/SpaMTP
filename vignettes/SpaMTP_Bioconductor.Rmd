@@ -54,8 +54,8 @@ BiocManager::install(c("SpaMTP", "SpaMTPData"))
 
 ## Real tissue examples
 
-The bladder and pig examples are bundled with SpaMTP and run without a data
-download. The linked mouse-brain workflow adds paired RNA, regional analysis
+The bladder and pig examples are bundled with SpaMTP.
+The linked mouse-brain workflow adds paired RNA, regional analysis
 and pathways using a versioned SpaMTPData resource.
 
 | Example | Measurements retained | Biological context |
@@ -95,8 +95,8 @@ for a subset of the section's locations.
 The stored `ssc` values are spatial shrunken-centroid classes. The
 [archived SpaMTP tutorial](https://genomicsmachinelearning.github.io/SpaMTP/articles/Mouse_Urinary_Bladder.html)
 interprets classes 2, 5 and 6 as adventitia, muscle and urothelium; the
-`compartment` column records these algorithm-derived labels as **archived
-compartment interpretations** and keeps the remaining classes as one group.
+`compartment` column stores these labels and groups the remaining classes
+together.
 
 ```{r bladder-data}
 bladder <- readRDS(system.file("extdata", "bladder_demo.rds", package = "SpaMTP"))
@@ -110,7 +110,7 @@ table(bladder$compartment)
 In Figure 1.\@ref(fig:bladder-compartments), colours identify the archived
 compartments; the reversed y-axis follows image orientation.
 
-```{r bladder-compartments, fig.width=7, fig.height=4.8, out.width="720px", fig.cap="Mouse urinary bladder: all 2,210 retained grid locations in original pixel coordinates. Colours show the archived interpretation of SSC classes 2, 5 and 6; grey retains the other classes, including background. These algorithm-derived compartment labels summarize the archived spatial interpretation."}
+```{r bladder-compartments, fig.width=7, fig.height=4.8, out.width="720px", fig.cap="Mouse urinary bladder: all 2,210 retained grid locations in original pixel coordinates. Colours show the archived compartment labels for SSC classes 2, 5 and 6; grey shows the remaining classes."}
 compartment_colours <- c(
     Adventitia = "#3478A5", Muscle = "#D17A32",
     Urothelium = "#238774", `Other SSC classes` = "#D5DADD"
@@ -121,19 +121,18 @@ plotSpatialLabels(bladder, "compartment",
 )
 ```
 
-## Preserve the source scale and select ions
+## Select ions and transform intensities
 
 Remove zero-total locations and apply the base-2 logarithmic transformation
-`log2(1 + x)` to the archived processed intensities. This preserves the
-upstream normalization for the spatial maps. The later
+`log2(1 + x)` to the archived processed intensities. The later
 [panel-composition sensitivity analysis](#panel-composition-sensitivity)
 checks how an additional **79-feature panel normalization** changes the
 compartment comparison.
 
 The two displayed masses were selected for their compartment-associated
 patterns in the source tutorial. `findNearestMZ()` returns the nearest measured
-feature for each mass. `archived_lipid_candidates` preserves the alternative
-candidate identities reported in the source.
+feature for each mass. `archived_lipid_candidates` lists the candidate
+identities reported in the source.
 
 ```{r bladder-normalization}
 bladder <- bladder[, colSums(counts(bladder)) > 0]
@@ -301,8 +300,8 @@ queues Cardinal TIC normalization. `binSpaMTP()` executes processing and creates
 a common mass axis at the requested resolution. Set resolution to suit the
 instrument and analytical goal. The small simulation below uses 16 pixels and
 0.1 m/z bins to demonstrate file creation, deferred processing and conversion;
-`with_seed()` from [withr](https://cran.r-project.org/package=withr) makes the simulated spectra
-reproducible without changing the random number stream of your session.
+`with_seed()` from [withr](https://cran.r-project.org/package=withr) makes the
+simulated spectra reproducible.
 The [Cardinal guide](https://bioconductor.org/packages/release/bioc/vignettes/Cardinal/inst/doc/Cardinal3-guide.html)
 describes acquisition-specific preprocessing.
 
@@ -324,8 +323,8 @@ spe <- binSpaMTP(raw, resolution = 0.1, units = "mz")
 spe
 ```
 
-For binned data, `asCardinal()` and standard S4 coercion preserve the intensity
-matrix and coordinates. This evaluated example uses the real bladder object.
+Use `asCardinal()` or standard S4 coercion to convert the binned bladder
+experiment to Cardinal.
 
 ```{r cardinal-coercion}
 asCardinal(bladder)
