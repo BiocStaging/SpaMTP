@@ -3,6 +3,11 @@
 \name{argumentNaming}
 \alias{argumentNaming}
 \title{SpaMTP argument names and migration}
+\value{
+This documentation topic describes the argument convention. The
+example reads a migration data frame with \code{function}, \code{previous} and
+\code{current} columns.
+}
 \description{
 Public function arguments use lower camel case, such as \code{assayName},
 \code{minScore} and \code{databaseLocalDir}. \code{BPPARAM} follows the BiocParallel

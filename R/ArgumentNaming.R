@@ -32,6 +32,9 @@
 #' change. `demsHeatmap()` accepts `logFCThreshold` on the scale of its `logFC`
 #' results. For log2 results, a threshold of 1 selects twofold changes.
 #'
+#' @return This documentation topic describes the argument convention. The
+#'   example reads a migration data frame with `function`, `previous` and
+#'   `current` columns.
 #' @seealso [experimentAccess], [findAllDEMs], [demsHeatmap]
 #' @examples
 #' migration <- read.csv(system.file("extdata", "argument-renames.csv",
