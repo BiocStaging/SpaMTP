@@ -1,7 +1,8 @@
-#' Visualise Significant Pathways
+#' Display Pathway Enrichment
 #'
-#' Displays the pathway analysis results form running the
-#' 'fishersPathwayAnalysis()' function
+#' Displays foreground and measured pathway-member counts from
+#' [fishersPathwayAnalysis()], with P values, available FDR values and
+#' a dendrogram of pathway membership overlap.
 #'
 #' @param object A SpatialExperiment used for fishersPathwayAnalysis.
 #' @param pathwayDf Dataframe containing the pathway enrichment results (output
@@ -24,6 +25,8 @@
 #' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
 #' @param databaseSource Database source; see [loadSpaMTPDatabase()].
 #' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
+#' @inheritParams plotRegionalPathways
+#' @param textSize Base text size in points (default 11).
 #' @param ... The arguments pass to stats::hclust
 #'
 #' @return A combined gg, ggplot object with pathway and dendrogram
@@ -54,8 +57,18 @@ visualisePathways <- function(
     databaseVersion = "latest",
     databaseSource = c("auto", "spamtpdb"),
     databaseLocalDir = NULL,
+    labelWidth = 32,
+    textSize = 11,
     ...
 ) {
+    if (!is.null(labelWidth) && (length(labelWidth) != 1L ||
+        !is.numeric(labelWidth) || !is.finite(labelWidth) || labelWidth < 1)) {
+        stop("labelWidth must be NULL or a positive number.", call. = FALSE)
+    }
+    if (!is.numeric(textSize) || length(textSize) != 1L ||
+        !is.finite(textSize) || textSize <= 0) {
+        stop("textSize must be a positive number.", call. = FALSE)
+    }
     no_pathways_plot <- function(reason) {
         verbose_message(messageText = reason, verbose = verbose)
         ggplot2::ggplot() +
@@ -133,12 +146,7 @@ visualisePathways <- function(
     }
     .progressDone(pb)
     merged_pathways <- merged_pathways %>%
-        dplyr::filter(.data$p_val <= pValThreshold) %>%
-        dplyr::mutate(signif_at_005level = ifelse(
-            .data$p_val <= 0.05,
-            "Significant",
-            "Non-significant"
-        ))
+        dplyr::filter(.data$p_val <= pValThreshold)
 
     if (nrow(merged_pathways) == 0L) {
         return(no_pathways_plot(
@@ -192,71 +200,64 @@ visualisePathways <- function(
         merged_pathways <- merged_pathways[clustering$order, , drop = FALSE]
     }
 
-    gg_bar1 <- with(
-        merged_pathways,
-        ggplot2::ggplot() +
-            ggplot2::geom_bar(
-                ggplot2::aes(
-                    x = paste0(pathway_name, "(", pathway_id, ")"),
-                    y = total_in_pathways,
-                    color = "Total analytes in pathway"
-                ),
-                stat = "identity",
-                fill = NA,
-                position = "dodge"
-            ) +
-            ggplot2::geom_bar(
-                ggplot2::aes(
-                    x = paste0(pathway_name, "(", pathway_id, ")"),
-                    y = analytes_in_pathways,
-                    colour = "Analytes detected in pathway"
-                ),
-                stat = "identity",
-                fill = "blue",
-                position = "dodge"
-            ) +
-            ggplot2::geom_point(
-                ggplot2::aes(
-                    x = paste0(pathway_name, "(", pathway_id, ")"),
-                    y = 1.05 * max(total_in_pathways),
-                    size = p_val,
-                    fill = signif_at_005level
-                ),
-                color = "black",
-                shape = 21,
-                position = ggplot2::position_nudge(y = 0.5)
-            ) +
-            ggplot2::scale_size_area(max_size = 5, name = "p value") +
-            ggplot2::scale_fill_manual(
-                values = c(
-                    "Significant" = "green",
-                    "Non-significant" = "red"
-                ),
-                name = ""
-            ) +
-            ggplot2::scale_colour_manual(
-                values = c(
-                    "Analytes detected in pathway" = "blue",
-                    "Total analytes in pathway" = "grey"
-                ),
-                name = ""
-            ) +
-            ggplot2::theme_minimal() +
-            ggplot2::coord_flip() +
-            ggplot2::theme(
-                legend.position = "left",
-                panel.grid.major = ggplot2::element_blank(),
-                panel.grid.minor = ggplot2::element_blank()
-            ) +
-            ggplot2::labs(
-                y = "Number of analytes in pathway",
-                x = "Pathway names"
-            )
+    ids <- as.character(merged_pathways$pathway_id)
+    display_names <- if (is.null(labelWidth)) {
+        merged_pathways$pathway_name
+    } else {
+        stringr::str_wrap(merged_pathways$pathway_name, width = labelWidth)
+    }
+    display_labels <- paste0(display_names, "\n", ids)
+    merged_pathways$.pathway <- factor(ids, levels = ids)
+    merged_pathways$.statistics <- paste0(
+        "P = ", format.pval(merged_pathways$p_val, digits = 2, eps = 0)
     )
-
-    gg_bar1 <- gg_bar1 + ggplot2::scale_x_discrete(limits = paste0(
-        merged_pathways$pathway_name, "(", merged_pathways$pathway_id, ")"
-    ))
+    if ("fdr" %in% names(merged_pathways)) {
+        merged_pathways$.statistics <- paste0(
+            merged_pathways$.statistics, "\nFDR = ",
+            format.pval(merged_pathways$fdr, digits = 2, eps = 0)
+        )
+    }
+    max_count <- max(merged_pathways$total_in_pathways)
+    gg_bar1 <- ggplot2::ggplot(
+        merged_pathways, ggplot2::aes(x = .data$.pathway)
+    ) +
+        ggplot2::geom_col(
+            ggplot2::aes(y = .data$total_in_pathways,
+                fill = "Measured members"),
+            colour = "#9daab3", width = 0.6
+        ) +
+        ggplot2::geom_col(
+            ggplot2::aes(y = .data$analytes_in_pathways,
+                fill = "Selected members"),
+            width = 0.6
+        ) +
+        ggplot2::geom_text(
+            ggplot2::aes(y = max_count * 1.08, label = .data$.statistics),
+            hjust = 0, size = textSize * 0.8 / ggplot2::.pt, lineheight = 1.1
+        ) +
+        ggplot2::scale_fill_manual(
+            values = c("Selected members" = "#287ca3",
+                "Measured members" = "#edf1f4"),
+            breaks = c("Selected members", "Measured members"),
+            name = NULL
+        ) +
+        ggplot2::scale_x_discrete(limits = ids, labels = display_labels,
+            expand = ggplot2::expansion(add = 0.6)) +
+        ggplot2::coord_flip() +
+        ggplot2::labs(y = "Pathway members", x = NULL) +
+        ggplot2::theme_minimal(base_size = textSize) +
+        ggplot2::theme(
+            legend.position = "bottom",
+            legend.text = ggplot2::element_text(
+                size = textSize * 0.85, margin = ggplot2::margin(r = 8)
+            ),
+            axis.text.y = ggplot2::element_text(
+                size = textSize * 0.85, lineheight = 1.05
+            ),
+            plot.margin = ggplot2::margin(8, 12, 8, 12),
+            panel.grid.major.y = ggplot2::element_blank(),
+            panel.grid.minor = ggplot2::element_blank()
+        )
 
     # Get the raster illustration for each pathway
     image_raster <- vector("list", nrow(merged_pathways))
@@ -264,9 +265,15 @@ visualisePathways <- function(
         messageText = "Generating spatial pathway images ... ", verbose = verbose
     )
     pb <- .progressBar(nrow(merged_pathways), verbose)
-    mass_matrix <- Matrix::t(.assayData(object, assay, assayName))
-    coords <- .nativeCoordinates(object, requireNames = FALSE)
+    mass_matrix <- coords <- NULL
     for (z in seq_len(nrow(merged_pathways))) {
+        if (!"adduct_info" %in% names(merged_pathways) ||
+            is.na(merged_pathways$adduct_info[z]) ||
+            !nzchar(merged_pathways$adduct_info[z])) next
+        if (is.null(mass_matrix)) {
+            mass_matrix <- Matrix::t(.assayData(object, assay, assayName))
+            coords <- .nativeCoordinates(object, requireNames = FALSE)
+        }
         mzs <- paste0("mz-", stringr::str_extract_all(
             merged_pathways$adduct_info[z], "\\d+\\.\\d+"
         )[[1]])
@@ -290,15 +297,18 @@ visualisePathways <- function(
                     ),
                     xmin = k - 0.5,
                     xmax = k + 0.5,
-                    ymin = -3.5,
-                    ymax = -0.3
+                    ymin = -0.25 * max_count,
+                    ymax = -0.02 * max_count
                 )
             }
         }
     }
-    gg_bar1 <- gg_bar1 + ggplot2::ylim(
-        if (any(lengths(image_raster))) -3.5 else 0,
-        max(merged_pathways$total_in_pathways) + 5
+    count_breaks <- unique(round(pretty(c(0, max_count), n = 4)))
+    gg_bar1 <- gg_bar1 + ggplot2::scale_y_continuous(
+        limits = c(if (any(lengths(image_raster))) -0.25 * max_count else 0,
+            max_count * 1.65),
+        breaks = count_breaks[count_breaks >= 0 & count_breaks <= max_count],
+        expand = ggplot2::expansion(mult = c(0.02, 0.02))
     )
     # gg_bar1
 
@@ -333,6 +343,8 @@ visualisePathways <- function(
         c(min(y_center - 0.5 * height), max(y_center + 0.5 * height))
     ) + 0.1 * c(-1, 1)
 
+    max_height <- max(segment_hc$x, segment_hc$xend)
+    tree_breaks <- if (max_height > 0) c(0, max_height / 2, max_height) else 0
     plt_dendr <- ggplot2::ggplot(segment_hc) +
         ggplot2::geom_segment(ggplot2::aes(
             x = .data$x,
@@ -341,8 +353,10 @@ visualisePathways <- function(
             yend = .data$yend
         )) +
         ggplot2::scale_x_continuous(
-            expand = c(0, 0.5),
-            limits = c(0, max(segment_hc$x, segment_hc$xend))
+            expand = ggplot2::expansion(mult = 0.05),
+            breaks = tree_breaks,
+            labels = function(x) format(round(x, 2), trim = TRUE),
+            limits = c(0, if (max_height > 0) max_height else 1)
         ) +
         ggplot2::scale_y_continuous(
             expand = c(0, 0),
@@ -352,19 +366,25 @@ visualisePathways <- function(
             position = "right"
         ) +
         ggplot2::labs(
-            x = "Clustering height",
-            y = ""
+            x = "Clustering\nheight", y = NULL
         ) +
-        ggplot2::theme_bw() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank())
+        ggplot2::theme_minimal(base_size = textSize) +
+        ggplot2::theme(
+            panel.grid = ggplot2::element_blank(),
+            axis.text.y = ggplot2::element_blank(),
+            axis.text.x = ggplot2::element_text(size = textSize * 0.8),
+            plot.margin = ggplot2::margin(8, 12, 8, 8)
+        )
 
-    # # Combine the dendrogram and bar plot
-    # combined_plot <- grid.arrange(gg_bar1,ggplotify::as.ggplot(dendro), widths = c(5, 1), nrow =1)
-
-    combined_plot <- cowplot::plot_grid(gg_bar1,
+    legend <- cowplot::get_legend(gg_bar1)
+    combined_plot <- cowplot::plot_grid(
+        gg_bar1 + ggplot2::theme(legend.position = "none"),
         plt_dendr,
-        align = "h",
-        rel_widths = c(6, 1)
+        align = "h", axis = "tb", rel_widths = c(5, 1)
+    )
+    combined_plot <- cowplot::plot_grid(
+        combined_plot, legend, ncol = 1,
+        rel_heights = c(1, 0.12)
     )
     verbose_message(messageText = "\nDone", verbose = verbose)
     # Show the plot

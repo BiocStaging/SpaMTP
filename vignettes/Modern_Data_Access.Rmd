@@ -89,8 +89,8 @@ demonstrates the file format; subsequent analysis uses the complete `spe`
 object above.
 
 `projectName` sets the imported sample label. The CSV importer generates
-pixel IDs from coordinates, so archived barcodes and RNA pairing must be
-retained separately. For raw imzML input, see the
+pixel IDs from coordinates. Keep archived barcodes and RNA pairing in a
+separate table when importing paired data. For raw imzML input, see the
 [native workflow](SpaMTP_Bioconductor.html).
 
 ```{r read-matrix}
@@ -222,7 +222,7 @@ imgRaster(image_example,
 
 `altExp(spe, "SPT")` contains the measured RNA at the same locations as MSI,
 with its own feature rows. Column subsetting keeps RNA and coordinates aligned;
-row subsetting affects only the main MSI experiment. Selecting the ACB
+row subsetting selects features in the main MSI experiment. Selecting the ACB
 locations keeps the 2,075 MSI features and all RNA features at those locations.
 
 ```{r paired-access}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/PathwayVisualisation.R
 \name{visualisePathways}
 \alias{visualisePathways}
-\title{Visualise Significant Pathways}
+\title{Display Pathway Enrichment}
 \usage{
 visualisePathways(
   object,
@@ -17,6 +17,8 @@ visualisePathways(
   databaseVersion = "latest",
   databaseSource = c("auto", "spamtpdb"),
   databaseLocalDir = NULL,
+  labelWidth = 32,
+  textSize = 11,
   ...
 )
 }
@@ -54,14 +56,22 @@ by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
 \item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
+\item{labelWidth}{Maximum target line width for pathway names, in
+characters.
+Defaults to 32. NULL keeps names on one line. Stable pathway identifiers
+are displayed on a separate line in either case.}
+
+\item{textSize}{Base text size in points (default 11).}
+
 \item{...}{The arguments pass to stats::hclust}
 }
 \value{
 A combined gg, ggplot object with pathway and dendrogram
 }
 \description{
-Displays the pathway analysis results form running the
-'fishersPathwayAnalysis()' function
+Displays foreground and measured pathway-member counts from
+\code{\link[=fishersPathwayAnalysis]{fishersPathwayAnalysis()}}, with P values, available FDR values and
+a dendrogram of pathway membership overlap.
 }
 \examples{
 data(spamtp_example)

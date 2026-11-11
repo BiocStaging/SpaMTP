@@ -15,6 +15,9 @@
   in one call, replacing the manual guide 7 summary.
 * Removed the unused `SM.boundary` argument from `applySpatialAlignment()`.
 * Added the maintainer's ORCID to the package metadata.
+* `visualisePathways()` wraps pathway labels, displays P values and FDR,
+  and separates the shared legend from the membership dendrogram. Guide 6
+  demonstrates enrichment with the measured human glioma RNA panel.
 * Marker ranking is now the default in `findAllDEMs()`. Explicit technical
   pooling divides sums by the number of pixels before the log2 transform;
   unequal region sizes no longer appear as fold changes. Random pools remain

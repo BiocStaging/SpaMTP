@@ -75,23 +75,72 @@ Choose the display for your question. The linked examples share the same
 `createPathwayAssay()` creates **identity-level** gene or compound rows;
 `createPathwayObject()` creates **pathway-level** scores.
 
-## A complete membership analysis
+## Enrichment of measured glioma RNA markers
 
-This small included dataset demonstrates the measured universe, enrichment
-and display together; replace the resource bundle with a versioned SpaMTPdb
-bundle for an analysis of experimental data.
+The bundled human glioma example contains 240 aligned tissue locations and
+a 339-gene Xenium panel. This example selects positive markers for the
+archived `Oligo` group and tests their pathway memberships against the measured
+RNA panel. The [gene-mapping guide](Gene_Identifier_Mapping.html#demonstration-data-and-pinned-inputs)
+describes the tissue data and its source.
 
-```{r membership-workflow, message=FALSE, fig.cap="Pathway enrichment for the included three-compound example."}
+Load RaMP 3.0.7 memberships and the HGNC reference, then resolve the measured
+gene names. `measured_genes` supplies the mapped background for enrichment.
+
+```{r membership-data, message=FALSE}
 library(SpaMTP)
-data(spamtp_example)
+library(SpatialExperiment)
+database <- loadSpaMTPDatabase(
+    c("source_df", "analyte", "analytehaspathway", "pathway"),
+    version = "3.0.7"
+)
+reference <- SpaMTPdb::spaMTPdbGeneReference(version = "2026.7.7")
+gene_index <- buildGeneMappingIndex(database$source_df, geneReference = reference)
+pathway_index <- buildPathwayIndex(database, geneIndex = gene_index)
+spe <- readRDS(system.file("extdata", "human_demo.rds", package = "SpaMTP"))
+rna <- altExp(spe, "SPT")
+gene_mapping <- mapGeneIdentifiers(rownames(rna), index = gene_index)
+measured_genes <- gene_mapping$input[gene_mapping$status == "mapped"]
+table(gene_mapping$status)
+```
+
+Normalize RNA counts, rank the positive `Oligo` markers by mean AUC, and
+select the first 20 mapped genes. `minPathSize = 5` selects pathways with at
+least five members in the mapped panel.
+
+```{r membership-enrichment, message=FALSE}
+spe <- normalizeSMData(spe, "LogNormalize", assay = "SPT", verbose = FALSE)
+markers <- findAllDEMs(spe,
+    ident = "cout_labels", assay = "SPT", assayName = "logcounts",
+    method = "markers", spatialBlocks = 0, verbose = FALSE
+)
+foreground <- subset(markers$DEMs,
+    cluster == "Oligo" & logFC > 0 & gene %in% measured_genes)
+foreground <- foreground[order(
+    -foreground$mean_auc, -foreground$logFC, foreground$gene
+), ]
+genes_of_interest <- head(foreground$gene, 20)
+head(foreground[, c("gene", "logFC", "mean_auc")])
 enrichment <- fishersPathwayAnalysis(
-    list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
-    universe = list(metabolites = paste0("RAMP_C_", 1:3)),
-    database = spamtp_example$database, minPathSize = 1,
-    pathwayAllInfo = TRUE, verbose = FALSE)
-visualisePathways(spamtp_example$experiment, enrichment,
-    assay = "main", minN = 1, pValThreshold = 1,
-    database = spamtp_example$database, verbose = FALSE)
+    analytes = list(genes = genes_of_interest),
+    universe = list(genes = measured_genes),
+    pathwayIndex = pathway_index, minPathSize = 5,
+    pathwayAllInfo = TRUE, verbose = FALSE
+)
+```
+
+Display six WikiPathways ranked by enrichment P value, each containing at
+least two selected markers. Blue bars count selected pathway members;
+pale bars count members in the measured background. The labels show P values
+and BH-adjusted FDR from the full set of tested pathways. The dendrogram
+groups pathways by shared database members using Jaccard distance.
+
+```{r membership-workflow, message=FALSE, fig.width=9, fig.height=6.8, fig.cap="Human glioma RNA: six leading WikiPathways for the selected Oligo markers, with measured-panel membership counts, enrichment P values, FDR and membership clustering."}
+display <- head(subset(enrichment,
+    type == "wiki" & analytes_in_pathways >= 2), 6)
+visualisePathways(spe, display,
+    assay = "SPT", assayName = "logcounts", minN = 2,
+    pValThreshold = 1, database = database, verbose = FALSE
+)
 ```
 
 # Pathway network example {#worked-pathway-network}

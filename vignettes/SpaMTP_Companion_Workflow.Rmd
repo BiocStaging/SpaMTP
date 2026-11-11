@@ -205,9 +205,10 @@ native <- spaMTPData("mouse_brain_dhb_striatum", version = "1.1.0")
 altExpNames(native)
 ```
 
-## Explicit archive conversion
+## Convert a historical Seurat object
 
-Use SeuratObject for archive conversion. `legacy` is the historical
+This example uses SeuratObject to convert the archived data to
+SpatialExperiment. `legacy` is the historical
 FMP-10 object: `assay = "Spatial"` selects MSI and `image = "fov"` selects
 coordinates. `converted_archive` has 1,538 features and 3,005 locations.
 

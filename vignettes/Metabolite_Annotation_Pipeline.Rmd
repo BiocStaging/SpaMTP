@@ -179,10 +179,9 @@ positive_rules[match(selected_adducts, positive_rules$name), c(
 ```
 
 Positive-mode rules also include `[M+H-H2O]+` and `[M+H-2H2O]+`.
-SMILES-derived `dehydration_sites` and `max_water_losses` constrain these
-fragment hypotheses: the requested water loss must fit the structure's
-dehydration capacity. The real-data example below shows the resulting
-structure-compatible candidates.
+SMILES-derived `dehydration_sites` and `max_water_losses` match these
+fragment hypotheses to the structure's dehydration capacity. The example
+below shows the resulting candidates for measured tissue ions.
 
 ## Expected mass-to-charge ratio
 

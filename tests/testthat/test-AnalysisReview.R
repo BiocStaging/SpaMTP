@@ -151,7 +151,7 @@ test_that("rendered pathway dendrograms retain all branches and align bar labels
         pathwayAllInfo = TRUE, verbose = FALSE)
     plots <- NULL
     testthat::local_mocked_bindings(plot_grid = function(...) {
-        plots <<- list(...)[1:2]
+        if (is.null(plots)) plots <<- list(...)[1:2]
         ggplot2::ggplot()
     }, .package = "cowplot")
     expect_no_warning(visualisePathways(spamtp_example$experiment, result,
@@ -164,5 +164,7 @@ test_that("rendered pathway dendrograms retain all branches and align bar labels
     leaves <- plots[[2]]$scales$get_scales("y")$labels
     bars <- plots[[1]]$scales$get_scales("x")$limits
     expect_equal(length(bars), length(leaves))
-    expect_true(all(endsWith(bars, paste0("(", leaves, ")"))))
+    expect_identical(bars, leaves)
+    labels <- plots[[1]]$scales$get_scales("x")$labels
+    expect_true(all(endsWith(labels, paste0("\n", leaves))))
 })
