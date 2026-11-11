@@ -121,7 +121,7 @@ plotSpatialLabels(bladder, "compartment",
 )
 ```
 
-## Select ions and transform intensities
+## Transform intensities and select ions
 
 Remove zero-total locations and apply the base-2 logarithmic transformation
 `log2(1 + x)` to the archived processed intensities. The later

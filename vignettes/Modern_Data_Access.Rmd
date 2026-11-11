@@ -193,7 +193,7 @@ spatialCoordsNames(spe)
 apply(spatialCoords(spe), 2, range)
 ```
 
-The coordinate names now label the two image axes.
+The output shows the axis names and the range of each axis.
 
 ## Image storage and registration
 

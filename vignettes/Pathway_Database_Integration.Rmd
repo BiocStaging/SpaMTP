@@ -89,11 +89,12 @@ gene names. `measured_genes` supplies the mapped background for enrichment.
 ```{r membership-data, message=FALSE}
 library(SpaMTP)
 library(SpatialExperiment)
+library(SpaMTPdb)
 database <- loadSpaMTPDatabase(
     c("source_df", "analyte", "analytehaspathway", "pathway"),
     version = "3.0.7"
 )
-reference <- SpaMTPdb::spaMTPdbGeneReference(version = "2026.7.7")
+reference <- spaMTPdbGeneReference(version = "2026.7.7")
 gene_index <- buildGeneMappingIndex(database$source_df, geneReference = reference)
 pathway_index <- buildPathwayIndex(database, geneIndex = gene_index)
 spe <- readRDS(system.file("extdata", "human_demo.rds", package = "SpaMTP"))

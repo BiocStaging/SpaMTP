@@ -35,7 +35,7 @@ is \code{"main"} for the primary experiment.}
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{minN}{Integer value specifying the minimum number of analytes required
+\item{minN}{Positive integer specifying the minimum number of analytes required
 to be present in a pathway (default = 3).}
 
 \item{pValThreshold}{The p-val cutoff to keep the pathways generated from

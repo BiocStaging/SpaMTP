@@ -310,7 +310,7 @@ rankings based on the other score components.
 ## Adduct-family support
 
 This example compares the score of a dimer peak on its own and alongside its
-base monomer. `checkIsotopes = FALSE` holds isotope scoring fixed for the comparison.
+base monomer. `checkIsotopes = FALSE` turns off isotope scoring for this comparison.
 
 ```{r adduct-network}
 dimer_mz <- ion_table$expected_mz[ion_table$adduct == "2M+H"]
@@ -658,7 +658,7 @@ cutoff changes feature coverage and the number of retained identities.
 
 Use standardized neutral SMILES and inspect `structure_evidence` for the
 functional groups and reaction sites used in scoring.
-Supply isotope and adduct-family checks with spectra from a matching
+For isotope and adduct-family checks, supply spectra from a matching
 retention-time window, pixel or region.
 
 Continue to [pathway resources](Pathway_Database_Integration.html) and the

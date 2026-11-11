@@ -12,7 +12,7 @@
 #' @param assayName Expression assay name within the selected experiment
 #'   (default = `"counts"`), read with `SummarizedExperiment::assay()`.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param minN Integer value specifying the minimum number of analytes required
+#' @param minN Positive integer specifying the minimum number of analytes required
 #'   to be present in a pathway (default = 3).
 #' @param pValThreshold The p-val cutoff to keep the pathways generated from
 #'   fisher exact test (default = "0.1").
@@ -85,8 +85,9 @@ visualisePathways <- function(
             ggplot2::theme_void()
     }
 
-    if (is.null(minN)) {
-        stop("Incorrect minimum analyte number! `minN` must be set to a value > 1. Please adjust this value accordingly ...")
+    if (!is.numeric(minN) || length(minN) != 1L || !is.finite(minN) ||
+        minN < 1 || minN != floor(minN)) {
+        stop("minN must be a positive integer.", call. = FALSE)
     }
     pathwayDf <- pathwayDf[which(pathwayDf$analytes_in_pathways >= minN), ]
     if (nrow(pathwayDf) == 0L) {
@@ -269,7 +270,10 @@ visualisePathways <- function(
     for (z in seq_len(nrow(merged_pathways))) {
         if (!"adduct_info" %in% names(merged_pathways) ||
             is.na(merged_pathways$adduct_info[z]) ||
-            !nzchar(merged_pathways$adduct_info[z])) next
+            !nzchar(merged_pathways$adduct_info[z])) {
+            .progressTick(pb, z)
+            next
+        }
         if (is.null(mass_matrix)) {
             mass_matrix <- Matrix::t(.assayData(object, assay, assayName))
             coords <- .nativeCoordinates(object, requireNames = FALSE)

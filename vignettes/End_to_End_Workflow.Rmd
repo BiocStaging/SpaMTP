@@ -53,8 +53,9 @@ The source is a coronal section from a 6-hydroxydopamine (6-OHDA)-lesioned mouse
 [GSM7392311](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM7392311)).
 The original analysis selected these striatal locations from the source section.
 
-For studies with independent samples, use the template in the replicate-design
-section. The pinned mouse resource downloads once (about 48 MB) and is cached. The
+For studies with independent samples, use the template in
+[Inference across biological replicates](#inference-across-biological-replicates).
+The pinned mouse resource downloads once (about 48 MB) and is cached. The
 [gene and joint-pathway guide](Gene_Identifier_Mapping.html#joint-ms-and-rna-pathways)
 contains the complementary human MSI/Xenium example and its acquisition and
 identity-mapping details.
@@ -176,7 +177,6 @@ agreement measures smoothness. [Adjusted Rand index (ARI)](https://mclust-org.gi
 compares clusters with `RegionLoupe`, with expected value zero for random partitions.
 Here ARI ranges from `r sprintf("%.3f", min(metrics$reference_ARI))` to
 `r sprintf("%.3f", max(metrics$reference_ARI))`.
-CP accounts for `r sum(x$RegionLoupe == "CP")` of `r ncol(x)` locations.
 
 At the primary `k = 3`, joint PCA has silhouette
 `r sprintf("%.3f", metrics$approx_silhouette[metrics$representation == "Joint / PCA" & metrics$k == 3])`,

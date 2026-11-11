@@ -98,7 +98,7 @@ aliases.
 
 `gene_id` stores HGNC identity, `ramp_ids` its non-conflicting RaMP records, and
 `canonical_ramp_id` a representative for counting each gene once. For AATK,
-the UniProt and Entrez records therefore contribute a union of memberships.
+the UniProt and Entrez records contribute a union of memberships.
 The returned table contains one row per supplied ID, in input order.
 
 ## Mapping status and ambiguity
@@ -492,7 +492,7 @@ plotSpatialFeature(spe, c("RAMP_G_000005676", "RAMP_C_000000954"),
 )
 ```
 
-## Find co-regulated pathway genes {#pathway-coregulation}
+## Find co-regulated pathways {#pathway-coregulation}
 
 `runRAMPGeseca()` tests whether pathway genes co-vary across observations.
 We center each gene
