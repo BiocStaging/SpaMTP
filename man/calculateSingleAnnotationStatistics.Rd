@@ -61,10 +61,10 @@ former temporary Seurat assay and synthetic-mass Cardinal conversion.
 \details{
 For each candidate, max_cor is the signed correlation of the
 pathway with largest absolute correlation; ties use pathway ID order.
-n_sig_path counts finite correlations strictly greater than corr_threshold
+n_sig_path counts finite correlations strictly greater than \code{corrThreshold}
 (zero therefore counts positive correlations, not every pathway).
-The score is corr_weight * scale(abs(max_cor)) +
-n_weight * scale(n_sig_path), across candidates for one feature.
+The score is corrWeight * scale(abs(max_cor)) +
+nWeight * scale(n_sig_path), across candidates for one feature.
 A constant component contributes zero. Constant expression and unmeasured
 pathways have undefined correlations. Scores require two evaluable
 candidates; otherwise scores and probabilities are NA.

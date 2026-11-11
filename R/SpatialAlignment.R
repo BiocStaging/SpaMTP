@@ -590,7 +590,7 @@ applySpatialAlignment <- function(
     transformed <- .sa_apply_transform(coordinates, transformation)
 
     if (!is.null(origin)) {
-        origin <- .sa_pair(origin, "source.origin")
+        origin <- .sa_pair(origin, "sourceOrigin")
         shift <- pmax(origin - apply(transformed, 2L, min), 0)
         origin_transform <- diag(3L)
         origin_transform[1:2, 3L] <- shift
@@ -619,8 +619,8 @@ applySpatialAlignment <- function(
             call. = FALSE
         )
     }
-    source <- .sa_landmark_matrix(smLandmarks, "SM.landmarks")
-    target <- .sa_landmark_matrix(stLandmarks, "ST.landmarks")
+    source <- .sa_landmark_matrix(smLandmarks, "smLandmarks")
+    target <- .sa_landmark_matrix(stLandmarks, "stLandmarks")
     if (nrow(source) != nrow(target)) {
         stop(
             "`smLandmarks` and `stLandmarks` must contain the same number of rows.",

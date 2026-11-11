@@ -86,9 +86,9 @@ search space when explicitly supplied.}
 \item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
 \item{...}{Additional indexed annotation/scoring arguments passed to
-\code{annotateTable()}, such as \code{index}, \code{rules}, \code{ms1_spectrum},
-\code{infer_structure}, \code{structure_backend}, \code{BPPARAM}, or
-\code{min_structure_score}.}
+\code{annotateTable()}, such as \code{index}, \code{rules}, \code{ms1Spectrum},
+\code{inferStructure}, \code{structureBackend}, \code{BPPARAM}, or
+\code{minStructureScore}.}
 }
 \value{
 A Bioconductor experiment with m/z values annotated. These

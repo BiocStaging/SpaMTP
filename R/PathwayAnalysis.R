@@ -410,7 +410,7 @@ fishersPathwayAnalysis <- function(
 #'   different differential statistics in one cluster, resolve the duplicate
 #'   features before differential analysis; the function does not select an
 #'   arbitrary statistic.
-#' @param ranks Alternative to DE.list: a list named `genes` and/or
+#' @param ranks Alternative to `deList`: a list named `genes` and/or
 #'   `metabolites`, each either a feature-by-region matrix of complete,
 #'   unfiltered ranks or a [findAllDEMs()] result (converted with
 #'   [markerRanks()]). Metabolite rows must be explicit RaMP compound IDs. Map
@@ -573,7 +573,7 @@ findRegionalPathways <- function(
     for (i in seq_along(analyteTypes)) {
         verbose_message(
             messageText = paste0(
-                "Assuming DE.list[",
+                "Assuming deList[",
                 i,
                 "] contains ",
                 analyteTypes[i],
@@ -913,7 +913,7 @@ runRAMPGeseca <- function(
 #' rownames(SingleCellExperiment::altExp(mapped, "gene_ids"))
 #'
 #' ## Create a pathway assay from gene data with verbose output
-#' # spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", outputExperiment = "gene_pathway", verbose = TRUE)
+#' # spamtp_obj <- createPathwayAssay(spamtp_obj, analyteType = "genes", assay = "SPT", outputExperiment = "gene_pathway", verbose = TRUE)
 #' @param metaboliteAmbiguity Expand a mass feature into candidate compounds
 #' (historical behavior), or exclude features mapping to more than one compound.
 #'   The workflow explicitly defaults to exclude. Candidate pairs, excluded
@@ -1088,7 +1088,7 @@ createPathwayAssay <- function(
 #' @param minPathSize Minimum measured unique members to score (default 1).
 #' @param maxPathSize Maximum measured unique members to score (default Inf).
 #' @details Accepts gene identifiers directly or a harmonized RaMP assay.
-#'   min_path_size and max_path_size are applied to measured unique members.
+#'   `minPathSize` and `maxPathSize` are applied to measured unique members.
 #'   rowData contains database_size (after identity reconciliation),
 #'   database_raw_size, measured_size, coverage_fraction, used_size,
 #' database_members, measured_members, used_members and

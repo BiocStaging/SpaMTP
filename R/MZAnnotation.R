@@ -104,9 +104,9 @@ labels_to_show <- function(annotationColumn, n = 3) {
 #'   [loadSpaMTPDatabase()].
 #' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #' @param ... Additional indexed annotation/scoring arguments passed to
-#'   `annotateTable()`, such as `index`, `rules`, `ms1_spectrum`,
-#'   `infer_structure`, `structure_backend`, `BPPARAM`, or
-#'   `min_structure_score`.
+#'   `annotateTable()`, such as `index`, `rules`, `ms1Spectrum`,
+#'   `inferStructure`, `structureBackend`, `BPPARAM`, or
+#'   `minStructureScore`.
 #'
 #' @returns A Bioconductor experiment with m/z values annotated. These
 #'   annotations are stored in the selected experiment's rowData().
@@ -1469,7 +1469,7 @@ addFMP10Annotations <- function(
 #'   [loadSpaMTPDatabase()].
 #' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #' @param ... Additional indexed annotation/scoring arguments passed to
-#'   `annotateTable()`, such as `index`, `rules`, or `ms1_spectrum`.
+#'   `annotateTable()`, such as `index`, `rules`, or `ms1Spectrum`.
 #'
 #' @returns A data.frame containing all successfully annotated m/z values, with
 #'   their corresponding annotation.

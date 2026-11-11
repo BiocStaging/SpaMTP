@@ -105,7 +105,7 @@ Constant scores are zero; unmatched pathways are removed or stored as NA.
 }
 \details{
 Accepts gene identifiers directly or a harmonized RaMP assay.
-min_path_size and max_path_size are applied to measured unique members.
+\code{minPathSize} and \code{maxPathSize} are applied to measured unique members.
 rowData contains database_size (after identity reconciliation),
 database_raw_size, measured_size, coverage_fraction, used_size,
 database_members, measured_members, used_members and

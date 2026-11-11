@@ -121,9 +121,9 @@
 #' Map metabolite intensities to transcriptomic pixels or cells
 #'
 #' Both inputs must already use the same planar coordinate units and matching
-#' sample_id values. Mapping never links different samples. ST.hires uses target
+#' sample_id values. Mapping never links different samples. `stHires` uses target
 #' centroids inside square MSI pixels; ties use the nearest MSI centre then
-#' pixel ID. Otherwise each MSI pixel must cover overlap.threshold of the target
+#' pixel ID. Otherwise each MSI pixel must cover `overlapThreshold` of the target
 #' spot/polygon area. Matching MSI intensities are averaged with equal weights.
 #'
 #' @param smData,stData SpatialExperiment objects with aligned coordinates.

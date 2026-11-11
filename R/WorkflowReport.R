@@ -355,7 +355,7 @@
 #' The HTML embeds PNG figures and styles and needs no network, Pandoc or R
 #' session to view. Full tables, mapping weights, processing settings and the
 #' analysed object are also saved for reproducibility. Existing files are never
-#' overwritten. A report is published to output_dir only after rendering
+#' overwritten. A report is published to `outputDir` only after rendering
 #' succeeds.
 #' @param result A spamtp_workflow result from runSpaMTPWorkflow.
 #' @param outputDir New or empty output directory.

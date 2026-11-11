@@ -39,7 +39,7 @@ Absolute path to report.html, invisibly.
 The HTML embeds PNG figures and styles and needs no network, Pandoc or R
 session to view. Full tables, mapping weights, processing settings and the
 analysed object are also saved for reproducibility. Existing files are never
-overwritten. A report is published to output_dir only after rendering
+overwritten. A report is published to \code{outputDir} only after rendering
 succeeds.
 }
 \examples{

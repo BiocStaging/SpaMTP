@@ -50,7 +50,7 @@ rule selection. The \code{adducts} argument remains an optional restriction.}
 \item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
 \item{...}{Additional indexed annotation/scoring arguments passed to
-\code{annotateTable()}, such as \code{index}, \code{rules}, or \code{ms1_spectrum}.}
+\code{annotateTable()}, such as \code{index}, \code{rules}, or \code{ms1Spectrum}.}
 }
 \value{
 A data.frame containing all successfully annotated m/z values, with

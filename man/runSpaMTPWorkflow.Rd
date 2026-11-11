@@ -89,7 +89,7 @@ validation.}
 \value{
 A spamtp_workflow list containing object, QC, alignment/mapping
 audit,
-analysis, settings, stage log and session information. output_dir also
+analysis, settings, stage log and session information. \code{outputDir} also
 receives a self-contained report.html, CSV tables and workflow.rds.
 }
 \description{

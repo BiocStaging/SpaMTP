@@ -57,7 +57,7 @@ remain as NA rows in top results and NULL entries when no table is possible.}
 selection;
 see loadSpaMTPDatabase.}
 
-\item{pathwayScores}{Whether pathway.assay already contains pathway scores.}
+\item{pathwayScores}{Whether \code{pathwayAssay} already contains pathway scores.}
 
 \item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
@@ -99,7 +99,7 @@ A data.frame preserving feature order and rowData, with ranked
 annotation columns; or a named list when returnTop=FALSE.
 }
 \description{
-When pathway.assay contains RaMP analytes rather than pathway scores,
+When \code{pathwayAssay} contains RaMP analytes rather than pathway scores,
 createPathwayObject is reused to calculate scores in a temporary altExp.
 Set pathwayScores=TRUE to use an existing pathway-level assay directly.
 Input containers are never modified.

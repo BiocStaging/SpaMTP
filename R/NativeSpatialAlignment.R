@@ -125,7 +125,7 @@
 #'   containing one tissue sample.
 #' @param transformation A 3 by 3 homogeneous matrix mapping source coordinates
 #'   to reference coordinates, or NULL for interactive alignment.
-#' @param imageSlice Optional reference image ID in imgData(st.data).
+#' @param imageSlice Optional reference image ID in `imgData(stData)`.
 #' @param msiPixelMultiplier Explicit initial scaling of source coordinates.
 #'   Defaults to one. Applied before transformation, including GUI transforms.
 #' @param shinyHost,shinyPort Host and optional port for the interactive app.

@@ -133,7 +133,7 @@ supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
-\item{ranks}{Alternative to DE.list: a list named \code{genes} and/or
+\item{ranks}{Alternative to \code{deList}: a list named \code{genes} and/or
 \code{metabolites}, each either a feature-by-region matrix of complete,
 unfiltered ranks or a \code{\link[=findAllDEMs]{findAllDEMs()}} result (converted with
 \code{\link[=markerRanks]{markerRanks()}}). Metabolite rows must be explicit RaMP compound IDs. Map

@@ -140,5 +140,5 @@ mapped <- createPathwayAssay(spe,
 rownames(SingleCellExperiment::altExp(mapped, "gene_ids"))
 
 ## Create a pathway assay from gene data with verbose output
-# spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", outputExperiment = "gene_pathway", verbose = TRUE)
+# spamtp_obj <- createPathwayAssay(spamtp_obj, analyteType = "genes", assay = "SPT", outputExperiment = "gene_pathway", verbose = TRUE)
 }

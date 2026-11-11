@@ -66,9 +66,9 @@ transcriptomes in altExp, target images and metadata, and mapping provenance.
 }
 \description{
 Both inputs must already use the same planar coordinate units and matching
-sample_id values. Mapping never links different samples. ST.hires uses target
+sample_id values. Mapping never links different samples. \code{stHires} uses target
 centroids inside square MSI pixels; ties use the nearest MSI centre then
-pixel ID. Otherwise each MSI pixel must cover overlap.threshold of the target
+pixel ID. Otherwise each MSI pixel must cover \code{overlapThreshold} of the target
 spot/polygon area. Matching MSI intensities are averaged with equal weights.
 }
 \examples{

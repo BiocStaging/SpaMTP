@@ -55,7 +55,7 @@ rules automatically when \code{rules} is \code{NULL}.}
 
 \item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
-\item{inferStructure, structureBackend, BPPARAM, min_structure_score}{Structure-aware
+\item{inferStructure, structureBackend, BPPARAM, minStructureScore}{Structure-aware
 rule-selection arguments passed to \code{\link[=buildMZAnnotationIndex]{buildMZAnnotationIndex()}}.}
 
 \item{...}{Additional arguments passed to \code{\link[=queryMZAnnotationIndex]{queryMZAnnotationIndex()}}.}

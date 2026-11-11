@@ -98,7 +98,7 @@ sum is generally inappropriate for log-transformed expression.}
 
 \item{combine}{Arrange the pathway maps in one figure with wrapped titles
 and a single colour bar. All maps share the default z-score limits
-(-3 to 3) unless \code{min.cutoff}/\code{max.cutoff} are supplied.}
+(-3 to 3) unless \code{minCutoff}/\code{maxCutoff} are supplied.}
 
 \item{combineColumns}{Number of columns in the combined figure.}
 

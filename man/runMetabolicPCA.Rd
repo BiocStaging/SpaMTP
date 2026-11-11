@@ -88,5 +88,5 @@ SingleCellExperiment::reducedDimNames(sce)
 # spamtp_obj <- runMetabolicPCA(spamtp_obj, npcs = 50)
 
 ## For running PCA on increased peak bin sizes
-# spamtp_obj <- runMetabolicPCA(spamtp_obj, npcs = 50, bin_resolution = 50)
+# spamtp_obj <- runMetabolicPCA(spamtp_obj, npcs = 50, binResolution = 50)
 }

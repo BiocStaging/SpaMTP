@@ -327,7 +327,7 @@ plotSinglePathwaySpatially <- function(
 #' @inheritParams plotPathways
 #' @param combine Arrange the pathway maps in one figure with wrapped titles
 #'   and a single colour bar. All maps share the default z-score limits
-#'   (-3 to 3) unless `min.cutoff`/`max.cutoff` are supplied.
+#'   (-3 to 3) unless `minCutoff`/`maxCutoff` are supplied.
 #' @param combineColumns Number of columns in the combined figure.
 #' @param ... Additional arguments to plotSinglePathwaySpatially.
 #' @return A named list of spatial pathway plots, carrying the same coverage

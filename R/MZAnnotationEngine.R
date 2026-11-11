@@ -1992,7 +1992,7 @@ queryMZAnnotationIndex <- function(
 #' @param databaseSource Database source used when `db = NULL`; see
 #'   [loadSpaMTPDatabase()].
 #' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
-#' @param inferStructure,structureBackend,BPPARAM,min_structure_score
+#' @param inferStructure,structureBackend,BPPARAM,minStructureScore
 #'   Structure-aware
 #'   rule-selection arguments passed to [buildMZAnnotationIndex()].
 #' @param ... Additional arguments passed to [queryMZAnnotationIndex()].

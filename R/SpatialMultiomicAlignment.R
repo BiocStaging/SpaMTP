@@ -195,9 +195,9 @@ rigid.transl <- function(
 
 #' Creates a transformation matrix for reflection
 #'
-#' Creates a transformation matrix for reflection where mirror.x will reflect
+#' Creates a transformation matrix for reflection where `mirrorX` will reflect
 #' the
-#' points along the x axis and mirror.y will reflect thepoints along the y axis.
+#' points along the x axis and `mirrorY` will reflect the points along the y axis.
 #' Points are assumed to be centered at (0, 0)
 #'
 #' @param mirrorX,mirrorY Logical: mirrors x or y axis if set to TRUE

@@ -301,7 +301,7 @@
         }
         .pn_assert_columns(
             de, c("cluster", "gene", "avg_log2FC", "p_val_adj"),
-            paste0("DE.list[['", type, "']]")
+            paste0("deList[['", type, "']]")
         )
         de$cluster <- as.character(de$cluster)
         de$gene <- as.character(de$gene)

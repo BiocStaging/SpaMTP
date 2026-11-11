@@ -179,10 +179,10 @@
 #'
 #' @details For each candidate, max_cor is the signed correlation of the
 #' pathway with largest absolute correlation; ties use pathway ID order.
-#' n_sig_path counts finite correlations strictly greater than corr_threshold
+#' n_sig_path counts finite correlations strictly greater than `corrThreshold`
 #' (zero therefore counts positive correlations, not every pathway).
-#' The score is corr_weight * scale(abs(max_cor)) +
-#' n_weight * scale(n_sig_path), across candidates for one feature.
+#' The score is corrWeight * scale(abs(max_cor)) +
+#' nWeight * scale(n_sig_path), across candidates for one feature.
 #' A constant component contributes zero. Constant expression and unmeasured
 #' pathways have undefined correlations. Scores require two evaluable
 #' candidates; otherwise scores and probabilities are NA.
@@ -281,7 +281,7 @@ calculateSingleAnnotationStatistics <- function(
 
 #' Rank annotations for all MSI features
 #'
-#' When pathway.assay contains RaMP analytes rather than pathway scores,
+#' When `pathwayAssay` contains RaMP analytes rather than pathway scores,
 #' createPathwayObject is reused to calculate scores in a temporary altExp.
 #' Set pathwayScores=TRUE to use an existing pathway-level assay directly.
 #' Input containers are never modified.
@@ -297,7 +297,7 @@ calculateSingleAnnotationStatistics <- function(
 #' @param returnTop Return one best evaluable candidate per feature; FALSE
 #'   returns a named list of all candidate tables. Features without a score
 #' remain as NA rows in top results and NULL entries when no table is possible.
-#' @param pathwayScores Whether pathway.assay already contains pathway scores.
+#' @param pathwayScores Whether `pathwayAssay` already contains pathway scores.
 #' @return A data.frame preserving feature order and rowData, with ranked
 #'   annotation columns; or a named list when returnTop=FALSE.
 #' @inheritParams createPathwayAssay

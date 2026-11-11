@@ -22,7 +22,7 @@ containing one tissue sample.}
 \item{transformation}{A 3 by 3 homogeneous matrix mapping source coordinates
 to reference coordinates, or NULL for interactive alignment.}
 
-\item{imageSlice}{Optional reference image ID in imgData(st.data).}
+\item{imageSlice}{Optional reference image ID in \code{imgData(stData)}.}
 
 \item{msiPixelMultiplier}{Explicit initial scaling of source coordinates.
 Defaults to one. Applied before transformation, including GUI transforms.}
