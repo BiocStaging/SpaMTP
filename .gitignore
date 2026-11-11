@@ -1,6 +1,10 @@
 .Rproj.user
 .Rhistory
 .Rdata
+.Ruserdata
+.Renviron
+.Rprofile
+*.Rproj
 .httr-oauth
 .DS_Store
 .quarto
@@ -19,3 +23,6 @@ Rplots.pdf
 .RData
 .idea/
 .vscode/
+*~
+*.swp
+*.swo
