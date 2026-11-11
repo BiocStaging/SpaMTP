@@ -9,7 +9,7 @@
 multiOmicIntegration(
   multiomicData,
   reductionList = list("spm.pca", "spt.pca"),
-  dimsList = list(1:30, 1:30),
+  dimsList = list(seq_len(30), seq_len(30)),
   returnIntermediate = FALSE,
   verbose = FALSE,
   modalities = c("main", "transcriptome"),
@@ -19,7 +19,7 @@ multiOmicIntegration(
 \S4method{multiOmicIntegration}{SpatialExperiment}(
   multiomicData,
   reductionList = list("spm.pca", "spt.pca"),
-  dimsList = list(1:30, 1:30),
+  dimsList = list(seq_len(30), seq_len(30)),
   returnIntermediate = FALSE,
   verbose = FALSE,
   modalities = c("main", "transcriptome"),
@@ -29,7 +29,7 @@ multiOmicIntegration(
 \S4method{multiOmicIntegration}{ANY}(
   multiomicData,
   reductionList = list("spm.pca", "spt.pca"),
-  dimsList = list(1:30, 1:30),
+  dimsList = list(seq_len(30), seq_len(30)),
   returnIntermediate = FALSE,
   verbose = FALSE,
   modalities = c("main", "transcriptome"),

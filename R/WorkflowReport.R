@@ -102,7 +102,7 @@
         "Joint multi-omics structure"
     )
     xy <- SpatialExperiment::spatialCoords(x$object)
-    if (ncol(xy) >= 2L && all(is.finite(xy[, 1:2, drop = FALSE]))) {
+    if (ncol(xy) >= 2L && all(is.finite(xy[, c(1L, 2L), drop = FALSE]))) {
         frame <- data.frame(
             x = xy[idx, 1], y = xy[idx, 2], group = colour[idx],
             sample = if ("sample_id" %in% names(meta)) as.character(meta$sample_id[idx]) else "sample"

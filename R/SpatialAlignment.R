@@ -558,7 +558,7 @@ applySpatialAlignment <- function(
             call. = FALSE
         )
     }
-    transformed[, 1:2, drop = FALSE] / denominator
+    transformed[, c(1L, 2L), drop = FALSE] / denominator
 }
 
 
@@ -585,7 +585,7 @@ applySpatialAlignment <- function(
         nrow = 3L
     )
     translation <- diag(3L)
-    translation[1:2, 3L] <- translate
+    translation[c(1L, 2L), 3L] <- translate
     transformation <- translation %*% rotation %*% scaling
     transformed <- .sa_apply_transform(coordinates, transformation)
 
@@ -593,7 +593,7 @@ applySpatialAlignment <- function(
         origin <- .sa_pair(origin, "sourceOrigin")
         shift <- pmax(origin - apply(transformed, 2L, min), 0)
         origin_transform <- diag(3L)
-        origin_transform[1:2, 3L] <- shift
+        origin_transform[c(1L, 2L), 3L] <- shift
         transformation <- origin_transform %*% transformation
         transformed <- .sa_apply_transform(coordinates, transformation)
     }
@@ -835,7 +835,7 @@ applySpatialAlignment <- function(
             }
         }
         if (is.null(coordinateColumns) && ncol(coordinates) == 2L) {
-            coordinateColumns <- 1:2
+            coordinateColumns <- c(1L, 2L)
         }
     }
     if (length(coordinateColumns) != 2L ||

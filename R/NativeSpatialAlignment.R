@@ -10,8 +10,8 @@
     linear <- matrix(c(cos(angle), sin(angle), -sin(angle), cos(angle)), 2L) %*%
         diag(c(scaleX, scaleY))
     output <- diag(3L)
-    output[1:2, 1:2] <- linear
-    output[1:2, 3] <- center + c(shiftX, shiftY) - as.numeric(linear %*% center)
+    output[c(1L, 2L), c(1L, 2L)] <- linear
+    output[c(1L, 2L), 3] <- center + c(shiftX, shiftY) - as.numeric(linear %*% center)
     output
 }
 
@@ -249,6 +249,12 @@ addSMImage <- function(
     scaleFactor = 1, transformation = NULL,
     interactive = TRUE, ...
 ) {
+    .checkDots(
+        ...,
+        allowed = setdiff(names(formals(shiny::runApp)), "appDir"),
+        fn = "addSMImage",
+        formalNames = names(formals(addSMImage))
+    )
     object <- .nativeSpatialObject(object)
     sampleId <- sampleId %||% .singleAlignmentSample(object)
     reference <- addSpatialImage(object,

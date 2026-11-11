@@ -28,15 +28,15 @@ BiocManager::install("SpaMTPData")
 
 | Package | Role |
 |---|---|
-| SpaMTP | Analysis, annotation, visualisation and integration |
-| SpaMTPdb | Versioned RaMP annotation resources and a human HGNC reference (installed with SpaMTP) |
-| [SpaMTPData](https://bioconductor.org/packages/SpaMTPData/) | Experimental datasets and example data |
+| [SpaMTP](https://bioconductor.org/packages/SpaMTP/) | Analysis, annotation, visualisation and multi-omic integration |
+| [SpaMTPdb](https://bioconductor.org/packages/SpaMTPdb/) | Versioned RaMP annotation resources and human HGNC gene reference (installed automatically with `SpaMTP`) |
+| [SpaMTPData](https://bioconductor.org/packages/SpaMTPData/) | Experimental datasets and companion example data |
 
 ## Quick start
 
 This example uses a compact measured mouse-bladder MSI panel bundled with
-SpaMTP, so it needs no data download after installation. The 79 features and
-2,210 retained locations preserve the source panel and a regular tissue grid.
+`SpaMTP`, so it requires no network download after installation. The 79 features
+and 2,210 retained locations preserve the source panel on a regular tissue grid.
 
 ```r
 library(SpaMTP)
@@ -50,11 +50,9 @@ plotSpatialLabels(bladder, "compartment")
 plotSpatialFeature(bladder, findNearestMZ(bladder, 798.54114), assayName = "counts")
 ```
 
-The [introductory vignette](vignettes/SpaMTP_Bioconductor.Rmd) explains the
-tissue compartments, ion selection and processing history. These are
-single-section examples: spatial differences describe the specimen, and
-accurate-mass matches are candidate identities that need further chemical
-evidence.
+The [introductory vignette](vignettes/SpaMTP_Bioconductor.Rmd) walks through
+these tissue compartments, ion selection, normalization sensitivity and raw
+`imzML` import.
 
 ## Tutorials
 
@@ -78,15 +76,13 @@ separate version numbers.
 
 ## Documentation and support
 
-This repository contains the Bioconductor submission. Its vignettes document
-the native workflow. The [project website](https://genomicsmachinelearning.github.io/SpaMTP/)
-also includes published and developmental tutorials; historical Seurat-based
-examples use a different API.
-
-Report package problems in the [issue tracker](https://github.com/SpaMTP-project/SpaMTP/issues).
-See [NEWS](NEWS.md) for changes and the
-[development repository](https://github.com/GenomicsMachineLearning/SpaMTP/tree/developmental)
-for website development.
+Package vignettes document the Bioconductor-native workflow (`browseVignettes("SpaMTP")`).
+Post usage questions on the [Bioconductor Support Site](https://support.bioconductor.org/)
+with the `spamtp` tag, and report bugs in the
+[GitHub issue tracker](https://github.com/SpaMTP-project/SpaMTP/issues).
+See [NEWS.md](NEWS.md) for release notes. Archived tutorials from the original
+publication on the [project website](https://genomicsmachinelearning.github.io/SpaMTP/)
+use the historical Seurat-based API.
 
 ## Citation
 

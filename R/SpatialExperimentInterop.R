@@ -193,7 +193,10 @@ methods::setMethod(
 methods::setMethod(
     "asSpatialExperiment",
     "SpatialExperiment",
-    function(x, ...) x
+    function(x, ...) {
+        .checkDots(..., fn = "asSpatialExperiment", formalNames = "x")
+        x
+    }
 )
 
 #' @rdname asSpatialExperiment
@@ -202,6 +205,11 @@ methods::setMethod(
     "asSpatialExperiment",
     "SummarizedExperiment",
     function(x, coordinates = c("x", "y"), ...) {
+        .checkDots(
+            ...,
+            fn = "asSpatialExperiment",
+            formalNames = c("x", "coordinates")
+        )
         columnData <- as.data.frame(SummarizedExperiment::colData(x))
         if (length(coordinates) != 2L || anyNA(coordinates) || anyDuplicated(coordinates)) {
             stop(
@@ -328,14 +336,20 @@ methods::setMethod(
 methods::setMethod(
     "asCardinal",
     "MSImagingExperiment",
-    function(x, ...) x
+    function(x, ...) {
+        .checkDots(..., fn = "asCardinal", formalNames = "x")
+        x
+    }
 )
 
 #' @rdname asCardinal
 #' @export
 methods::setMethod(
     "asCardinal", "MSImagingArrays",
-    function(x, ...) x
+    function(x, ...) {
+        .checkDots(..., fn = "asCardinal", formalNames = "x")
+        x
+    }
 )
 
 methods::setAs(
@@ -384,6 +398,11 @@ methods::setMethod(
     "addTranscriptome",
     "SpatialExperiment",
     function(x, transcriptome, name = "transcriptome", assayName = "counts", ...) {
+        .checkDots(
+            ...,
+            fn = "addTranscriptome",
+            formalNames = names(formals(addTranscriptome))
+        )
         if (is.matrix(transcriptome) || inherits(transcriptome, "Matrix")) {
             transcriptome <- SingleCellExperiment::SingleCellExperiment(
                 assays = stats::setNames(list(transcriptome), assayName)
@@ -468,6 +487,11 @@ methods::setMethod(
                      load = FALSE,
                      ...
     ) {
+        .checkDots(
+            ...,
+            fn = "addSpatialImage",
+            formalNames = names(formals(addSpatialImage))
+        )
         SpatialExperiment::addImg(
             x,
             imageSource = imageSource,
@@ -675,6 +699,11 @@ methods::setMethod(
                      legendTitle = assayName,
                      ...
     ) {
+        .checkDots(
+            ...,
+            fn = "plotSpatialFeature",
+            formalNames = names(formals(plotSpatialFeature))
+        )
         values <- .spatialFeatureValues(x, features, assayName)
         .plotSpatialValues(
             x,
@@ -696,7 +725,33 @@ methods::setMethod(
 methods::setMethod(
     "plotSpatialFeature",
     "MSImagingExperiment",
-    function(x, features, ...) {
-        plotSpatialFeature(asSpatialExperiment(x), features = features, ...)
+    function(
+        x,
+        features,
+        assayName = "counts",
+        labels = NULL,
+        pointSize = 1.6,
+        alpha = 1,
+        minCutoff = NA,
+        maxCutoff = NA,
+        combine = TRUE,
+        ncol = NULL,
+        legendTitle = assayName,
+        ...
+    ) {
+        plotSpatialFeature(
+            asSpatialExperiment(x, assayName = assayName),
+            features = features,
+            assayName = assayName,
+            labels = labels,
+            pointSize = pointSize,
+            alpha = alpha,
+            minCutoff = minCutoff,
+            maxCutoff = maxCutoff,
+            combine = combine,
+            ncol = ncol,
+            legendTitle = legendTitle,
+            ...
+        )
     }
 )

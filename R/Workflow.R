@@ -627,7 +627,7 @@ runSpaMTPWorkflow <- function(
         embedding <- SingleCellExperiment::reducedDim(object, "integrated")
         joint <- list(
             embedding = embedding,
-            display = stats::prcomp(embedding, rank. = 2)$x[, 1:2, drop = FALSE],
+            display = stats::prcomp(embedding, rank. = 2)$x[, c(1L, 2L), drop = FALSE],
             method = "Equal-weight concatenated standardized modality PCs; display is a PCA of the entire joint representation. No batch correction."
         )
         record("integration", "completed", joint$method)

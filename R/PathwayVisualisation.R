@@ -61,6 +61,12 @@ visualisePathways <- function(
     textSize = 11,
     ...
 ) {
+    .checkDots(
+        ...,
+        allowed = setdiff(names(formals(stats::hclust)), c("d", "method")),
+        fn = "visualisePathways",
+        formalNames = names(formals(visualisePathways))
+    )
     if (!is.null(labelWidth) && (length(labelWidth) != 1L ||
         !is.numeric(labelWidth) || !is.finite(labelWidth) || labelWidth < 1)) {
         stop("labelWidth must be NULL or a positive number.", call. = FALSE)

@@ -353,6 +353,18 @@ plotPathwaysSpatially <- function(
     duplicateGenes = c("error", "mean", "sum"), combine = FALSE,
     combineColumns = 2L, ...
 ) {
+    .checkDots(
+        ...,
+        allowed = setdiff(
+            names(formals(.plot_pathway_spatial_score)),
+            c(
+                "scores", "object", "images", "title",
+                "imageAlpha", "colors", "guide"
+            )
+        ),
+        fn = "plotPathwaysSpatially",
+        formalNames = names(formals(plotPathwaysSpatially))
+    )
     object <- .nativeSpatialObject(object)
     context <- .pathway_score_context(
         object, assay, assayName, database, pathwayIndex,

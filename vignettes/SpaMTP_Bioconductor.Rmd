@@ -163,7 +163,6 @@ locations with intensity above zero.
 
 ```{r bladder-regional-summary}
 named <- bladder$compartment != "Other SSC classes"
-compartment <- droplevels(bladder$compartment[named])
 summarizeFeatures(bladder[, named], features = ion_features,
     groupBy = "compartment", assayName = "logcounts")
 ```

@@ -138,7 +138,7 @@
                 num.neighbors = min(15L, nrow(z) - 1L), num.threads = 1L
             )
         } else {
-            stats::prcomp(z, rank. = 2)$x[, 1:2, drop = FALSE]
+            stats::prcomp(z, rank. = 2)$x[, c(1L, 2L), drop = FALSE]
         }
         rownames(display) <- rownames(z)
         representation$display <- display

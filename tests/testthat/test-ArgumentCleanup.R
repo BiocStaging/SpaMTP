@@ -71,3 +71,111 @@ test_that("workflow metrics expose the computed representation comparisons", {
     expect_true(any(metrics$representation == "main / PCA" & metrics$k == 2))
     expect_error(workflowMetrics(list()), "computed structure metrics")
 })
+
+test_that("functions and S4 methods reject misspelt or legacy arguments in ...", {
+    data(spamtp_example)
+    spe <- spamtp_example$experiment
+    db <- spamtp_example$database
+
+    expect_error(
+        fishersPathwayAnalysis(
+            list(genes = c("GENE1", "GENE2")),
+            universe = list(genes = paste0("GENE", seq_len(8))),
+            database = db, minPathSize = 2, pval_cutoff = 0.01, verbose = FALSE
+        ),
+        "pvalCutoff"
+    )
+    expect_error(
+        fishersPathwayAnalysis(
+            list(genes = c("GENE1", "GENE2")),
+            universe = list(genes = paste0("GENE", seq_len(8))),
+            database = db, minPathSize = 2, ppm = 5, ppm = 10, verbose = FALSE
+        ),
+        "Duplicate argument"
+    )
+    expect_error(
+        asSpatialExperiment(spe, "unnamed"),
+        "Unused unnamed"
+    )
+
+    empty_df <- data.frame(analytes_in_pathways = c(1L, 2L), p_val = c(0.01, 0.02))
+    expect_error(
+        visualisePathways(NULL, empty_df, minN = 3, min_n = 1, verbose = FALSE),
+        "minN"
+    )
+    single_df <- data.frame(
+        pathway_name = "Single pathway",
+        pathway_id = "WP1",
+        p_val = 0.01,
+        fdr = 0.02,
+        analytes_in_pathways = 5L,
+        total_in_pathways = 8L
+    )
+    expect_error(
+        visualisePathways(NULL, single_df, minN = 1, min_n = 1, verbose = FALSE),
+        "minN"
+    )
+
+    expect_error(
+        plotSpatialFeature(spe, "ion1", legend_title = "x"),
+        "legendTitle"
+    )
+    msi <- asCardinal(spe)
+    msi_feature <- rownames(asSpatialExperiment(msi))[[1L]]
+    expect_error(
+        plotSpatialFeature(msi, msi_feature, legend_title = "x"),
+        "legendTitle"
+    )
+    msi_plot <- plotSpatialFeature(
+        msi, msi_feature, legendTitle = "Custom title"
+    )
+    expect_identical(msi_plot$labels$colour, "Custom title")
+
+    expect_error(asSpatialExperiment(spe, assay_name = "counts"), "Unused argument")
+    se <- SummarizedExperiment::SummarizedExperiment(
+        assays = SummarizedExperiment::assays(spe),
+        colData = cbind(
+            SummarizedExperiment::colData(spe),
+            SpatialExperiment::spatialCoords(spe)
+        )
+    )
+    expect_error(asSpatialExperiment(se, assay_name = "counts"), "Unused argument")
+    expect_error(asCardinal(msi, assay_name = "counts"), "Unused argument")
+
+    rna <- SummarizedExperiment::assay(
+        SingleCellExperiment::altExp(spe, "transcriptome")
+    )
+    expect_error(
+        addTranscriptome(spe, rna, name = "extra", assay_name = "counts"),
+        "assayName"
+    )
+
+    img_file <- tempfile(fileext = ".png")
+    on.exit(unlink(img_file), add = TRUE)
+    png::writePNG(matrix(0.5, 4, 4), img_file)
+    expect_error(
+        addSpatialImage(spe, img_file, sample_id = "s1"),
+        "sampleId"
+    )
+    expect_error(
+        addSMImage(img_file, spe, interactive = FALSE, scale_factor = 2),
+        "scaleFactor"
+    )
+
+    precomputed <- multiOmicIntegration(
+        spe, dimsList = list(seq_len(2), seq_len(2)), returnIntermediate = TRUE
+    )
+    expect_error(
+        multiOmicIntegration(precomputed, dims.list = list(seq_len(2), seq_len(2))),
+        "dimsList"
+    )
+
+    idx <- buildPathwayIndex(db)
+    expect_error(
+        plotPathwaysSpatially(
+            "P1", spe, assay = "transcriptome", pathwayIndex = idx,
+            min.cutoff = -1
+        ),
+        "minCutoff"
+    )
+})

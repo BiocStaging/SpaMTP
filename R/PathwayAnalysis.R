@@ -114,6 +114,18 @@ fishersPathwayAnalysis <- function(
     pathwayIndex = NULL,
     ...
 ) {
+    .checkDots(
+        ...,
+        allowed = setdiff(
+            names(formals(annotateTable)),
+            c(
+                "mzDf", "verbose", "databaseVersion",
+                "databaseSource", "databaseLocalDir"
+            )
+        ),
+        fn = "fishersPathwayAnalysis",
+        formalNames = names(formals(fishersPathwayAnalysis))
+    )
     analytes <- .fisher_validate_input(analytes, "analytes")
     if (!is.null(universe)) {
         universe <- .fisher_validate_input(universe, "universe")
@@ -132,7 +144,7 @@ fishersPathwayAnalysis <- function(
     }
     if (!valid_size(minPathSize) || !valid_size(maxPathSize) ||
         minPathSize > maxPathSize) {
-        stop("Pathway size limits must be positive finite integers with minPathSize <= max_path_size.",
+        stop("Pathway size limits must be positive finite integers with minPathSize <= maxPathSize.",
             call. = FALSE
         )
     }
@@ -151,13 +163,6 @@ fishersPathwayAnalysis <- function(
         }
     }
     args <- list(...)
-    if (length(args) && (is.null(names(args)) || any(!nzchar(names(args))) ||
-        anyDuplicated(names(args)))) {
-        stop(
-            "Annotation arguments in ... must have unique names.",
-            call. = FALSE
-        )
-    }
     needed <- c("source_df", "analyte", "analytehaspathway", "pathway")
     if (length(c(analytes$mzs, universe$mzs)) && is.null(args$db) && is.null(args$index)) {
         needed <- c(needed, "chem_props")

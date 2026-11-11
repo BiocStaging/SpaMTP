@@ -3,7 +3,7 @@
     field <- result$region_analysis$field
     ids <- .wf_preview_indices(metadata, field, points)
     xy <- SpatialExperiment::spatialCoords(result$object)
-    coords <- if (ncol(xy) >= 2L && all(is.finite(xy))) unname(xy[ids, 1:2, drop = FALSE]) else NULL
+    coords <- if (ncol(xy) >= 2L && all(is.finite(xy))) unname(xy[ids, c(1L, 2L), drop = FALSE]) else NULL
     vector <- function(x) unname(as.list(x))
     payload <- list(
         schema = 1L, observations = vector(colnames(result$object)[ids]),
@@ -119,7 +119,7 @@
                 return(NULL)
             }
             list(
-                sample = s, coordinates = unname(z$graph_pca$scores[, 1:2, drop = FALSE]),
+                sample = s, coordinates = unname(z$graph_pca$scores[, c(1L, 2L), drop = FALSE]),
                 pixels = vector(z$pixels), groups = vector(if (is.null(field)) {
                     rep(s, length(z$pixels))
                 } else {

@@ -2,7 +2,9 @@
 
 * Public arguments now use lower camel case, with the conventional
   Bioconductor `BPPARAM` name retained. For example, `SM.assay` and `SM_assay`
-  become `smAssay`, and annotation functions share `minScore`. See
+  become `smAssay`, and annotation functions share `minScore`. Unused or
+  legacy argument names passed through `...` now raise an explicit error
+  rather than being ignored on non-forwarding code paths. See
   `help("argumentNaming")` and `extdata/argument-renames.csv` for the
   complete migration table. Update named calls to the new spelling.
 * `foldChangeThreshold` replaces the misleading `logFC_threshold` in

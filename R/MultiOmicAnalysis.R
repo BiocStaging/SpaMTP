@@ -33,7 +33,7 @@ methods::setGeneric(
     function(
         multiomicData,
                      reductionList = list("spm.pca", "spt.pca"),
-                     dimsList = list(1:30, 1:30),
+                     dimsList = list(seq_len(30), seq_len(30)),
                      returnIntermediate = FALSE,
                      verbose = FALSE,
                      modalities = c("main", "transcriptome"),
@@ -106,12 +106,24 @@ methods::setMethod(
     function(
         multiomicData,
                      reductionList = list("spm.pca", "spt.pca"),
-                     dimsList = list(1:30, 1:30),
+                     dimsList = list(seq_len(30), seq_len(30)),
                      returnIntermediate = FALSE,
                      verbose = FALSE,
                      modalities = c("main", "transcriptome"),
                      ...
     ) {
+        .checkDots(
+            ...,
+            allowed = union(
+                "scale",
+                setdiff(
+                    names(formals(scrapper::runPca)),
+                    c("x", "number", "...")
+                )
+            ),
+            fn = "multiOmicIntegration",
+            formalNames = names(formals(multiOmicIntegration))
+        )
         if (length(modalities) < 2L || !identical(modalities[[1L]], "main") ||
             anyNA(modalities) || anyDuplicated(modalities)) {
             stop("modalities must start with main and contain distinct altExp names.",
@@ -211,7 +223,7 @@ methods::setMethod(
     function(
         multiomicData,
                      reductionList = list("spm.pca", "spt.pca"),
-                     dimsList = list(1:30, 1:30),
+                     dimsList = list(seq_len(30), seq_len(30)),
                      returnIntermediate = FALSE,
                      verbose = FALSE,
                      modalities = c("main", "transcriptome"),
