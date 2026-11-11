@@ -11,13 +11,19 @@ and paired modalities. Seurat conversion is optional and explicit.
 
 ## Installation
 
-SpaMTP requires **R >= 4.6.0**. Install it and its companion data packages
-from Bioconductor:
+To install `SpaMTP`, start R (>= 4.6.0) and enter:
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("SpaMTP", "SpaMTPData"))
+
+BiocManager::install("SpaMTP")
+```
+
+To also install the companion experimental datasets package (`SpaMTPData`):
+
+```r
+BiocManager::install("SpaMTPData")
 ```
 
 | Package | Role |
