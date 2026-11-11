@@ -34,7 +34,7 @@ rank.
 }
 \description{
 Returns the candidate identities stored by \code{\link[=annotateSM]{annotateSM()}} (with
-\code{save.intermediate = TRUE}), ranked within each feature by decreasing score
+\code{saveIntermediate = TRUE}), ranked within each feature by decreasing score
 and then increasing absolute ppm error. Candidates remain hypotheses: the
 \code{identities} column counts the distinct RaMP compound identities that remain
 for each feature at \code{minScore}, so values above one mark ambiguous features.

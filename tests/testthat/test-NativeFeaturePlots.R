@@ -31,7 +31,7 @@ test_that("annotation panels aggregate independently without double-counting pea
     values <- .mzPlotValues(object, NULL, "main", "counts", 0.1, "Glucose")
     expect_equal(as.numeric(values), as.numeric(Matrix::colSums(counts)))
     expect_error(imageMZAnnotationPlot(object, "Gluc"), "No matching")
-    expect_s3_class(imageMZAnnotationPlot(object, "Gluc", plot.exact = FALSE), "ggplot")
+    expect_s3_class(imageMZAnnotationPlot(object, "Gluc", plotExact = FALSE), "ggplot")
     expect_s3_class(spatialMZAnnotationPlot(object, "Glucose"), "ggplot")
     expect_identical(object, before)
 })
@@ -49,7 +49,7 @@ test_that("current annotation stores can label arbitrary native feature IDs", {
         object, "mz_annotation",
         list(results = annotations, metadata = list(schema_version = 2L))
     )
-    result <- searchAnnotations(object, "Glucose", search.exact = TRUE)
+    result <- searchAnnotations(object, "Glucose", searchExact = TRUE)
     expect_identical(result$mz_names, "a")
     expect_identical(rownames(result), "a")
     expect_equal(imageMZAnnotationPlot(object, "Glucose")$data$score, as.numeric(1:6))
@@ -71,14 +71,14 @@ test_that("sample, split and cutoff controls keep coordinates aligned", {
     selected <- imageMZPlot(object, 100, fov = "s1", cells = c("p1", "p3"))
     expect_setequal(selected$data$cell, c("p1", "p3"))
     expect_setequal(selected$data$score, c(1, 3))
-    split <- imageMZPlot(nativeFixture(), 100, split.by = "region", combine = FALSE)
+    split <- imageMZPlot(nativeFixture(), 100, splitBy = "region", combine = FALSE)
     expect_length(split, 2)
-    clipped <- imageMZPlot(nativeFixture(), 100, min.cutoff = "q50", max.cutoff = 5)
+    clipped <- imageMZPlot(nativeFixture(), 100, minCutoff = "q50", maxCutoff = 5)
     expect_equal(clipped$data$score, c(3.5, 3.5, 3.5, 4, 5, 5))
-    expect_error(imageMZPlot(object, 100, min.cutoff = 8, max.cutoff = 1), "exceeds")
-    expect_error(imageMZPlot(object, 100, min.cutoff = c(1, 2)), "one cutoff")
-    expect_error(imageMZPlot(object, 100, min.cutoff = "q101"), "Cutoffs")
-    expect_error(imageMZPlot(object, 100, max.cutoff = "typo"), "Cutoffs")
+    expect_error(imageMZPlot(object, 100, minCutoff = 8, maxCutoff = 1), "exceeds")
+    expect_error(imageMZPlot(object, 100, minCutoff = c(1, 2)), "one cutoff")
+    expect_error(imageMZPlot(object, 100, minCutoff = "q101"), "Cutoffs")
+    expect_error(imageMZPlot(object, 100, maxCutoff = "typo"), "Cutoffs")
 })
 
 test_that("pathway-network payloads align native RNA and MSI with spatial pixels", {
@@ -87,9 +87,9 @@ test_that("pathway-network payloads align native RNA and MSI with spatial pixels
     metabolites <- .pn_layer_data(object, "main", "counts")
     payload <- .pn_spatial_payload(object, "region", NULL,
         c("RAMP_G_1", "RAMP_C_1"),
-        gene_de = data.frame(rampId = "RAMP_G_1", gene = "a", p_val_adj = 0.01),
-        metabolite_de = data.frame(ramp_id = "RAMP_C_1", mz_name = "a", p_val_adj = 0.01),
-        gene_matrix = genes, metabolite_matrix = metabolites
+        geneDe = data.frame(rampId = "RAMP_G_1", gene = "a", p_val_adj = 0.01),
+        metaboliteDe = data.frame(ramp_id = "RAMP_C_1", mz_name = "a", p_val_adj = 0.01),
+        geneMatrix = genes, metaboliteMatrix = metabolites
     )
     expect_identical(payload$clusters, as.character(object$region))
     expect_equal(payload$expression$rna$RAMP_G_1, as.numeric(genes["a", ]))
@@ -129,7 +129,7 @@ test_that("optical overlays use imgData scale and native interactive widgets", {
     plots <- spatialMZPlot(object, c(100, 200), interactive = TRUE, combine = FALSE)
     expect_length(plots, 2)
     expect_true(all(vapply(plots, inherits, logical(1), "plotly")))
-    widget <- plotly::plotly_build(plot3DFeature(object, "a", show.image = "optical"))
+    widget <- plotly::plotly_build(plot3DFeature(object, "a", showImage = "optical"))
     traces <- widget$x$data
     expect_length(traces, 3)
     expect_equal(as.numeric(traces[[1]]$marker$color), as.numeric(6:1))
@@ -194,7 +194,7 @@ test_that("density HTML exports native masses, empty peaks and safe annotations"
 
 test_that("mass spectra and pixel symbols do not infer masses or swap axes", {
     object <- nativeFixture()
-    spectrum <- massIntensityPlot(object, group.by = "region", mz.labels = 100)
+    spectrum <- massIntensityPlot(object, groupBy = "region", mzLabels = 100)
     expect_setequal(spectrum$data$mass, c(100, 200, 300))
     expected <- Matrix::rowMeans(SummarizedExperiment::assay(object, "counts")[, c(1, 3, 5)])
     expect_equal(spectrum$data$intensity[spectrum$data$variable == "edge"], as.numeric(expected))
@@ -204,7 +204,7 @@ test_that("mass spectra and pixel symbols do not infer masses or swap axes", {
         plain$data$intensity,
         as.numeric(Matrix::rowMeans(SummarizedExperiment::assay(object, "counts")))
     )
-    expect_no_error(ggplot2::ggplot_build(massIntensityPlot(object, split.by = "region")))
+    expect_no_error(ggplot2::ggplot_build(massIntensityPlot(object, splitBy = "region")))
     original <- imageMZPlot(object, 100)
     squared <- pixelPlot(original)
     expect_identical(squared$data, original$data)
@@ -216,5 +216,5 @@ test_that("mass spectra and pixel symbols do not infer masses or swap axes", {
         binned$Binned_Metabolites,
         as.numeric(Matrix::colSums(SummarizedExperiment::assay(object, "counts")[1:2, ]))
     )
-    expect_error(binMetabolites(object, "a", bin_name = "sample_id"), "new colData")
+    expect_error(binMetabolites(object, "a", binName = "sample_id"), "new colData")
 })

@@ -1,6 +1,6 @@
 .pathwayScores <- function(
     pathways, object, assay = "main", assayName = "logcounts",
-    standardize = TRUE, pathway_index = NULL, duplicate_genes = "error"
+    standardize = TRUE, pathwayIndex = NULL, duplicateGenes = "error"
 ) {
     expression <- .assayData(object, assay, assayName)
     if (!is.list(pathways) || !length(pathways)) {
@@ -10,27 +10,27 @@
         )
     }
     audit <- NULL
-    if (!is.null(pathway_index)) {
-        .pathway_validate_index(pathway_index)
-        if (!is.null(pathway_index$gene_index)) .gene_check_experiment_species(
+    if (!is.null(pathwayIndex)) {
+        .pathway_validate_index(pathwayIndex)
+        if (!is.null(pathwayIndex$gene_index)) .gene_check_experiment_species(
             object,
             assay,
-            pathway_index$gene_index$provenance$organism
+            pathwayIndex$gene_index$provenance$organism
         )
         mapped <- .pathway_expression(
             expression,
-            pathway_index,
-            duplicate_genes
+            pathwayIndex,
+            duplicateGenes
         )
         expression <- mapped$expression
         pathways <- lapply(pathways, function(ids) {
             unique(c(
                 ids[grepl("^RAMP_C_", ids)],
-                .pathway_gene_ids(ids[!grepl("^RAMP_C_", ids)], pathway_index)
+                .pathway_gene_ids(ids[!grepl("^RAMP_C_", ids)], pathwayIndex)
             ))
         })
         audit <- list(
-            provenance = pathway_index$provenance, inputs = mapped$mapping,
+            provenance = pathwayIndex$provenance, inputs = mapped$mapping,
             used_members = lapply(pathways, intersect, y = rownames(expression))
         )
     }
@@ -70,12 +70,12 @@
 
 addGesecaScores <- function(
     pathways, object, assay = "main", assayName = "logcounts",
-    prefix = "", scale = FALSE, pathway_index = NULL, duplicate_genes = "error"
+    prefix = "", scale = FALSE, pathwayIndex = NULL, duplicateGenes = "error"
 ) {
     object <- .nativeSpatialObject(object)
     scores <- .pathwayScores(pathways, object, assay, assayName,
         standardize = scale,
-        pathway_index = pathway_index, duplicate_genes = duplicate_genes
+        pathwayIndex = pathwayIndex, duplicateGenes = duplicateGenes
     )
     colnames(scores) <- paste0(prefix, colnames(scores))
     object <- .setCellMetadata(object, scores)
@@ -84,14 +84,14 @@ addGesecaScores <- function(
 }
 
 .namedPathways <- function(
-    pathways, database, database_version,
-    database_source, database_local_dir
+    pathways, database, databaseVersion,
+    databaseSource, databaseLocalDir
 ) {
     resources <- .spamtp_db_bundle(
         c("analytehaspathway", "pathway"),
         database = database,
-        version = database_version, source = database_source,
-        local_dir = database_local_dir
+        version = databaseVersion, source = databaseSource,
+        localDir = databaseLocalDir
     )
     table <- merge(resources$analytehaspathway, resources$pathway,
         by = "pathwayRampId"
@@ -140,11 +140,11 @@ plotSinglePathway <- function(
     pathway, object, title = NULL, assay = "main",
     assayName = "logcounts", reduction = NULL,
     colors = c("darkblue", "lightgrey", "darkred"),
-    guide = "colourbar", pathway_index = NULL, duplicate_genes = "error", ...
+    guide = "colourbar", pathwayIndex = NULL, duplicateGenes = "error", ...
 ) {
     object <- .nativeSpatialObject(object)
     scores <- .pathwayScores(list(pathway = pathway), object, assay, assayName,
-        pathway_index = pathway_index, duplicate_genes = duplicate_genes
+        pathwayIndex = pathwayIndex, duplicateGenes = duplicateGenes
     )
     plot <- .plot_pathway_reduced_score(
         object,
@@ -200,9 +200,9 @@ plotSinglePathway <- function(
 #' @inheritParams plotSinglePathway
 #' @inheritParams createPathwayAssay
 #' @param database Optional named list of database tables.
-#' @param database_version Database version.
-#' @param database_source Database source, auto or spamtpdb.
-#' @param database_local_dir Optional local database directory.
+#' @param databaseVersion Database version.
+#' @param databaseSource Database source, auto or spamtpdb.
+#' @param databaseLocalDir Optional local database directory.
 #' @return A named list of ggplots with pathway_coverage and pathway_index
 #'   attributes; each plot also carries its exact pathway_scores.
 #' @export
@@ -211,23 +211,23 @@ plotSinglePathway <- function(
 #' spe <- spamtp_example$experiment
 #' index <- buildPathwayIndex(spamtp_example$database)
 #' if (requireNamespace("scater", quietly = TRUE)) {
-#'     plotPathways(c("P1", "P2"), spe, assay = "transcriptome", pathway_index = index)
+#'     plotPathways(c("P1", "P2"), spe, assay = "transcriptome", pathwayIndex = index)
 #' }
 plotPathways <- function(
     pathways, object, title = NULL, assay = "main",
     assayName = "logcounts", reduction = NULL, colors = c("darkblue", "lightgrey", "darkred"),
-    guide = "colourbar", database = NULL, database_version = "latest",
-    database_source = c("auto", "spamtpdb"), database_local_dir = NULL,
-    pathway_index = NULL, gene_mapping = c("auto", "hgnc", "ramp"), gene_reference = NULL,
-    gene_index = NULL, gene_reference_version = "latest", gene_reference_local_dir = NULL,
-    organism = "Homo sapiens", duplicate_genes = c("error", "mean", "sum"), ...
+    guide = "colourbar", database = NULL, databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"), databaseLocalDir = NULL,
+    pathwayIndex = NULL, geneMapping = c("auto", "hgnc", "ramp"), geneReference = NULL,
+    geneIndex = NULL, geneReferenceVersion = "latest", geneReferenceLocalDir = NULL,
+    organism = "Homo sapiens", duplicateGenes = c("error", "mean", "sum"), ...
 ) {
     object <- .nativeSpatialObject(object)
     context <- .pathway_score_context(
-        object, assay, assayName, database, pathway_index,
-        match.arg(gene_mapping), gene_reference, gene_index, gene_reference_version,
-        gene_reference_local_dir, organism, database_version, match.arg(database_source),
-        database_local_dir, match.arg(duplicate_genes)
+        object, assay, assayName, database, pathwayIndex,
+        match.arg(geneMapping), geneReference, geneIndex, geneReferenceVersion,
+        geneReferenceLocalDir, organism, databaseVersion, match.arg(databaseSource),
+        databaseLocalDir, match.arg(duplicateGenes)
     )
     ids <- .pathway_select(context$index, pathways)
     selected <- context$coverage[match(ids, context$coverage$pathwayRampId), , drop = FALSE]
@@ -263,16 +263,16 @@ plotPathways <- function(
 #' Plot a pathway score in tissue coordinates
 #' @inheritParams plotSinglePathway
 #' @param images Image IDs in imgData to overlay; NULL draws coordinates only.
-#' @param image.alpha Image opacity.
+#' @param imageAlpha Image opacity.
 #' @param crop Whether to restrict plotting to the pixel extent.
-#' @param min.cutoff,max.cutoff Numeric or quantile colour cutoffs.
+#' @param minCutoff,maxCutoff Numeric or quantile colour cutoffs.
 #' @param ncol Number of columns in the combined plot.
-#' @param pt.size.factor Point size.
+#' @param ptSizeFactor Point size.
 #' @param alpha Point opacity (the first value is used).
 #' @param shape Point shape.
 #' @param stroke Point border width.
 #' @param interactive Convert the result to an interactive plotly plot.
-#' @param image.labels Optional labels for the selected images.
+#' @param imageLabels Optional labels for the selected images.
 #' @return A ggplot or combined plot; a plotly object if interactive is TRUE.
 #' @export
 #' @examples
@@ -283,22 +283,22 @@ plotPathways <- function(
 #' )
 #' plotSinglePathwaySpatially("a", x)
 plotSinglePathwaySpatially <- function(
-    pathway, object, images = NULL, title = NULL, image.alpha = 1,
+    pathway, object, images = NULL, title = NULL, imageAlpha = 1,
     assay = "main", assayName = "logcounts",
     colors = c("darkblue", "lightgrey", "darkred"), guide = "colourbar",
-    crop = TRUE, min.cutoff = NA, max.cutoff = NA, ncol = NULL,
-    pt.size.factor = 1.6, alpha = 1, shape = 16, stroke = 0,
-    interactive = FALSE, image.labels = NULL, pathway_index = NULL, duplicate_genes = "error"
+    crop = TRUE, minCutoff = NA, maxCutoff = NA, ncol = NULL,
+    ptSizeFactor = 1.6, alpha = 1, shape = 16, stroke = 0,
+    interactive = FALSE, imageLabels = NULL, pathwayIndex = NULL, duplicateGenes = "error"
 ) {
     object <- .nativeSpatialObject(object)
     values <- .pathwayScores(list(pathway = pathway), object, assay, assayName,
-        pathway_index = pathway_index, duplicate_genes = duplicate_genes
+        pathwayIndex = pathwayIndex, duplicateGenes = duplicateGenes
     )
     scores <- values[, 1L]
     plot <- .plot_pathway_spatial_score(
-        scores, object, images, title, image.alpha,
-        colors, guide, crop, min.cutoff, max.cutoff, ncol, pt.size.factor,
-        alpha, shape, stroke, interactive, image.labels
+        scores, object, images, title, imageAlpha,
+        colors, guide, crop, minCutoff, maxCutoff, ncol, ptSizeFactor,
+        alpha, shape, stroke, interactive, imageLabels
     )
     attr(plot, "pathway_mapping") <- attr(values, "pathway_mapping")
     plot
@@ -306,19 +306,19 @@ plotSinglePathwaySpatially <- function(
 
 .plot_pathway_spatial_score <- function(
     scores, object, images = NULL,
-    title = NULL, image.alpha = 1,
+    title = NULL, imageAlpha = 1,
     colors = c("darkblue", "lightgrey", "darkred"), guide = "colourbar",
-    crop = TRUE, min.cutoff = NA, max.cutoff = NA, ncol = NULL,
-    pt.size.factor = 1.6, alpha = 1, shape = 16, stroke = 0,
-    interactive = FALSE, image.labels = NULL
+    crop = TRUE, minCutoff = NA, maxCutoff = NA, ncol = NULL,
+    ptSizeFactor = 1.6, alpha = 1, shape = 16, stroke = 0,
+    interactive = FALSE, imageLabels = NULL
 ) {
     .plotNativeSpatialScore(
         object, scores,
         images = images, title = title, colors = colors,
-        guide = guide, imageAlpha = image.alpha, pointSize = pt.size.factor,
+        guide = guide, imageAlpha = imageAlpha, pointSize = ptSizeFactor,
         alpha = alpha[[1L]], shape = shape, stroke = stroke, crop = crop,
-        minCutoff = min.cutoff, maxCutoff = max.cutoff, ncol = ncol,
-        interactive = interactive, imageLabels = image.labels
+        minCutoff = minCutoff, maxCutoff = maxCutoff, ncol = ncol,
+        interactive = interactive, imageLabels = imageLabels
     )
 }
 
@@ -340,25 +340,25 @@ plotSinglePathwaySpatially <- function(
 #' index <- buildPathwayIndex(spamtp_example$database)
 #' plotPathwaysSpatially(c("P1", "P2"), spe,
 #'     assay = "transcriptome",
-#'     pathway_index = index, combine = TRUE
+#'     pathwayIndex = index, combine = TRUE
 #' )
 plotPathwaysSpatially <- function(
     pathways, object, images = NULL, title = NULL,
-    image.alpha = 1, assay = "main", assayName = "logcounts",
+    imageAlpha = 1, assay = "main", assayName = "logcounts",
     colors = c("darkblue", "lightgrey", "darkred"), guide = "colourbar",
-    database = NULL, database_version = "latest", database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL, pathway_index = NULL, gene_mapping = c("auto", "hgnc", "ramp"),
-    gene_reference = NULL, gene_index = NULL, gene_reference_version = "latest",
-    gene_reference_local_dir = NULL, organism = "Homo sapiens",
-    duplicate_genes = c("error", "mean", "sum"), combine = FALSE,
+    database = NULL, databaseVersion = "latest", databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL, pathwayIndex = NULL, geneMapping = c("auto", "hgnc", "ramp"),
+    geneReference = NULL, geneIndex = NULL, geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL, organism = "Homo sapiens",
+    duplicateGenes = c("error", "mean", "sum"), combine = FALSE,
     combineColumns = 2L, ...
 ) {
     object <- .nativeSpatialObject(object)
     context <- .pathway_score_context(
-        object, assay, assayName, database, pathway_index,
-        match.arg(gene_mapping), gene_reference, gene_index, gene_reference_version,
-        gene_reference_local_dir, organism, database_version, match.arg(database_source),
-        database_local_dir, match.arg(duplicate_genes)
+        object, assay, assayName, database, pathwayIndex,
+        match.arg(geneMapping), geneReference, geneIndex, geneReferenceVersion,
+        geneReferenceLocalDir, organism, databaseVersion, match.arg(databaseSource),
+        databaseLocalDir, match.arg(duplicateGenes)
     )
     ids <- .pathway_select(context$index, pathways)
     selected <- context$coverage[match(ids, context$coverage$pathwayRampId), , drop = FALSE]
@@ -374,7 +374,7 @@ plotPathwaysSpatially <- function(
     if (length(titles) != length(ids)) stop("Provide one title per pathway.", call. = FALSE)
     plots <- lapply(seq_along(ids), function(i) {
         p <- .plot_pathway_spatial_score(
-            scores[i, ], object, images, titles[i], image.alpha,
+            scores[i, ], object, images, titles[i], imageAlpha,
             colors, guide, ...
         )
         attr(p, "pathway_coverage") <- selected[i, , drop = FALSE]

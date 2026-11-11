@@ -22,7 +22,7 @@ Extract regional markers from a SpaMTP workflow
 data(spamtp_example)
 fit <- runSpaMTPWorkflow(spamtp_example$experiment,
     modalities = list(main = list(type = "metabolomics", layer = "counts")),
-    group = "region", npcs = 2, clusters = 2, association_features = 0,
+    group = "region", npcs = 2, clusters = 2, associationFeatures = 0,
     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0))
 head(workflowMarkers(fit)$DEMs)
 }

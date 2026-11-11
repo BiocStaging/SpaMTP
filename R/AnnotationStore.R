@@ -39,12 +39,12 @@
 
 .select_mz_annotations <- function(
     tools,
-    annotation_source = c("current", "auto", "legacy"),
-    warn_legacy = TRUE
+    annotationSource = c("current", "auto", "legacy"),
+    warnLegacy = TRUE
 ) {
-    annotation_source <- match.arg(annotation_source)
+    annotationSource <- match.arg(annotationSource)
     current <- tools[["mz_annotation"]]
-    if (annotation_source != "legacy" && is.list(current) &&
+    if (annotationSource != "legacy" && is.list(current) &&
         .annotation_has_current_schema(current$results)) {
         result <- current$results
         attr(result, "annotation_metadata") <- current$metadata
@@ -53,7 +53,7 @@
     }
 
     compatibility <- tools[["db_3"]]
-    if (annotation_source != "legacy" &&
+    if (annotationSource != "legacy" &&
         .annotation_has_current_schema(compatibility)) {
         attr(compatibility, "annotation_metadata") <- list(
             schema_version = .spamtp_annotation_schema,
@@ -65,19 +65,19 @@
         return(compatibility)
     }
 
-    if (annotation_source == "current") {
+    if (annotationSource == "current") {
         stop(
             "No current indexed RaMP annotation result was found. Run annotateSM() ",
-            "again (db = chem_props, save.intermediate = TRUE), or explicitly set ",
-            "annotation_source = 'legacy' for an older stored db_3 result."
+            "again (db = chemProps, saveIntermediate = TRUE), or explicitly set ",
+            "annotationSource = 'legacy' for an older stored db3 result."
         )
     }
     if (!is.data.frame(compatibility)) {
         stop("No metabolite annotation result was found in the SpaMTP object.")
     }
-    if (isTRUE(warn_legacy) && !.annotation_has_current_schema(compatibility)) {
+    if (isTRUE(warnLegacy) && !.annotation_has_current_schema(compatibility)) {
         warning(
-            "Using a legacy db_3 annotation without scored RaMP IDs. ",
+            "Using a legacy db3 annotation without scored RaMP IDs. ",
             "Re-run annotateSM() to use the current indexed annotation pipeline.",
             call. = FALSE
         )
@@ -93,17 +93,17 @@
 }
 
 .get_mz_annotations <- function(
-    SpaMTP,
-    annotation_source = c("current", "auto", "legacy"),
-    warn_legacy = TRUE
+    object,
+    annotationSource = c("current", "auto", "legacy"),
+    warnLegacy = TRUE
 ) {
     .select_mz_annotations(
         list(
-            mz_annotation = .storedData(SpaMTP, "mz_annotation"),
-            db_3 = .storedData(SpaMTP, "db_3")
+            mz_annotation = .storedData(object, "mz_annotation"),
+            db_3 = .storedData(object, "db_3")
         ),
-        annotation_source = annotation_source,
-        warn_legacy = warn_legacy
+        annotationSource = annotationSource,
+        warnLegacy = warnLegacy
     )
 }
 
@@ -152,23 +152,23 @@
     x[!is.na(x[[column]]) & nzchar(x[[column]]), , drop = FALSE]
 }
 
-.preferred_chemical_metadata <- function(chemical_properties, ramp_ids) {
-    if (is.null(chemical_properties) || !length(ramp_ids)) {
+.preferred_chemical_metadata <- function(chemicalProperties, rampIds) {
+    if (is.null(chemicalProperties) || !length(rampIds)) {
         return(data.frame(
             ramp_id = character(), common_name = character(),
             chem_source_id = character(), stringsAsFactors = FALSE
         ))
     }
     required <- c("ramp_id", "chem_source_id", "common_name")
-    missing <- setdiff(required, names(chemical_properties))
+    missing <- setdiff(required, names(chemicalProperties))
     if (length(missing)) {
         stop(
-            "chem_props is missing required column(s): ",
+            "chemProps is missing required column(s): ",
             paste(missing, collapse = ", ")
         )
     }
     value <- as.data.frame(
-        chemical_properties[chemical_properties$ramp_id %in% ramp_ids, required],
+        chemicalProperties[chemicalProperties$ramp_id %in% rampIds, required],
         stringsAsFactors = FALSE
     )
     if (!nrow(value)) {
@@ -188,30 +188,30 @@
 }
 
 .resolve_pathway_metabolite_annotations <- function(
-    SpaMTP,
-    annotation_source = c("current", "auto", "legacy"),
-    score_threshold = 0,
-    chemical_properties = NULL,
-    warn_legacy = TRUE
+    object,
+    annotationSource = c("current", "auto", "legacy"),
+    scoreThreshold = 0,
+    chemicalProperties = NULL,
+    warnLegacy = TRUE
 ) {
-    annotation_source <- match.arg(annotation_source)
-    if (!is.numeric(score_threshold) || length(score_threshold) != 1L ||
-        !is.finite(score_threshold) || score_threshold < 0) {
-        stop("score_threshold must be one non-negative finite number.")
+    annotationSource <- match.arg(annotationSource)
+    if (!is.numeric(scoreThreshold) || length(scoreThreshold) != 1L ||
+        !is.finite(scoreThreshold) || scoreThreshold < 0) {
+        stop("scoreThreshold must be one non-negative finite number.")
     }
     annotations <- .get_mz_annotations(
-        SpaMTP,
-        annotation_source = annotation_source, warn_legacy = warn_legacy
+        object,
+        annotationSource = annotationSource, warnLegacy = warnLegacy
     )
     source_used <- attr(annotations, "annotation_source")
     metadata <- attr(annotations, "annotation_metadata")
 
     if (.annotation_has_current_schema(annotations)) {
-        annotations$mz_name <- .candidateFeatures(SpaMTP, annotations)
+        annotations$mz_name <- .candidateFeatures(object, annotations)
         score <- suppressWarnings(as.numeric(annotations$Score))
         annotations <- annotations[
             !is.na(annotations$mz_name) &
-                is.finite(score) & score >= score_threshold, ,
+                is.finite(score) & score >= scoreThreshold, ,
             drop = FALSE
         ]
         value <- .expand_annotation_column(annotations, "Ramp_IDs")
@@ -221,7 +221,7 @@
         if (!"IsomerNames" %in% names(value)) value$IsomerNames <- NA_character_
 
         chemical <- .preferred_chemical_metadata(
-            chemical_properties, unique(value$ramp_id)
+            chemicalProperties, unique(value$ramp_id)
         )
         if (nrow(chemical)) {
             names(chemical)[names(chemical) == "common_name"] <- ".current_name"
@@ -243,20 +243,20 @@
         }
         value$inputid <- value$ramp_id
     } else {
-        if (score_threshold > 0) {
+        if (scoreThreshold > 0) {
             warning(
-                "score_threshold cannot be applied to a legacy unscored annotation.",
+                "scoreThreshold cannot be applied to a legacy unscored annotation.",
                 call. = FALSE
             )
         }
-        if (is.null(chemical_properties)) {
-            stop("Legacy metabolite annotations require the chem_props lookup table.")
+        if (is.null(chemicalProperties)) {
+            stop("Legacy metabolite annotations require the chemProps lookup table.")
         }
         value <- .expand_annotation_column(annotations, "Isomers_IDs")
         value$chem_source_id <- trimws(as.character(value$Isomers_IDs))
         value$inputid <- value$chem_source_id
         value <- merge(
-            chemical_properties,
+            chemicalProperties,
             value,
             by = "chem_source_id",
             sort = FALSE
@@ -273,7 +273,7 @@
     if (!nrow(value)) {
         stop(
             "The selected annotation result contains no current RaMP compound IDs ",
-            "for retained features at score_threshold = ", score_threshold, "."
+            "for retained features at scoreThreshold = ", scoreThreshold, "."
         )
     }
     order_columns <- intersect(c("Score", "Error"), names(value))
@@ -303,7 +303,7 @@
     value <- value[!duplicated(key), , drop = FALSE]
     attr(value, "annotation_source") <- source_used
     if (is.null(metadata)) metadata <- list()
-    metadata$analysis_score_threshold <- score_threshold
+    metadata$analysis_score_threshold <- scoreThreshold
     attr(value, "annotation_metadata") <- metadata
     rownames(value) <- NULL
     value
@@ -314,7 +314,7 @@
 #' Reports whether downstream pathway functions will use the current indexed,
 #' scored RaMP annotation pipeline or a legacy mass-match result.
 #'
-#' @param SpaMTP A SingleCellExperiment, including SpatialExperiment.
+#' @param object A SingleCellExperiment, including SpatialExperiment.
 #'
 #' @return A named list containing annotation schema, engine, RaMP version,
 #'   provenance, and candidate count where available.
@@ -323,12 +323,12 @@
 #' spe <- spamtp_example$experiment
 #' annotationInfo(spe)
 #' @export
-annotationInfo <- function(SpaMTP) {
-    current <- .storedData(SpaMTP, "mz_annotation")
+annotationInfo <- function(object) {
+    current <- .storedData(object, "mz_annotation")
     if (is.list(current) && .annotation_has_current_schema(current$results)) {
         return(current$metadata)
     }
-    compatibility <- .storedData(SpaMTP, "db_3")
+    compatibility <- .storedData(object, "db_3")
     if (.annotation_has_current_schema(compatibility)) {
         return(list(
             schema_version = .spamtp_annotation_schema,

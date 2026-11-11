@@ -31,7 +31,7 @@ test_that("alternative experiments have independent feature and assay access", {
 test_that("correlation uses the requested modality and keeps undefined values", {
     object <- nativeFixture()
     result <- findCorrelatedFeatures(object,
-        gene = "a", ST.assay = "transcriptome",
+        gene = "a", stAssay = "transcriptome",
         nfeatures = NULL
     )
     expect_equal(result$correlation[result$features == "a" & result$modality == "gene"], 1)
@@ -51,7 +51,7 @@ test_that("Moran statistics match the equation and do not rank constant rows", {
     skip_if_not_installed("ape")
     withr::local_seed(123)
     object <- nativeFixture()
-    result <- findSpatiallyVariableMetabolites(object, max_spots = NULL, verbose = FALSE)
+    result <- findSpatiallyVariableMetabolites(object, maxSpots = NULL, verbose = FALSE)
     values <- as.numeric(.assayData(object)["a", ])
     weights <- 1 / as.matrix(stats::dist(SpatialExperiment::spatialCoords(object)))^2
     diag(weights) <- 0
@@ -69,12 +69,12 @@ test_that("Moran statistics match the equation and do not rank constant rows", {
     expect_identical(result$region, object$region)
     before <- .Random.seed
     sampled <- findSpatiallyVariableMetabolites(object,
-        max_spots = 4, seed = 17,
+        maxSpots = 4, seed = 17,
         verbose = FALSE
     )
     expect_identical(.Random.seed, before)
     repeatResult <- findSpatiallyVariableMetabolites(object,
-        max_spots = 4, seed = 17,
+        maxSpots = 4, seed = 17,
         verbose = FALSE
     )
     expect_identical(
@@ -110,8 +110,8 @@ test_that("mapping respects tissue identity and preserves target and source data
     SpatialExperiment::spatialCoords(source) <- cbind(x = c(0, 0), y = c(0, 0))
     SpatialExperiment::spatialCoords(target) <- cbind(x = c(0, 0, 10), y = c(0, 0, 10))
     result <- mapSpatialOmics(source, target,
-        ST.hires = TRUE, SM.pixel.width = 1,
-        map.data = TRUE
+        stHires = TRUE, smPixelWidth = 1,
+        mapData = TRUE
     )
     expect_equal(
         as.numeric(SummarizedExperiment::assay(result, "counts")["a", ]),
@@ -135,8 +135,8 @@ test_that("mapping respects tissue identity and preserves target and source data
         SummarizedExperiment::rowData(source)$annotation
     )
     expect_equal(ncol(mapSpatialOmics(source, target,
-        ST.hires = TRUE,
-        SM.pixel.width = 1, dropUnmapped = TRUE
+        stHires = TRUE,
+        smPixelWidth = 1, dropUnmapped = TRUE
     )), 2L)
 })
 
@@ -152,12 +152,12 @@ test_that("area mapping averages intersecting MSI pixels and validates geometry"
         )))
     ))
     result <- mapSpatialOmics(source, target,
-        SM.pixel.width = 1,
-        ST.polygons = polygon, overlap.threshold = 0.49
+        smPixelWidth = 1,
+        stPolygons = polygon, overlapThreshold = 0.49
     )
     expect_equal(as.numeric(SummarizedExperiment::assay(result)["a", ]), 1.5)
     expect_equal(result$n_source_pixels, 2L)
-    expect_error(mapSpatialOmics(source, target, SM.pixel.width = 1), "ST.radius")
+    expect_error(mapSpatialOmics(source, target, smPixelWidth = 1), "stRadius")
 })
 
 test_that("affine entry point transforms coordinates without changing assay data", {

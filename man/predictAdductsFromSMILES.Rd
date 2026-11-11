@@ -7,9 +7,9 @@
 predictAdductsFromSMILES(
   smiles,
   polarity = NULL,
-  maldi_matrix = NULL,
+  maldiMatrix = NULL,
   rules = NULL,
-  min_structure_score = 0.05,
+  minStructureScore = 0.05,
   backend = c("auto", "native"),
   BPPARAM = BiocParallel::SerialParam()
 )
@@ -20,12 +20,12 @@ predictAdductsFromSMILES(
 \item{polarity}{\code{"positive"}, \code{"negative"}, or \code{"neutral"}. When \code{NULL},
 use the matrix-profile default or positive mode.}
 
-\item{maldi_matrix}{Optional MALDI matrix/reagent profile.}
+\item{maldiMatrix}{Optional MALDI matrix/reagent profile.}
 
 \item{rules}{Optional custom rule table. It cannot be combined with
-\code{maldi_matrix}.}
+\code{maldiMatrix}.}
 
-\item{min_structure_score}{Minimum rule-specific structural prior marked as
+\item{minStructureScore}{Minimum rule-specific structural prior marked as
 retained.}
 
 \item{backend, BPPARAM}{Passed to \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}

@@ -9,12 +9,12 @@ buildMZAnnotationIndex(
   polarity = NULL,
   adducts = NULL,
   rules = NULL,
-  maldi_matrix = NULL,
-  collapse_isomers = TRUE,
-  infer_structure = c("auto", "never", "always"),
-  structure_backend = c("auto", "native"),
+  maldiMatrix = NULL,
+  collapseIsomers = TRUE,
+  inferStructure = c("auto", "never", "always"),
+  structureBackend = c("auto", "native"),
   BPPARAM = BiocParallel::SerialParam(),
-  min_structure_score = 0.05
+  minStructureScore = 0.05
 )
 }
 \arguments{
@@ -30,25 +30,25 @@ space; this is a filter, not a compulsory input.}
 
 \item{rules}{Optional custom rule table. See \code{\link[=adductRules]{adductRules()}}.}
 
-\item{maldi_matrix}{Optional MALDI matrix or derivatization reagent profile.
+\item{maldiMatrix}{Optional MALDI matrix or derivatization reagent profile.
 When supplied and \code{rules} is \code{NULL}, \code{\link[=maldiMatrixRules]{maldiMatrixRules()}} automatically
 selects standard and validated matrix-specific rules. \code{adducts} remains an
 optional filter on that selected rule space.}
 
-\item{collapse_isomers}{Collapse records sharing formula, exact mass, and
+\item{collapseIsomers}{Collapse records sharing formula, exact mass, and
 proton bound before indexing.}
 
-\item{infer_structure}{\code{"auto"} joins precomputed SpaMTPdb features or
+\item{inferStructure}{\code{"auto"} joins precomputed SpaMTPdb features or
 derives them for at most \code{getOption("SpaMTP.max_runtime_smiles", 5000)}
 unique SMILES, \code{"never"} disables inference, and \code{"always"} forces
 runtime parsing and replaces precomputed structural fields. \code{"never"}
 and \code{"always"} do not fetch a precomputed structure table.}
 
-\item{structure_backend}{SMILES parser used by \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
+\item{structureBackend}{SMILES parser used by \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}
 
 \item{BPPARAM}{BiocParallel parameters for runtime SMILES parsing.}
 
-\item{min_structure_score}{Minimum rule-specific structural prior retained
+\item{minStructureScore}{Minimum rule-specific structural prior retained
 before m/z indexing. Set to zero to rank without structure-based pruning.}
 }
 \value{

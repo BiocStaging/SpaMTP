@@ -111,8 +111,8 @@ test_that("paired transcriptomes use altExp and Bioconductor reductions", {
 
     integrated <- suppressWarnings(multiOmicIntegration(
         spatial,
-        reduction.list = list("spm.pca", "spt.pca"),
-        dims.list = list(1:2, 1:2),
+        reductionList = list("spm.pca", "spt.pca"),
+        dimsList = list(1:2, 1:2),
         verbose = FALSE
     ))
     expect_equal(
@@ -143,7 +143,7 @@ test_that("images are stored through SpatialExperiment imgData", {
         assay = "counts",
         assayName = "counts",
         image = "optical",
-        generate.h5 = FALSE,
+        generateH5 = FALSE,
         verbose = FALSE
     )
     expect_true(file.exists(file.path(output, "spatial", "tissue_lowres_image.png")))
@@ -160,7 +160,7 @@ test_that("feature utilities and spatial plots use Bioconductor accessors", {
         mzs = rownames(spatial)[1:2],
         assay = "counts",
         assayName = "counts",
-        bin_name = "combined"
+        binName = "combined"
     )
     expect_true("combined" %in% colnames(SummarizedExperiment::colData(spatial)))
     expect_s3_class(
@@ -189,7 +189,7 @@ test_that("TMM and expression plotting reuse edgeR and scater", {
     expect_s3_class(
         mzViolinPlot(
             normalized,
-            group.by = "sample",
+            groupBy = "sample",
             mzs = rownames(normalized)[[1L]],
             assay = "counts",
             assayName = "normcounts"
@@ -212,7 +212,7 @@ test_that("merged modalities are represented as an altExp", {
     spatial <- addTranscriptome(spatial, transcriptome)
     spatial <- createMergedModalityAssay(
         spatial,
-        assays.to.merge = c("main", "transcriptome")
+        assaysToMerge = c("main", "transcriptome")
     )
     expect_true("merged" %in% SingleCellExperiment::altExpNames(spatial))
     expect_equal(
@@ -256,7 +256,7 @@ test_that("precomputed alignment updates spatialCoords", {
     output <- applySpatialAlignment(
         spatial,
         alignment = aligned,
-        coordinate.columns = c("x_aligned", "y_aligned"),
+        coordinateColumns = c("x_aligned", "y_aligned"),
         verbose = FALSE
     )
     expect_equal(
@@ -273,19 +273,19 @@ test_that("dimensionality reduction uses reducedDims", {
         npcs = 2L,
         assay = "counts",
         assayName = "counts",
-        reduction.name = "metabolicPCA",
+        reductionName = "metabolicPCA",
         verbose = FALSE
     )
     expect_true("metabolicPCA" %in% SingleCellExperiment::reducedDimNames(spatial))
 
     spatial <- runSpatialGraphPCA(
         spatial,
-        n_components = 2L,
+        nComponents = 2L,
         assay = "counts",
         assayName = "counts",
         platform = "ST",
-        n_neighbors = 2L,
-        reduction_name = "spatialPCA",
+        nNeighbors = 2L,
+        reductionName = "spatialPCA",
         verbose = FALSE
     )
     expect_true("spatialPCA" %in% SingleCellExperiment::reducedDimNames(spatial))
@@ -295,7 +295,7 @@ test_that("dimensionality reduction uses reducedDims", {
         spatial,
         reduction = "spatialPCA",
         clusters = 2L,
-        cluster.name = "region"
+        clusterName = "region"
     )
     expect_true("region" %in% colnames(SummarizedExperiment::colData(spatial)))
 })

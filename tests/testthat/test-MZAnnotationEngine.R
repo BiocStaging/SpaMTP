@@ -104,12 +104,12 @@ test_that("isotope and adduct-family evidence changes candidate scores", {
     )
     with_isotope <- queryMZAnnotationIndex(
         monomer_mz, monomer_index,
-        ppm = 5, ms1_spectrum = spectrum
+        ppm = 5, ms1Spectrum = spectrum
     )
     without_isotope <- queryMZAnnotationIndex(
         monomer_mz, monomer_index,
         ppm = 5,
-        ms1_spectrum = spectrum[1, , drop = FALSE]
+        ms1Spectrum = spectrum[1, , drop = FALSE]
     )
     expect_gt(with_isotope$isotope_score, without_isotope$isotope_score)
 
@@ -118,12 +118,12 @@ test_that("isotope and adduct-family evidence changes candidate scores", {
     isolated <- queryMZAnnotationIndex(
         complex_mz, complex_index,
         ppm = 5,
-        ms1_spectrum = data.frame(mz = complex_mz, intensity = 100)
+        ms1Spectrum = data.frame(mz = complex_mz, intensity = 100)
     )
     supported <- queryMZAnnotationIndex(
         complex_mz, complex_index,
         ppm = 5,
-        ms1_spectrum = data.frame(
+        ms1Spectrum = data.frame(
             mz = c(complex_mz, monomer_mz), intensity = c(100, 500)
         )
     )
@@ -194,7 +194,7 @@ test_that("MALDI matrix aliases select rules without compulsory adduct input", {
     )
     index <- buildMZAnnotationIndex(
         target,
-        polarity = "positive", maldi_matrix = "FMP-10"
+        polarity = "positive", maldiMatrix = "FMP-10"
     )
     expect_equal(index$maldi_matrix, "fmp10")
     expect_true(all(c("M+FMP10", "M+2FMP10a", "M+2FMP10b") %in%
@@ -202,11 +202,11 @@ test_that("MALDI matrix aliases select rules without compulsory adduct input", {
 
     batch_hit <- annotateBigData(
         index$expected_mz[index$rules$name[index$rule_idx] == "M+2FMP10a"][[1]],
-        db = target, maldi_matrix = "FMP-10", ppm = 0, verbose = FALSE
+        db = target, maldiMatrix = "FMP-10", ppm = 0, verbose = FALSE
     )
     expect_match(batch_hit$all_Adducts, "M\\+2FMP10a")
 
-    aa_index <- buildMZAnnotationIndex(target, maldi_matrix = "9-AA")
+    aa_index <- buildMZAnnotationIndex(target, maldiMatrix = "9-AA")
     expect_equal(aa_index$polarity, "negative")
     expect_true("M-H" %in% aa_index$rules$name)
     expect_error(
@@ -224,8 +224,8 @@ test_that("FMP10 reaction sites prune impossible products and flag unknowns", {
     )
     index <- buildMZAnnotationIndex(
         target,
-        polarity = "positive", maldi_matrix = "FMP-10",
-        adducts = "M+2FMP10a", collapse_isomers = FALSE
+        polarity = "positive", maldiMatrix = "FMP-10",
+        adducts = "M+2FMP10a", collapseIsomers = FALSE
     )
     expect_equal(length(index$expected_mz), 1)
     result <- queryMZAnnotationIndex(index$expected_mz, index, ppm = 0)
@@ -237,7 +237,7 @@ test_that("FMP10 reaction sites prune impossible products and flag unknowns", {
     expect_warning(
         unknown_index <- buildMZAnnotationIndex(
             unknown,
-            polarity = "positive", maldi_matrix = "FMP-10",
+            polarity = "positive", maldiMatrix = "FMP-10",
             adducts = "M+2FMP10a"
         ),
         "reaction-site counts"
@@ -257,7 +257,7 @@ test_that("DHB and CHCA matrix adducts require parent-family support", {
     )
     dhb_index <- buildMZAnnotationIndex(
         target,
-        polarity = "positive", maldi_matrix = "DHB",
+        polarity = "positive", maldiMatrix = "DHB",
         adducts = "M+(DHB-H2O)+H"
     )
     matrix_mz <- dhb_index$expected_mz[[1]]
@@ -265,12 +265,12 @@ test_that("DHB and CHCA matrix adducts require parent-family support", {
     isolated <- queryMZAnnotationIndex(
         matrix_mz, dhb_index,
         ppm = 1,
-        ms1_spectrum = data.frame(mz = matrix_mz, intensity = 100)
+        ms1Spectrum = data.frame(mz = matrix_mz, intensity = 100)
     )
     supported <- queryMZAnnotationIndex(
         matrix_mz, dhb_index,
         ppm = 1,
-        ms1_spectrum = data.frame(
+        ms1Spectrum = data.frame(
             mz = c(parent_mz, matrix_mz), intensity = c(500, 100)
         )
     )
@@ -347,7 +347,7 @@ test_that("ion-mode and alkali priors are inferred before mass matching", {
     positive <- buildMZAnnotationIndex(
         target,
         polarity = "positive", adducts = c("M+H", "M+Na"),
-        collapse_isomers = FALSE
+        collapseIsomers = FALSE
     )
     two_hg <- positive$compounds$isomers_names == "2HG"
     expect_true(positive$compounds$alkali_affinity_score[two_hg] >
@@ -366,7 +366,7 @@ test_that("ion-mode and alkali priors are inferred before mass matching", {
     negative <- buildMZAnnotationIndex(
         target,
         polarity = "negative", adducts = c("M-H", "M-2H", "M-3H"),
-        collapse_isomers = FALSE
+        collapseIsomers = FALSE
     )
     indexed <- data.frame(
         name = negative$compounds$isomers_names[negative$compound_idx],
@@ -377,7 +377,7 @@ test_that("ion-mode and alkali priors are inferred before mass matching", {
 
     neutral <- buildMZAnnotationIndex(
         target,
-        polarity = "neutral", collapse_isomers = FALSE
+        polarity = "neutral", collapseIsomers = FALSE
     )
     neutral_result <- queryMZAnnotationIndex(
         neutral$expected_mz, neutral,
@@ -393,7 +393,7 @@ test_that("SMILES-derived reactive sites automate FMP10 rule eligibility", {
     )
     index <- buildMZAnnotationIndex(
         dopamine,
-        polarity = "positive", maldi_matrix = "FMP-10",
+        polarity = "positive", maldiMatrix = "FMP-10",
         adducts = "M+2FMP10a"
     )
     expect_equal(index$compounds$fmp10_reactive_sites, 3)
@@ -428,7 +428,7 @@ test_that("structure-only adduct prediction is mode-specific and auditable", {
 
     dopamine <- predictAdductsFromSMILES(
         "NCCc1ccc(O)c(O)c1",
-        maldi_matrix = "FMP-10"
+        maldiMatrix = "FMP-10"
     )
     expect_true(dopamine$retained[dopamine$adduct == "M+2FMP10a"])
     expect_equal(
@@ -471,23 +471,23 @@ test_that("registered reactive matrices report SMILES target compatibility", {
 
     dpp <- suppressWarnings(predictAdductsFromSMILES(
         dopamine,
-        maldi_matrix = "DPP-TFB"
+        maldiMatrix = "DPP-TFB"
     ))
     dnph <- suppressWarnings(predictAdductsFromSMILES(
         acetone,
-        maldi_matrix = "DNPH"
+        maldiMatrix = "DNPH"
     ))
     picolyl <- suppressWarnings(predictAdductsFromSMILES(
         two_hg,
-        maldi_matrix = "2-picolylamine"
+        maldiMatrix = "2-picolylamine"
     ))
     tahs <- suppressWarnings(predictAdductsFromSMILES(
         dopamine,
-        maldi_matrix = "TAHS"
+        maldiMatrix = "TAHS"
     ))
     conventional <- predictAdductsFromSMILES(
         two_hg,
-        maldi_matrix = "9-AA"
+        maldiMatrix = "9-AA"
     )
 
     expect_true(all(dpp$matrix_target_status == "compatible-target"))

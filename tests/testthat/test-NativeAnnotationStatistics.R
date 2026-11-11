@@ -30,7 +30,7 @@ test_that("native annotation ranking preserves the finite legacy formula", {
     object <- fixture$object
     before <- object
     result <- calculateSingleAnnotationStatistics(100, object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     correlation <- stats::cor(1:6, c(2, 1, 5, 3, 6, 4))
     maximum <- c(1, correlation, -1)
@@ -44,16 +44,16 @@ test_that("native annotation ranking preserves the finite legacy formula", {
     expect_equal(result$pval_adj, stats::p.adjust(result$pval, "BH"))
     expect_identical(result$metabolite, c("First", "Second", "Third"))
     reordered <- calculateSingleAnnotationStatistics("a", object[, 6:1],
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_equal(reordered$z_score[match(result$ramp_id, reordered$ramp_id)], result$z_score)
     negative <- calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores", pathwayAssayName = "negative", database = fixture$database
+        pathwayAssay = "scores", pathwayAssayName = "negative", database = fixture$database
     )
     expect_equal(negative$max_cor[match(result$ramp_id, negative$ramp_id)], -maximum)
     expect_identical(object, before)
     expect_error(calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores",
+        pathwayAssay = "scores",
         pathwayAssayName = "absent", database = fixture$database
     ), "was not found")
 })
@@ -62,25 +62,25 @@ test_that("constant, absent and duplicated candidates do not create invalid rank
     fixture <- annotationStatisticsFixture()
     object <- fixture$object
     result <- calculateSingleAnnotationStatistics("constant", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_true(all(is.na(result$max_cor)))
     expect_true(all(is.na(result$z_score)))
     expect_true(all(is.na(result$pval_adj)))
     expect_error(calculateSingleAnnotationStatistics("b", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     ), "two candidate")
     expect_error(calculateSingleAnnotationStatistics("a", object,
-        corr_weight = -1,
-        pathway.assay = "scores", database = fixture$database
+        corrWeight = -1,
+        pathwayAssay = "scores", database = fixture$database
     ), "Weights")
     expect_error(calculateSingleAnnotationStatistics("a", object,
-        corr_threshold = 2,
-        pathway.assay = "scores", database = fixture$database
+        corrThreshold = 2,
+        pathwayAssay = "scores", database = fixture$database
     ), "between")
     fixture$database$analytehaspathway$pathwayRampId[] <- "pA"
     equal <- calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_equal(equal$z_score, c(0, 0, 0))
     expect_equal(equal$pval_adj, c(0.5, 0.5, 0.5))
@@ -90,8 +90,8 @@ test_that("batch ranking reuses pathway scores and preserves feature metadata", 
     fixture <- annotationStatisticsFixture()
     object <- fixture$object
     top <- calculateAnnotationStatistics(object,
-        pathway.assay = "scores",
-        pathwayAssayName = "pathwayScores", pathway.scores = TRUE, database = fixture$database
+        pathwayAssay = "scores",
+        pathwayAssayName = "pathwayScores", pathwayScores = TRUE, database = fixture$database
     )
     expect_identical(top$mz_names, rownames(object))
     expect_identical(top$annotation, letters[1:3])
@@ -99,8 +99,8 @@ test_that("batch ranking reuses pathway scores and preserves feature metadata", 
     expect_identical(top$ramp_id[1], "RAMP_C_1")
     expect_true(all(is.na(top$ramp_id[2:3])))
     all <- calculateAnnotationStatistics(object,
-        pathway.assay = "scores",
-        pathwayAssayName = "pathwayScores", pathway.scores = TRUE, return.top = FALSE,
+        pathwayAssay = "scores",
+        pathwayAssayName = "pathwayScores", pathwayScores = TRUE, returnTop = FALSE,
         database = fixture$database
     )
     expect_identical(names(all), rownames(object))
@@ -114,11 +114,11 @@ test_that("batch ranking reuses pathway scores and preserves feature metadata", 
         outputExperiment = "expected", database = fixture$database
     )
     expected <- calculateAnnotationStatistics(scored,
-        pathway.assay = "expected",
-        pathwayAssayName = "pathwayScores", pathway.scores = TRUE, database = fixture$database
+        pathwayAssay = "expected",
+        pathwayAssayName = "pathwayScores", pathwayScores = TRUE, database = fixture$database
     )
     actual <- calculateAnnotationStatistics(object,
-        pathway.assay = "analytes",
+        pathwayAssay = "analytes",
         database = fixture$database
     )
     expect_equal(actual, expected)
@@ -138,14 +138,14 @@ test_that("current RaMP candidates take precedence over legacy rowData", {
         list(results = current, metadata = list(schema_version = 2L))
     )
     result <- calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_setequal(result$ramp_id, c("RAMP_C_2", "RAMP_C_3"))
     object <- fixture$object
     SummarizedExperiment::rowData(object)$all_Ramp_IDs <- NULL
     SummarizedExperiment::rowData(object)$all_Isomers_IDs <- c("id1; id2; id3", "id1", "id1; id2")
     result <- calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_setequal(result$ramp_id, paste0("RAMP_C_", 1:3))
 })
@@ -203,12 +203,12 @@ test_that("single and batch annotation ranks use the requested modality store", 
         for (assay in c("main", "Spatial", "otherMSI")) {
             ids <- expected[[if (assay == "Spatial") "main" else assay]]
             single <- calculateSingleAnnotationStatistics("a", object,
-                mz.assay = assay, pathway.assay = "scores", database = fixture$database
+                mzAssay = assay, pathwayAssay = "scores", database = fixture$database
             )
             batch <- calculateAnnotationStatistics(object,
-                mz.assay = assay,
-                pathway.assay = "scores", pathwayAssayName = "pathwayScores",
-                pathway.scores = TRUE, return.top = FALSE, database = fixture$database
+                mzAssay = assay,
+                pathwayAssay = "scores", pathwayAssayName = "pathwayScores",
+                pathwayScores = TRUE, returnTop = FALSE, database = fixture$database
             )
             expect_setequal(single$ramp_id, ids)
             expect_equal(batch$a, single)
@@ -225,12 +225,12 @@ test_that("assay-local and historical stores cannot borrow unrelated candidates"
     }
     # A matching explicitly labelled root store remains usable for older objects.
     other <- calculateSingleAnnotationStatistics("a", object,
-        mz.assay = "otherMSI", pathway.assay = "scores", database = fixture$database
+        mzAssay = "otherMSI", pathwayAssay = "scores", database = fixture$database
     )
     expect_setequal(other$ramp_id, paste0("RAMP_C_", 2:3))
     # The root store belongs to otherMSI; main must use its own rowData candidates.
     main <- calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_setequal(main$ramp_id, paste0("RAMP_C_", 1:3))
 
@@ -243,10 +243,10 @@ test_that("assay-local and historical stores cannot borrow unrelated candidates"
         object <- .setStoredData(object, field, fixture$stores$main[[field]])
     }
     other <- calculateSingleAnnotationStatistics("a", object,
-        mz.assay = "otherMSI", pathway.assay = "scores", database = fixture$database
+        mzAssay = "otherMSI", pathwayAssay = "scores", database = fixture$database
     )
     main <- calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_setequal(other$ramp_id, paste0("RAMP_C_", 2:3))
     expect_setequal(main$ramp_id, paste0("RAMP_C_", 1:2))
@@ -255,7 +255,7 @@ test_that("assay-local and historical stores cannot borrow unrelated candidates"
     SingleCellExperiment::altExp(extracted, "scores") <-
         SingleCellExperiment::altExp(object, "scores")
     standalone <- calculateSingleAnnotationStatistics("a", extracted,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_setequal(standalone$ramp_id, paste0("RAMP_C_", 2:3))
 
@@ -265,7 +265,7 @@ test_that("assay-local and historical stores cannot borrow unrelated candidates"
         list(main = list(db_3 = fixture$stores$otherMSI$db_3))
     )
     main <- calculateSingleAnnotationStatistics("a", object,
-        pathway.assay = "scores", database = fixture$database
+        pathwayAssay = "scores", database = fixture$database
     )
     expect_setequal(main$ramp_id, paste0("RAMP_C_", 2:3))
 })
@@ -273,15 +273,15 @@ test_that("assay-local and historical stores cannot borrow unrelated candidates"
 test_that("single-feature annotation statistics bound numeric mass lookup", {
     fixture <- annotationStatisticsFixture()
     expect_error(calculateSingleAnnotationStatistics(500, fixture$object,
-        pathway.assay = "scores", database = fixture$database), "within 5 ppm")
+        pathwayAssay = "scores", database = fixture$database), "within 5 ppm")
     close <- calculateSingleAnnotationStatistics(100.0001, fixture$object,
-        pathway.assay = "scores", database = fixture$database)
+        pathwayAssay = "scores", database = fixture$database)
     exact <- calculateSingleAnnotationStatistics("a", fixture$object,
-        pathway.assay = "scores", database = fixture$database)
+        pathwayAssay = "scores", database = fixture$database)
     expect_equal(close, exact)
     expect_error(calculateSingleAnnotationStatistics(100.0001, fixture$object,
-        mz.ppm = 0, pathway.assay = "scores", database = fixture$database), "within 0 ppm")
+        mzPpm = 0, pathwayAssay = "scores", database = fixture$database), "within 0 ppm")
     SummarizedExperiment::rowData(fixture$object)$mz[2] <- 100
     expect_error(calculateSingleAnnotationStatistics(100, fixture$object,
-        pathway.assay = "scores", database = fixture$database), "equally close")
+        pathwayAssay = "scores", database = fixture$database), "equally close")
 })

@@ -5,23 +5,23 @@
 \title{Select annotation rules from the MALDI matrix/reagent profile}
 \usage{
 maldiMatrixRules(
-  maldi_matrix,
+  maldiMatrix,
   polarity = NULL,
-  include_standard = TRUE,
-  include_matrix_products = TRUE
+  includeStandard = TRUE,
+  includeMatrixProducts = TRUE
 )
 }
 \arguments{
-\item{maldi_matrix}{Matrix or derivatization reagent name; aliases such as
+\item{maldiMatrix}{Matrix or derivatization reagent name; aliases such as
 \code{"2,5-DHB"}, \code{"HCCA"}, \code{"9-AA"}, and \code{"FMP-10"} are accepted.}
 
 \item{polarity}{\code{"positive"}, \code{"negative"}, or \code{"neutral"}. If \code{NULL}, use
 the profile default; profiles supporting both modes require an explicit
 choice.}
 
-\item{include_standard}{Include the validated ordinary adduct rules.}
+\item{includeStandard}{Include the validated ordinary adduct rules.}
 
-\item{include_matrix_products}{Include validated matrix-adduct or reactive
+\item{includeMatrixProducts}{Include validated matrix-adduct or reactive
 product rules.}
 }
 \value{

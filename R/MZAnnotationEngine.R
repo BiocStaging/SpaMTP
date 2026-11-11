@@ -26,15 +26,15 @@
 }
 
 .make_adduct_rule <- function(
-    name, polarity, n_molecules, charge,
-    mass_shift, loss_h = 0L,
-    added_charge = charge + loss_h,
-    complexity = "simple", base_adduct = name,
-    contains_halogen = FALSE,
-    contains_metal = FALSE, prior = 1,
-    water_loss = 0L,
-    metabocoreutils_name = NA_character_,
-    carbon_delta = 0L, chlorine_delta = 0L, bromine_delta = 0L
+    name, polarity, nMolecules, charge,
+    massShift, lossH = 0L,
+    addedCharge = charge + lossH,
+    complexity = "simple", baseAdduct = name,
+    containsHalogen = FALSE,
+    containsMetal = FALSE, prior = 1,
+    waterLoss = 0L,
+    metabocoreutilsName = NA_character_,
+    carbonDelta = 0L, chlorineDelta = 0L, bromineDelta = 0L
 ) {
     data.frame(
         name = name,
@@ -44,21 +44,21 @@
             ifelse(charge > 0, "+", "-")
         ),
         polarity = polarity,
-        n_molecules = as.integer(n_molecules),
+        n_molecules = as.integer(nMolecules),
         charge = as.integer(charge),
-        mass_shift = as.numeric(mass_shift),
-        loss_h = as.integer(loss_h),
-        water_loss = as.integer(water_loss),
-        added_charge = as.integer(added_charge),
+        mass_shift = as.numeric(massShift),
+        loss_h = as.integer(lossH),
+        water_loss = as.integer(waterLoss),
+        added_charge = as.integer(addedCharge),
         complexity = complexity,
-        base_adduct = base_adduct,
-        contains_halogen = contains_halogen,
-        contains_metal = contains_metal,
+        base_adduct = baseAdduct,
+        contains_halogen = containsHalogen,
+        contains_metal = containsMetal,
         prior = as.numeric(prior),
-        metabocoreutils_name = as.character(metabocoreutils_name),
-        carbon_delta = as.numeric(carbon_delta),
-        chlorine_delta = as.numeric(chlorine_delta),
-        bromine_delta = as.numeric(bromine_delta),
+        metabocoreutils_name = as.character(metabocoreutilsName),
+        carbon_delta = as.numeric(carbonDelta),
+        chlorine_delta = as.numeric(chlorineDelta),
+        bromine_delta = as.numeric(bromineDelta),
         stringsAsFactors = FALSE
     )
 }
@@ -148,7 +148,7 @@ M           NA             neutral  0      0          neutral        M    FALSE 
 #'
 #' @param polarity One of `"both"`, `"positive"`, `"negative"`, or
 #'   `"neutral"`.
-#' @param include_complex Include multimers, solvent clusters, metal-exchange,
+#' @param includeComplex Include multimers, solvent clusters, metal-exchange,
 #'   multiply charged ions, and neutral losses.
 #'
 #' @details Positive `[M+H-H2O]+` and `[M+H-2H2O]+` rules require
@@ -169,7 +169,7 @@ M           NA             neutral  0      0          neutral        M    FALSE 
 #' @export
 adductRules <- function(
     polarity = c("both", "positive", "negative", "neutral"),
-    include_complex = TRUE
+    includeComplex = TRUE
 ) {
     polarity <- match.arg(polarity)
     map <- .spamtp_adduct_map()
@@ -196,14 +196,14 @@ adductRules <- function(
 
     rules <- .make_adduct_rule(
         map$name, map$polarity, ion$n_molecules, ion$charge, ion$mass_shift,
-        loss_h = map$loss_h,
-        added_charge = ifelse(map$polarity == "neutral", 0L,
+        lossH = map$loss_h,
+        addedCharge = ifelse(map$polarity == "neutral", 0L,
             ion$charge + map$loss_h
         ),
-        complexity = map$complexity, base_adduct = map$base,
-        contains_halogen = map$halogen, contains_metal = map$metal,
-        prior = map$prior, water_loss = map$water_loss,
-        metabocoreutils_name = map$mcu
+        complexity = map$complexity, baseAdduct = map$base,
+        containsHalogen = map$halogen, containsMetal = map$metal,
+        prior = map$prior, waterLoss = map$water_loss,
+        metabocoreutilsName = map$mcu
     )
     # Include atoms contributed by solvents/adducts in isotope predictions.
     atom_counts <- function(x) {
@@ -225,7 +225,7 @@ adductRules <- function(
     if (polarity != "both") {
         rules <- rules[rules$polarity == polarity, , drop = FALSE]
     }
-    if (!isTRUE(include_complex)) {
+    if (!isTRUE(includeComplex)) {
         rules <- rules[rules$complexity %in% c("simple", "salt", "neutral"), , drop = FALSE]
     }
     rules
@@ -321,7 +321,7 @@ maldiMatrixProfiles <- function(matrix = NULL) {
         return("none")
     }
     if (length(matrix) != 1L || is.na(matrix) || !nzchar(trimws(matrix))) {
-        stop("maldi_matrix must be one non-empty matrix/reagent name.")
+        stop("maldiMatrix must be one non-empty matrix/reagent name.")
     }
     key <- tolower(gsub("[^[:alnum:]]", "", matrix))
     aliases <- c(
@@ -348,14 +348,14 @@ maldiMatrixProfiles <- function(matrix = NULL) {
     unname(aliases[[key]])
 }
 
-.resolve_maldi_polarity <- function(polarity = NULL, maldi_matrix = NULL) {
+.resolve_maldi_polarity <- function(polarity = NULL, maldiMatrix = NULL) {
     if (!is.null(polarity)) {
         return(match.arg(polarity, c("positive", "negative", "neutral")))
     }
-    if (is.null(maldi_matrix)) {
+    if (is.null(maldiMatrix)) {
         return("positive")
     }
-    profile <- maldiMatrixProfiles(maldi_matrix)
+    profile <- maldiMatrixProfiles(maldiMatrix)
     selected <- profile$default_polarity[[1]]
     if (identical(selected, "both")) {
         stop(
@@ -367,18 +367,18 @@ maldiMatrixProfiles <- function(matrix = NULL) {
 }
 
 .decorate_matrix_rules <- function(
-    rules, matrix, rule_class, source,
-    reactive_group = "none",
-    min_reactive_sites = 0L,
-    site_count_column = NA_character_
+    rules, matrix, ruleClass, source,
+    reactiveGroup = "none",
+    minReactiveSites = 0L,
+    siteCountColumn = NA_character_
 ) {
     n <- nrow(rules)
     rules$maldi_matrix <- rep_len(matrix, n)
-    rules$rule_class <- rep_len(rule_class, n)
+    rules$rule_class <- rep_len(ruleClass, n)
     rules$rule_source <- rep_len(source, n)
-    rules$reactive_group <- rep_len(reactive_group, n)
-    rules$min_reactive_sites <- rep_len(as.integer(min_reactive_sites), n)
-    rules$site_count_column <- rep_len(site_count_column, n)
+    rules$reactive_group <- rep_len(reactiveGroup, n)
+    rules$min_reactive_sites <- rep_len(as.integer(minReactiveSites), n)
+    rules$site_count_column <- rep_len(siteCountColumn, n)
     rules
 }
 
@@ -399,17 +399,17 @@ maldiMatrixProfiles <- function(matrix = NULL) {
         rules <- rbind(
             .make_adduct_rule(
                 "M+FMP10", "positive", 1, 1, retained_tag - m$electron,
-                complexity = "matrix_derivative", prior = 0.8, carbon_delta = 20L
+                complexity = "matrix_derivative", prior = 0.8, carbonDelta = 20L
             ),
             .make_adduct_rule(
                 "M+2FMP10a", "positive", 1, 1,
                 2 * retained_tag - (m$carbon + 3 * m$hydrogen) - m$electron,
-                complexity = "matrix_derivative", prior = 0.75, carbon_delta = 39L
+                complexity = "matrix_derivative", prior = 0.75, carbonDelta = 39L
             ),
             .make_adduct_rule(
                 "M+2FMP10b", "positive", 1, 1,
                 2 * retained_tag - m$hydrogen - m$electron,
-                complexity = "matrix_derivative", prior = 0.7, carbon_delta = 40L
+                complexity = "matrix_derivative", prior = 0.7, carbonDelta = 40L
             )
         )
         rules <- .decorate_matrix_rules(
@@ -428,19 +428,19 @@ maldiMatrixProfiles <- function(matrix = NULL) {
                 "M+(DHB-H2O)+H", "positive", 1, 1,
                 dehydrated_dhb + m$proton,
                 complexity = "matrix_adduct",
-                base_adduct = "M+H", prior = 0.4, carbon_delta = 7L
+                baseAdduct = "M+H", prior = 0.4, carbonDelta = 7L
             ),
             .make_adduct_rule(
                 "M+(DHB-H2O)+Na", "positive", 1, 1,
                 dehydrated_dhb + m$sodium_ion,
                 complexity = "matrix_adduct",
-                base_adduct = "M+Na", contains_metal = TRUE, prior = 0.3, carbon_delta = 7L
+                baseAdduct = "M+Na", containsMetal = TRUE, prior = 0.3, carbonDelta = 7L
             ),
             .make_adduct_rule(
                 "M+2(DHB-H2O)+H", "positive", 1, 1,
                 2 * dehydrated_dhb + m$proton,
                 complexity = "matrix_adduct",
-                base_adduct = "M+H", prior = 0.2, carbon_delta = 14L
+                baseAdduct = "M+H", prior = 0.2, carbonDelta = 14L
             )
         )
         return(.decorate_matrix_rules(
@@ -453,8 +453,8 @@ maldiMatrixProfiles <- function(matrix = NULL) {
         chca <- 10 * m$carbon + 7 * m$hydrogen + m$nitrogen + 3 * m$oxygen
         rule <- .make_adduct_rule(
             "M+CHCA+Na", "positive", 1, 1, chca + m$sodium_ion,
-            complexity = "matrix_adduct", base_adduct = "M+Na",
-            contains_metal = TRUE, prior = 0.25, carbon_delta = 10L
+            complexity = "matrix_adduct", baseAdduct = "M+Na",
+            containsMetal = TRUE, prior = 0.25, carbonDelta = 10L
         )
         return(.decorate_matrix_rules(
             rule, matrix, "matrix_adduct", "10.1021/acs.analchem.0c04720",
@@ -471,13 +471,13 @@ maldiMatrixProfiles <- function(matrix = NULL) {
 #' product rules. Profiles without a verified universal net transformation are
 #' retained in the registry but do not generate speculative mass shifts.
 #'
-#' @param maldi_matrix Matrix or derivatization reagent name; aliases such as
+#' @param maldiMatrix Matrix or derivatization reagent name; aliases such as
 #'   `"2,5-DHB"`, `"HCCA"`, `"9-AA"`, and `"FMP-10"` are accepted.
 #' @param polarity `"positive"`, `"negative"`, or `"neutral"`. If `NULL`, use
 #'   the profile default; profiles supporting both modes require an explicit
 #'   choice.
-#' @param include_standard Include the validated ordinary adduct rules.
-#' @param include_matrix_products Include validated matrix-adduct or reactive
+#' @param includeStandard Include the validated ordinary adduct rules.
+#' @param includeMatrixProducts Include validated matrix-adduct or reactive
 #'   product rules.
 #'
 #' @return A validated adduct/reaction rule data frame accepted by
@@ -486,25 +486,25 @@ maldiMatrixProfiles <- function(matrix = NULL) {
 #' head(maldiMatrixRules("DHB", polarity = "positive"))
 #' @export
 maldiMatrixRules <- function(
-    maldi_matrix, polarity = NULL,
-    include_standard = TRUE,
-    include_matrix_products = TRUE
+    maldiMatrix, polarity = NULL,
+    includeStandard = TRUE,
+    includeMatrixProducts = TRUE
 ) {
-    matrix <- .normalise_maldi_matrix(maldi_matrix)
+    matrix <- .normalise_maldi_matrix(maldiMatrix)
     profile <- maldiMatrixProfiles(matrix)
     polarity <- .resolve_maldi_polarity(polarity, matrix)
 
     standard <- .decorate_matrix_rules(
-        adductRules(polarity)[if (isTRUE(include_standard)) TRUE else FALSE, , drop = FALSE],
+        adductRules(polarity)[if (isTRUE(includeStandard)) TRUE else FALSE, , drop = FALSE],
         matrix, "standard_adduct", "SpaMTP validated general adduct rules"
     )
-    specific <- if (isTRUE(include_matrix_products)) {
+    specific <- if (isTRUE(includeMatrixProducts)) {
         .matrix_specific_rules(matrix, polarity)
     } else {
         standard[0, , drop = FALSE]
     }
 
-    if (isTRUE(include_matrix_products) &&
+    if (isTRUE(includeMatrixProducts) &&
         profile$automatic_rules[[1]] == "profile_only") {
         warning(
             "The ", profile$display_name[[1]],
@@ -562,7 +562,7 @@ maldiMatrixRules <- function(
         }
     }
     if (any(!is.finite(rules$n_molecules) | rules$n_molecules < 1)) {
-        stop("Every adduct rule must have n_molecules >= 1.")
+        stop("Every adduct rule must have nMolecules >= 1.")
     }
     if (any(!is.finite(rules$charge) | rules$charge == 0)) {
         stop("Every adduct rule must use a non-zero observed charge.")
@@ -573,14 +573,14 @@ maldiMatrixRules <- function(
         bad <- rules$name[non_neutral & !balanced]
         stop(
             "Unbalanced adduct rule(s): ", paste(bad, collapse = ", "),
-            ". added_charge - loss_h must equal charge."
+            ". addedCharge - lossH must equal charge."
         )
     }
     if (any(!is.finite(rules$mass_shift)) || any(!is.finite(rules$prior))) {
         stop("Adduct mass shifts and priors must be finite.")
     }
     if (any(!is.finite(rules$water_loss) | !rules$water_loss %in% 0:2)) {
-        stop("water_loss must contain integers from zero to two.")
+        stop("waterLoss must contain integers from zero to two.")
     }
     if (any(canonical_loss > 0L & rules$water_loss != canonical_loss)) {
         stop("Canonical water-loss names must agree with water_loss.")
@@ -600,7 +600,7 @@ maldiMatrixRules <- function(
         as.integer(rules$min_reactive_sites)
     )
     if (any(is.na(rules$min_reactive_sites) | rules$min_reactive_sites < 0L)) {
-        stop("min_reactive_sites must contain non-negative integers.")
+        stop("minReactiveSites must contain non-negative integers.")
     }
     rules
 }
@@ -625,18 +625,18 @@ maldiMatrixRules <- function(
 }
 
 .normalise_metabolite_db <- function(
-    db, collapse_isomers = TRUE,
-    infer_structure = c("auto", "never", "always"),
-    structure_backend = c("auto", "native"),
+    db, collapseIsomers = TRUE,
+    inferStructure = c("auto", "never", "always"),
+    structureBackend = c("auto", "native"),
     BPPARAM = BiocParallel::SerialParam(),
-    retain_structure_records = FALSE
+    retainStructureRecords = FALSE
 ) {
     if (!is.data.frame(db)) {
         stop("db must be a data.frame or data.table.")
     }
     database_metadata <- attr(db, "spamtp_database", exact = TRUE)
-    infer_structure <- match.arg(infer_structure)
-    structure_backend <- match.arg(structure_backend)
+    inferStructure <- match.arg(inferStructure)
+    structureBackend <- match.arg(structureBackend)
     db <- as.data.frame(db, stringsAsFactors = FALSE)
     supplied_proton_col <- .first_existing_column(
         db,
@@ -665,7 +665,7 @@ maldiMatrixRules <- function(
     )
     needs_precomputed <- !"structure_valid" %in% names(db) ||
         !any(!is.na(db$structure_valid) & db$structure_valid)
-    if (infer_structure == "auto" && !is.null(smiles_col) && isTRUE(needs_precomputed) &&
+    if (inferStructure == "auto" && !is.null(smiles_col) && isTRUE(needs_precomputed) &&
         is.list(database_metadata) &&
         identical(database_metadata$source, "spamtpdb")) {
         precomputed <- tryCatch(
@@ -673,7 +673,7 @@ maldiMatrixRules <- function(
                 "smiles_features",
                 version = database_metadata$version %||% "latest",
                 source = "spamtpdb",
-                local_dir = database_metadata$local_dir,
+                localDir = database_metadata$local_dir,
                 offline = isTRUE(database_metadata$offline)
             ),
             error = function(e) NULL
@@ -697,9 +697,9 @@ maldiMatrixRules <- function(
             }
         }
     }
-    if (!is.null(smiles_col) && infer_structure != "never") {
+    if (!is.null(smiles_col) && inferStructure != "never") {
         has_smiles <- !is.na(db[[smiles_col]]) & nzchar(as.character(db[[smiles_col]]))
-        should_infer <- infer_structure == "always" ||
+        should_infer <- inferStructure == "always" ||
             !"structure_valid" %in% names(db) ||
             any(has_smiles & is.na(db$structure_valid))
         if (isTRUE(should_infer)) {
@@ -712,21 +712,21 @@ maldiMatrixRules <- function(
                 runtime_limit < 0L) {
                 runtime_limit <- 5000L
             }
-            if (infer_structure == "auto" &&
+            if (inferStructure == "auto" &&
                 structure_count > runtime_limit) {
                 warning(
                     "Skipping runtime SMILES decomposition for ",
                     format(structure_count, big.mark = ","), " unique structures ",
                     "(SpaMTP.max_runtime_smiles = ", runtime_limit, "). Use a ",
                     "SpaMTPdb resource with precomputed structural fields, set ",
-                    "infer_structure = 'always', or raise the option explicitly.",
+                    "inferStructure = 'always', or raise the option explicitly.",
                     call. = FALSE
                 )
             } else {
                 db <- annotateSMILESStructure(
                     db,
-                    smiles_column = smiles_col, backend = structure_backend,
-                    overwrite = infer_structure == "always", strict = FALSE,
+                    smilesColumn = smiles_col, backend = structureBackend,
+                    overwrite = inferStructure == "always", strict = FALSE,
                     BPPARAM = BPPARAM
                 )
             }
@@ -853,14 +853,14 @@ maldiMatrixRules <- function(
     keep <- is.finite(compounds$exactmass) & compounds$exactmass > 0 &
         !is.na(compounds$formula) & nzchar(compounds$formula)
     compounds <- compounds[keep, , drop = FALSE]
-    structure_records <- if (retain_structure_records) compounds else NULL
-    structure_record_rows <- if (retain_structure_records) {
+    structure_records <- if (retainStructureRecords) compounds else NULL
+    structure_record_rows <- if (retainStructureRecords) {
         as.list(seq_len(nrow(compounds)))
     } else {
         NULL
     }
 
-    if (isTRUE(collapse_isomers) && nrow(compounds)) {
+    if (isTRUE(collapseIsomers) && nrow(compounds)) {
         # Keep existing adduct groups stable; water losses resolve original records.
         grouping_columns <- setdiff(
             site_columns,
@@ -891,7 +891,7 @@ maldiMatrixRules <- function(
         )
         if (anyDuplicated(group_key)) {
             grouped_rows <- split(seq_len(nrow(compounds)), group_key)
-            if (retain_structure_records) structure_record_rows <- unname(grouped_rows)
+            if (retainStructureRecords) structure_record_rows <- unname(grouped_rows)
             first_row <- vapply(grouped_rows, function(i) i[[1]], integer(1))
             collapsed_site_values <- lapply(
                 compounds[site_columns], function(x) x[first_row]
@@ -936,7 +936,7 @@ maldiMatrixRules <- function(
 # Resolve only mass-matched original records, so an eligible isomer cannot
 # confer dehydration eligibility on other members of a collapsed group.
 .resolve_dehydration <- function(
-    compounds, rules, infer_structure, cache, formula_cache = NULL
+    compounds, rules, inferStructure, cache, formulaCache = NULL
 ) {
     n <- nrow(compounds)
     for (column in c("dehydration_sites", "max_water_losses")) {
@@ -948,7 +948,7 @@ maldiMatrixRules <- function(
         smiles <- compounds$smiles[[j]]
         missing_prior <- !"positive_mode_score" %in% names(compounds) ||
             !is.finite(compounds$positive_mode_score[[j]])
-        if (infer_structure != "never" &&
+        if (inferStructure != "never" &&
             (!isTRUE(compounds$structure_valid[[j]]) || missing_prior) &&
             !is.na(smiles) && nzchar(smiles)) {
             full_key <- paste0("full\n", smiles)
@@ -974,7 +974,7 @@ maldiMatrixRules <- function(
             compounds$max_water_losses[[j]] <- 0L
             compounds$dehydration_sites[[j]] <- 0L
         }
-        if (!is.finite(capacity) && infer_structure != "never") {
+        if (!is.finite(capacity) && inferStructure != "never") {
             if (!is.na(smiles) && nzchar(smiles)) {
                 if (!exists(smiles, envir = cache, inherits = FALSE)) {
                     assign(
@@ -992,9 +992,9 @@ maldiMatrixRules <- function(
         required <- rules$water_loss[[j]]
         atoms_available <- if ("formula" %in% names(compounds)) {
             isTRUE(.element_count(
-                compounds$formula[[j]], "O", formula_cache
+                compounds$formula[[j]], "O", formulaCache
             ) >= required) && isTRUE(.element_count(
-                compounds$formula[[j]], "H", formula_cache
+                compounds$formula[[j]], "H", formulaCache
             ) >= 2L * required)
         } else {
             TRUE
@@ -1153,10 +1153,10 @@ maldiMatrixRules <- function(
 #' @param smiles Character vector of SMILES strings.
 #' @param polarity `"positive"`, `"negative"`, or `"neutral"`. When `NULL`,
 #'   use the matrix-profile default or positive mode.
-#' @param maldi_matrix Optional MALDI matrix/reagent profile.
+#' @param maldiMatrix Optional MALDI matrix/reagent profile.
 #' @param rules Optional custom rule table. It cannot be combined with
-#'   `maldi_matrix`.
-#' @param min_structure_score Minimum rule-specific structural prior marked as
+#'   `maldiMatrix`.
+#' @param minStructureScore Minimum rule-specific structural prior marked as
 #'   retained.
 #' @param backend,BPPARAM Passed to [deconvolveSMILES()].
 #'
@@ -1166,41 +1166,41 @@ maldiMatrixRules <- function(
 #' head(predicted[, c("adduct", "structure_score", "retained")])
 #' @export
 predictAdductsFromSMILES <- function(
-    smiles, polarity = NULL, maldi_matrix = NULL, rules = NULL,
-    min_structure_score = 0.05,
+    smiles, polarity = NULL, maldiMatrix = NULL, rules = NULL,
+    minStructureScore = 0.05,
     backend = c("auto", "native"),
     BPPARAM = BiocParallel::SerialParam()
 ) {
     backend <- match.arg(backend)
-    polarity <- .resolve_maldi_polarity(polarity, maldi_matrix)
+    polarity <- .resolve_maldi_polarity(polarity, maldiMatrix)
     if (is.null(rules)) {
-        rules <- if (is.null(maldi_matrix)) {
+        rules <- if (is.null(maldiMatrix)) {
             adductRules(polarity)
         } else {
-            maldiMatrixRules(maldi_matrix, polarity = polarity)
+            maldiMatrixRules(maldiMatrix, polarity = polarity)
         }
     } else {
-        if (!is.null(maldi_matrix)) {
-            stop("Supply either maldi_matrix or rules, not both.")
+        if (!is.null(maldiMatrix)) {
+            stop("Supply either maldiMatrix or rules, not both.")
         }
         rules <- .validate_adduct_rules(as.data.frame(rules))
         rules <- rules[rules$polarity == polarity, , drop = FALSE]
     }
     rules <- .validate_adduct_rules(rules)
     if (!nrow(rules)) stop("No rules are available for the selected polarity.")
-    if (length(min_structure_score) != 1L || !is.finite(min_structure_score) ||
-        min_structure_score < 0 || min_structure_score > 1) {
-        stop("min_structure_score must be a single number between zero and one.")
+    if (length(minStructureScore) != 1L || !is.finite(minStructureScore) ||
+        minStructureScore < 0 || minStructureScore > 1) {
+        stop("minStructureScore must be a single number between zero and one.")
     }
 
     structures <- deconvolveSMILES(
         smiles,
         backend = backend, strict = FALSE, BPPARAM = BPPARAM
     )
-    matrix_profile <- if (is.null(maldi_matrix)) {
+    matrix_profile <- if (is.null(maldiMatrix)) {
         "none"
     } else {
-        .normalise_maldi_matrix(maldi_matrix)
+        .normalise_maldi_matrix(maldiMatrix)
     }
     matrix_compatibility <- .matrix_structure_compatibility(
         structures, matrix_profile
@@ -1241,7 +1241,7 @@ predictAdductsFromSMILES <- function(
                     "insufficient"
                 }
             }
-            retained <- prior$score[[1]] >= min_structure_score &&
+            retained <- prior$score[[1]] >= minStructureScore &&
                 site_status != "insufficient" && proton_bound_status != "insufficient"
             dehydration <- .resolve_dehydration(
                 compound, rule, "never", new.env(parent = emptyenv())
@@ -1297,20 +1297,20 @@ predictAdductsFromSMILES <- function(
 #'   notations. When `NULL`, use the complete automatically selected rule
 #'   space; this is a filter, not a compulsory input.
 #' @param rules Optional custom rule table. See [adductRules()].
-#' @param maldi_matrix Optional MALDI matrix or derivatization reagent profile.
+#' @param maldiMatrix Optional MALDI matrix or derivatization reagent profile.
 #'   When supplied and `rules` is `NULL`, [maldiMatrixRules()] automatically
 #'   selects standard and validated matrix-specific rules. `adducts` remains an
 #'   optional filter on that selected rule space.
-#' @param collapse_isomers Collapse records sharing formula, exact mass, and
+#' @param collapseIsomers Collapse records sharing formula, exact mass, and
 #'   proton bound before indexing.
-#' @param infer_structure `"auto"` joins precomputed SpaMTPdb features or
+#' @param inferStructure `"auto"` joins precomputed SpaMTPdb features or
 #'   derives them for at most `getOption("SpaMTP.max_runtime_smiles", 5000)`
 #'   unique SMILES, `"never"` disables inference, and `"always"` forces
 #'   runtime parsing and replaces precomputed structural fields. `"never"`
 #'   and `"always"` do not fetch a precomputed structure table.
-#' @param structure_backend SMILES parser used by [deconvolveSMILES()].
+#' @param structureBackend SMILES parser used by [deconvolveSMILES()].
 #' @param BPPARAM BiocParallel parameters for runtime SMILES parsing.
-#' @param min_structure_score Minimum rule-specific structural prior retained
+#' @param minStructureScore Minimum rule-specific structural prior retained
 #'   before m/z indexing. Set to zero to rank without structure-based pruning.
 #'
 #' @return An object of class `spamtp_mz_index`.
@@ -1322,30 +1322,30 @@ predictAdductsFromSMILES <- function(
 buildMZAnnotationIndex <- function(
     db, polarity = NULL,
     adducts = NULL, rules = NULL,
-    maldi_matrix = NULL,
-    collapse_isomers = TRUE,
-    infer_structure = c("auto", "never", "always"),
-    structure_backend = c("auto", "native"),
+    maldiMatrix = NULL,
+    collapseIsomers = TRUE,
+    inferStructure = c("auto", "never", "always"),
+    structureBackend = c("auto", "native"),
     BPPARAM = BiocParallel::SerialParam(),
-    min_structure_score = 0.05
+    minStructureScore = 0.05
 ) {
-    infer_structure <- match.arg(infer_structure)
-    structure_backend <- match.arg(structure_backend)
-    if (length(min_structure_score) != 1L || !is.finite(min_structure_score) ||
-        min_structure_score < 0 || min_structure_score > 1) {
-        stop("min_structure_score must be a single number between zero and one.")
+    inferStructure <- match.arg(inferStructure)
+    structureBackend <- match.arg(structureBackend)
+    if (length(minStructureScore) != 1L || !is.finite(minStructureScore) ||
+        minStructureScore < 0 || minStructureScore > 1) {
+        stop("minStructureScore must be a single number between zero and one.")
     }
-    polarity <- .resolve_maldi_polarity(polarity, maldi_matrix)
+    polarity <- .resolve_maldi_polarity(polarity, maldiMatrix)
     if (is.null(rules)) {
-        rules <- if (is.null(maldi_matrix)) {
+        rules <- if (is.null(maldiMatrix)) {
             adductRules(polarity = polarity)
         } else {
-            maldiMatrixRules(maldi_matrix, polarity = polarity)
+            maldiMatrixRules(maldiMatrix, polarity = polarity)
         }
     } else {
-        if (!is.null(maldi_matrix)) {
+        if (!is.null(maldiMatrix)) {
             stop(
-                "Supply either maldi_matrix for automatic selection or an explicit ",
+                "Supply either maldiMatrix for automatic selection or an explicit ",
                 "rules table, not both."
             )
         }
@@ -1373,10 +1373,10 @@ buildMZAnnotationIndex <- function(
 
     compounds <- .normalise_metabolite_db(
         db,
-        collapse_isomers = collapse_isomers,
-        infer_structure = infer_structure, structure_backend = structure_backend,
+        collapseIsomers = collapseIsomers,
+        inferStructure = inferStructure, structureBackend = structureBackend,
         BPPARAM = BPPARAM,
-        retain_structure_records = any(rules$water_loss > 0L)
+        retainStructureRecords = any(rules$water_loss > 0L)
     )
     structure_records <- attr(compounds, "structure_records", exact = TRUE)
     structure_record_rows <- attr(compounds, "structure_record_rows", exact = TRUE)
@@ -1425,7 +1425,7 @@ buildMZAnnotationIndex <- function(
         structure_prior <- .adduct_structure_prior(compounds, rule)
         structure_known <- structure_prior$status != "unavailable"
         valid[structure_known] <- valid[structure_known] &
-            structure_prior$score[structure_known] >= min_structure_score
+            structure_prior$score[structure_known] >= minStructureScore
         required_sites <- rule$min_reactive_sites[[1]]
         site_column <- rule$site_count_column[[1]]
         if (required_sites > 0L && !is.na(site_column) &&
@@ -1457,14 +1457,14 @@ buildMZAnnotationIndex <- function(
             rules = rules,
             family_rules = family_rules,
             polarity = polarity,
-            maldi_matrix = if (is.null(maldi_matrix)) {
+            maldi_matrix = if (is.null(maldiMatrix)) {
                 "unspecified"
             } else {
-                .normalise_maldi_matrix(maldi_matrix)
+                .normalise_maldi_matrix(maldiMatrix)
             },
-            infer_structure = infer_structure,
-            structure_backend = structure_backend,
-            min_structure_score = min_structure_score,
+            infer_structure = inferStructure,
+            structure_backend = structureBackend,
+            min_structure_score = minStructureScore,
             database_metadata = attr(db, "spamtp_database", exact = TRUE)
         ),
         class = "spamtp_mz_index"
@@ -1493,14 +1493,14 @@ print.spamtp_mz_index <- function(x, ...) {
     invisible(x)
 }
 
-.normalise_ms1_spectrum <- function(ms1_spectrum) {
-    if (is.null(ms1_spectrum)) {
+.normalise_ms1_spectrum <- function(ms1Spectrum) {
+    if (is.null(ms1Spectrum)) {
         return(NULL)
     }
-    if (is.numeric(ms1_spectrum) && is.null(dim(ms1_spectrum))) {
-        ms1_spectrum <- data.frame(mz = ms1_spectrum, intensity = rep(1, length(ms1_spectrum)))
+    if (is.numeric(ms1Spectrum) && is.null(dim(ms1Spectrum))) {
+        ms1Spectrum <- data.frame(mz = ms1Spectrum, intensity = rep(1, length(ms1Spectrum)))
     }
-    spectrum <- as.data.frame(ms1_spectrum)
+    spectrum <- as.data.frame(ms1Spectrum)
     mz_col <- .first_existing_column(
         spectrum, c("mz", "m.z", "mass", "raw_mz", "observed_mz")
     )
@@ -1521,13 +1521,13 @@ print.spamtp_mz_index <- function(x, ...) {
     out[order(out$mz), , drop = FALSE]
 }
 
-.find_spectrum_peak <- function(spectrum, target_mz, ppm) {
-    if (is.null(spectrum) || !nrow(spectrum) || !is.finite(target_mz)) {
+.find_spectrum_peak <- function(spectrum, targetMz, ppm) {
+    if (is.null(spectrum) || !nrow(spectrum) || !is.finite(targetMz)) {
         return(c(mz = NA_real_, intensity = NA_real_, ppm = NA_real_))
     }
-    pos <- findInterval(target_mz, spectrum$mz)
+    pos <- findInterval(targetMz, spectrum$mz)
     idx <- unique(pmax(1L, pmin(nrow(spectrum), c(pos, pos + 1L))))
-    errors <- abs(spectrum$mz[idx] - target_mz) / target_mz * 1e6
+    errors <- abs(spectrum$mz[idx] - targetMz) / targetMz * 1e6
     best <- idx[which.min(errors)]
     if (!length(best) || errors[which.min(errors)] > ppm) {
         return(c(mz = NA_real_, intensity = NA_real_, ppm = NA_real_))
@@ -1538,7 +1538,7 @@ print.spamtp_mz_index <- function(x, ...) {
     )
 }
 
-.formula_mass_score <- function(observed_mz, formula, rule, cache = NULL, ppm = 5) {
+.formula_mass_score <- function(observedMz, formula, rule, cache = NULL, ppm = 5) {
     counts <- .formula_counts(formula, cache)
     if (is.null(counts)) return(NA_real_)
     if (!all(names(counts) %in% c("C", "H", "O"))) return(1)
@@ -1549,7 +1549,7 @@ print.spamtp_mz_index <- function(x, ...) {
     masses <- c(C = m$carbon, H = m$hydrogen, O = m$oxygen)
     neutral_mass <- sum(counts * masses[names(counts)])
     predicted <- (rule$n_molecules * neutral_mass + rule$mass_shift) / abs(rule$charge)
-    error <- abs(observed_mz - predicted) / predicted * 1e6
+    error <- abs(observedMz - predicted) / predicted * 1e6
     # Do not impose sub-5-ppm formula accuracy on rounded database masses.
     if (is.finite(error) && error > max(5, ppm)) 0.2 else 1
 }
@@ -1562,21 +1562,21 @@ print.spamtp_mz_index <- function(x, ...) {
 }
 
 .isotope_score <- function(
-    expected_mz, formula, rule, spectrum, ppm, cache = NULL
+    expectedMz, formula, rule, spectrum, ppm, cache = NULL
 ) {
     if (is.null(spectrum) || is.null(.formula_counts(formula, cache))) {
         return(NA_real_)
     }
     m <- .spamtp_mass_constants()
     charge <- abs(rule$charge)
-    main <- .find_spectrum_peak(spectrum, expected_mz, ppm)
+    main <- .find_spectrum_peak(spectrum, expectedMz, ppm)
     score <- 1
 
     carbon_count <- rule$n_molecules * .element_count(formula, "C", cache) +
         (rule$carbon_delta %||% 0)
     if (carbon_count > 0) {
         isotope <- .find_spectrum_peak(
-            spectrum, expected_mz + m$carbon13_spacing / charge, ppm
+            spectrum, expectedMz + m$carbon13_spacing / charge, ppm
         )
         if (!is.finite(isotope[["mz"]])) {
             score <- score * 0.5
@@ -1594,7 +1594,7 @@ print.spamtp_mz_index <- function(x, ...) {
         spacing <- if (n_br > 0) m$bromine_m2_spacing else m$chlorine_m2_spacing
         expected_ratio <- if (n_br > 0) n_br * 0.97 else n_cl * 0.32
         isotope_m2 <- .find_spectrum_peak(
-            spectrum, expected_mz + spacing / charge, ppm
+            spectrum, expectedMz + spacing / charge, ppm
         )
         if (!is.finite(isotope_m2[["mz"]])) {
             score <- score * 0.2
@@ -1607,7 +1607,7 @@ print.spamtp_mz_index <- function(x, ...) {
     score
 }
 
-.adduct_family_score <- function(neutral_mass, rule, all_rules, spectrum, ppm) {
+.adduct_family_score <- function(neutralMass, rule, allRules, spectrum, ppm) {
     complex_types <- c("multimer", "solvent", "metal_exchange", "matrix_adduct")
     if (is.null(spectrum) || !rule$complexity %in% complex_types) {
         return(NA_real_)
@@ -1616,12 +1616,12 @@ print.spamtp_mz_index <- function(x, ...) {
         rule$base_adduct,
         if (rule$polarity == "positive") c("M+H", "M+Na") else "M-H"
     ))
-    base_rules <- all_rules[all_rules$name %in% base_names &
-        all_rules$n_molecules == 1, , drop = FALSE]
+    base_rules <- allRules[allRules$name %in% base_names &
+        allRules$n_molecules == 1, , drop = FALSE]
     if (!nrow(base_rules)) {
         return(NA_real_)
     }
-    base_mz <- (base_rules$n_molecules * neutral_mass + base_rules$mass_shift) /
+    base_mz <- (base_rules$n_molecules * neutralMass + base_rules$mass_shift) /
         abs(base_rules$charge)
     found <- vapply(base_mz, function(x) {
         is.finite(.find_spectrum_peak(spectrum, x, ppm)[["mz"]])
@@ -1662,24 +1662,24 @@ print.spamtp_mz_index <- function(x, ...) {
 #' isotope, and contextual adduct-family evidence. Positive water-loss
 #' candidates additionally require compatible alcohol OH and neighbouring
 #' carbon H sites. Older structure tables are checked lazily for mass-matched
-#' records; `infer_structure = "never"` requires precomputed dehydration
+#' records; `inferStructure = "never"` requires precomputed dehydration
 #' capacity. Isomer identities are resolved separately for these losses.
 #'
-#' @param observed_mz Numeric vector of observed m/z values.
+#' @param observedMz Numeric vector of observed m/z values.
 #' @param index A `spamtp_mz_index` from [buildMZAnnotationIndex()].
 #' @param ppm Mass tolerance in parts per million.
-#' @param ms1_spectrum Optional contextual spectrum with `mz` and `intensity`
+#' @param ms1Spectrum Optional contextual spectrum with `mz` and `intensity`
 #'   columns. It should represent the same retention-time window or spatial
 #'   pixel/region as the queried peaks.
-#' @param check_formula_mass Check CHO formula/ion mass consistency. A mismatch
+#' @param checkFormulaMass Check CHO formula/ion mass consistency. A mismatch
 #'   beyond the query tolerance (at least 5 ppm for rounded reference masses)
 #'   receives a 0.2 chemical score. Negative fractional mass defects alone
 #'   are not penalized.
-#' @param check_isotopes Score carbon-13 and, when relevant, chlorine/bromine
+#' @param checkIsotopes Score carbon-13 and, when relevant, chlorine/bromine
 #'   M+2 patterns.
-#' @param check_adduct_network Downweight complex ions whose base monomer
-#'   family is absent from `ms1_spectrum`.
-#' @param min_score Minimum final score to retain.
+#' @param checkAdductNetwork Downweight complex ions whose base monomer
+#'   family is absent from `ms1Spectrum`.
+#' @param minScore Minimum final score to retain.
 #'
 #' @return A ranked candidate data frame. `water_loss` is the required number
 #'   of neutral water losses; `dehydration_sites` and `max_water_losses` record
@@ -1699,36 +1699,36 @@ print.spamtp_mz_index <- function(x, ...) {
 #' queryMZAnnotationIndex(c(149.04445, 181.07066), index, ppm = 5)
 #' @export
 queryMZAnnotationIndex <- function(
-    observed_mz, index, ppm = 5,
-    ms1_spectrum = NULL,
-    check_formula_mass = TRUE,
-    check_isotopes = TRUE,
-    check_adduct_network = TRUE,
-    min_score = 0
+    observedMz, index, ppm = 5,
+    ms1Spectrum = NULL,
+    checkFormulaMass = TRUE,
+    checkIsotopes = TRUE,
+    checkAdductNetwork = TRUE,
+    minScore = 0
 ) {
     if (!inherits(index, "spamtp_mz_index")) {
         stop("index must be created by buildMZAnnotationIndex().")
     }
-    observed_mz <- suppressWarnings(as.numeric(observed_mz))
-    if (!length(observed_mz) || any(!is.finite(observed_mz) | observed_mz <= 0)) {
-        stop("observed_mz must contain positive finite values.")
+    observedMz <- suppressWarnings(as.numeric(observedMz))
+    if (!length(observedMz) || any(!is.finite(observedMz) | observedMz <= 0)) {
+        stop("observedMz must contain positive finite values.")
     }
     if (length(ppm) != 1 || !is.finite(ppm) || ppm < 0) {
         stop("ppm must be a single non-negative number.")
     }
-    spectrum <- .normalise_ms1_spectrum(ms1_spectrum)
+    spectrum <- .normalise_ms1_spectrum(ms1Spectrum)
     tolerance <- ppm / 1e6
-    results <- vector("list", length(observed_mz))
+    results <- vector("list", length(observedMz))
     dehydration_cache <- new.env(parent = emptyenv())
     formula_cache <- new.env(parent = emptyenv())
-    lower <- observed_mz / (1 + tolerance)
-    upper <- if (tolerance < 1) observed_mz / (1 - tolerance) else rep(Inf, length(lower))
+    lower <- observedMz / (1 + tolerance)
+    upper <- if (tolerance < 1) observedMz / (1 - tolerance) else rep(Inf, length(lower))
     lower_open <- lower - .Machine$double.eps * pmax(1, abs(lower))
     lower_index <- findInterval(lower_open, index$expected_mz)
     upper_index <- findInterval(upper, index$expected_mz)
 
-    for (i in seq_along(observed_mz)) {
-        obs <- observed_mz[[i]]
+    for (i in seq_along(observedMz)) {
+        obs <- observedMz[[i]]
         lo <- lower_index[[i]]
         hi <- upper_index[[i]]
         if (hi <= lo) next
@@ -1797,7 +1797,7 @@ queryMZAnnotationIndex <- function(
         } else {
             exp(-0.5 * (error / (ppm / 3))^2)
         }
-        chemical_score <- if (isTRUE(check_formula_mass)) {
+        chemical_score <- if (isTRUE(checkFormulaMass)) {
             vapply(seq_along(error), function(j) {
                 .formula_mass_score(
                     obs,
@@ -1824,7 +1824,7 @@ queryMZAnnotationIndex <- function(
             if (count >= required_sites) "verified" else "insufficient"
         }, character(1))
         reactive_site_score <- ifelse(site_status == "unknown", 0.25, 1)
-        isotope_score <- if (isTRUE(check_isotopes)) {
+        isotope_score <- if (isTRUE(checkIsotopes)) {
             vapply(seq_along(error), function(j) {
                 .isotope_score(
                     expected[[j]], compounds$formula[[j]],
@@ -1834,7 +1834,7 @@ queryMZAnnotationIndex <- function(
         } else {
             rep(NA_real_, length(error))
         }
-        network_score <- if (isTRUE(check_adduct_network)) {
+        network_score <- if (isTRUE(checkAdductNetwork)) {
             vapply(seq_along(error), function(j) {
                 .adduct_family_score(
                     compounds$exactmass[[j]], rules[j, , drop = FALSE],
@@ -1846,8 +1846,8 @@ queryMZAnnotationIndex <- function(
         }
 
         formula_checked <- rules$water_loss > 0L |
-            isTRUE(check_formula_mass) |
-            (isTRUE(check_isotopes) && !is.null(spectrum))
+            isTRUE(checkFormulaMass) |
+            (isTRUE(checkIsotopes) && !is.null(spectrum))
         formula_status <- vapply(seq_along(error), function(j) {
             if (!formula_checked[[j]]) {
                 return("not_checked")
@@ -1907,7 +1907,7 @@ queryMZAnnotationIndex <- function(
             ramp_ids = compounds$ramp_ids,
             stringsAsFactors = FALSE
         )
-        allowed <- out$score >= min_score
+        allowed <- out$score >= minScore
         # Apply the threshold again after lazy structure resolution.
         water <- out$water_loss > 0L
         allowed[water] <- allowed[water] &
@@ -1932,19 +1932,21 @@ queryMZAnnotationIndex <- function(
 # or structural evidence. Reject conflicting construction options explicitly.
 .reuse_mz_index <- function(
     index, adducts = NULL, db = NULL, rules = NULL,
-    infer_structure = NULL, structure_backend = NULL,
-    min_structure_score = NULL, supplied_BPPARAM = FALSE
+    inferStructure = NULL, structureBackend = NULL,
+    minStructureScore = NULL, suppliedBpparam = FALSE
 ) {
-    if (!is.null(db) || !is.null(rules) || supplied_BPPARAM) {
+    if (!is.null(db) || !is.null(rules) || suppliedBpparam) {
         stop("With index supplied, omit db, rules and BPPARAM; use buildMZAnnotationIndex() to change them.",
             call. = FALSE)
     }
-    requested <- list(infer_structure = infer_structure,
-        structure_backend = structure_backend, min_structure_score = min_structure_score)
+    requested <- list(infer_structure = inferStructure,
+        structure_backend = structureBackend, min_structure_score = minStructureScore)
+    argument_names <- c(infer_structure = "inferStructure",
+        structure_backend = "structureBackend", min_structure_score = "minStructureScore")
     for (name in names(requested)) {
         value <- requested[[name]]
         if (!is.null(value) && !identical(value, index[[name]])) {
-            stop("The supplied index does not match ", name,
+            stop("The supplied index does not match ", argument_names[[name]],
                 "; rebuild it with buildMZAnnotationIndex().", call. = FALSE)
         }
     }
@@ -1972,7 +1974,7 @@ queryMZAnnotationIndex <- function(
 #' Convenience wrapper that builds an index when one is not supplied. Reuse a
 #' pre-built index for repeated or large searches.
 #'
-#' @param observed_mz Numeric vector of observed m/z values.
+#' @param observedMz Numeric vector of observed m/z values.
 #' @param db Metabolite database used when `index` is `NULL`.
 #' @param index Optional pre-built `spamtp_mz_index`. `adducts` can restrict
 #'   the existing rules; unavailable rules or conflicting construction options
@@ -1982,15 +1984,15 @@ queryMZAnnotationIndex <- function(
 #' @param adducts Optional adduct subset. When `NULL`, retain the complete rule
 #'   space selected by the matrix profile or polarity.
 #' @param rules Optional custom rule table.
-#' @param maldi_matrix Optional MALDI matrix/reagent profile used to select
+#' @param maldiMatrix Optional MALDI matrix/reagent profile used to select
 #'   rules automatically when `rules` is `NULL`.
 #' @param ppm Mass tolerance in ppm.
-#' @param ms1_spectrum Optional contextual spectrum.
-#' @param database_version SpaMTPdb/RaMP version used when `db = NULL`.
-#' @param database_source Database source used when `db = NULL`; see
+#' @param ms1Spectrum Optional contextual spectrum.
+#' @param databaseVersion SpaMTPdb/RaMP version used when `db = NULL`.
+#' @param databaseSource Database source used when `db = NULL`; see
 #'   [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
-#' @param infer_structure,structure_backend,BPPARAM,min_structure_score
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
+#' @param inferStructure,structureBackend,BPPARAM,min_structure_score
 #'   Structure-aware
 #'   rule-selection arguments passed to [buildMZAnnotationIndex()].
 #' @param ... Additional arguments passed to [queryMZAnnotationIndex()].
@@ -2002,18 +2004,18 @@ queryMZAnnotationIndex <- function(
 #' annotateMZ(149.04445, index = index, ppm = 5)
 #' @export
 annotateMZ <- function(
-    observed_mz, db = NULL, index = NULL,
+    observedMz, db = NULL, index = NULL,
     polarity = NULL,
-    adducts = NULL, rules = NULL, maldi_matrix = NULL,
+    adducts = NULL, rules = NULL, maldiMatrix = NULL,
     ppm = 5,
-    ms1_spectrum = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL,
-    infer_structure = c("auto", "never", "always"),
-    structure_backend = c("auto", "native"),
+    ms1Spectrum = NULL,
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL,
+    inferStructure = c("auto", "never", "always"),
+    structureBackend = c("auto", "native"),
     BPPARAM = BiocParallel::SerialParam(),
-    min_structure_score = 0.05, ...
+    minStructureScore = 0.05, ...
 ) {
     if (!is.null(index) && !inherits(index, "spamtp_mz_index")) {
         stop("index must be created by buildMZAnnotationIndex().")
@@ -2021,38 +2023,38 @@ annotateMZ <- function(
     polarity <- if (is.null(polarity) && inherits(index, "spamtp_mz_index")) {
         index$polarity
     } else {
-        .resolve_maldi_polarity(polarity, maldi_matrix)
+        .resolve_maldi_polarity(polarity, maldiMatrix)
     }
     if (is.null(index)) {
         if (is.null(db)) {
             db <- .spamtp_db_resource(
                 "chem_props",
-                version = database_version,
-                source = match.arg(database_source),
-                local_dir = database_local_dir
+                version = databaseVersion,
+                source = match.arg(databaseSource),
+                localDir = databaseLocalDir
             )
         }
         index <- buildMZAnnotationIndex(
             db = db, polarity = polarity, adducts = adducts, rules = rules,
-            maldi_matrix = maldi_matrix, infer_structure = infer_structure,
-            structure_backend = structure_backend,
+            maldiMatrix = maldiMatrix, inferStructure = inferStructure,
+            structureBackend = structureBackend,
             BPPARAM = BPPARAM,
-            min_structure_score = min_structure_score
+            minStructureScore = minStructureScore
         )
     } else if (!identical(index$polarity, polarity)) {
         stop("The supplied index polarity does not match polarity.")
-    } else if (!is.null(maldi_matrix) &&
-        !identical(index$maldi_matrix, .normalise_maldi_matrix(maldi_matrix))) {
+    } else if (!is.null(maldiMatrix) &&
+        !identical(index$maldi_matrix, .normalise_maldi_matrix(maldiMatrix))) {
         stop("The supplied index MALDI matrix profile does not match maldi_matrix.")
     } else {
         index <- .reuse_mz_index(index, adducts, db, rules,
-            infer_structure = if (!missing(infer_structure)) match.arg(infer_structure),
-            structure_backend = if (!missing(structure_backend)) match.arg(structure_backend),
-            min_structure_score = if (!missing(min_structure_score)) min_structure_score,
-            supplied_BPPARAM = !missing(BPPARAM))
+            inferStructure = if (!missing(inferStructure)) match.arg(inferStructure),
+            structureBackend = if (!missing(structureBackend)) match.arg(structureBackend),
+            minStructureScore = if (!missing(minStructureScore)) minStructureScore,
+            suppliedBpparam = !missing(BPPARAM))
     }
     queryMZAnnotationIndex(
-        observed_mz = observed_mz, index = index, ppm = ppm,
-        ms1_spectrum = ms1_spectrum, ...
+        observedMz = observedMz, index = index, ppm = ppm,
+        ms1Spectrum = ms1Spectrum, ...
     )
 }

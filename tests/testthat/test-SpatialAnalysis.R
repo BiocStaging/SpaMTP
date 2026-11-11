@@ -1,7 +1,7 @@
 test_that("findSpatiallyVariableMetabolites validates sampling controls", {
     expect_error(
-        findSpatiallyVariableMetabolites(NULL, max_spots = 1),
-        "max_spots must be NULL or one finite number >= 2",
+        findSpatiallyVariableMetabolites(NULL, maxSpots = 1),
+        "maxSpots must be NULL or one finite number >= 2",
         fixed = TRUE
     )
     expect_error(

@@ -9,8 +9,8 @@ flagIsotopePeaks(
   intensity,
   ppm = 3,
   charge = 1L,
-  min_cor = 0.5,
-  max_ratio = NULL
+  minCor = 0.5,
+  maxRatio = NULL
 )
 }
 \arguments{
@@ -25,9 +25,9 @@ observations or constant profiles; such pairs do not pass that test.}
 
 \item{charge}{Ion charge (spacing is 1.00335 / charge).}
 
-\item{min_cor}{Smallest profile correlation accepted when a matrix is given.}
+\item{minCor}{Smallest profile correlation accepted when a matrix is given.}
 
-\item{max_ratio}{Optional fixed upper bound on heavy/light intensity. By
+\item{maxRatio}{Optional fixed upper bound on heavy/light intensity. By
 default it is 1.2 x 1.07\% per carbon, with at most m/z x charge / 12
 carbons in the lighter ion.}
 }

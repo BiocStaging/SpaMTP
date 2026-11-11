@@ -80,10 +80,10 @@ test_that("applySpatialAlignment estimates affine transforms from landmarks", {
 
     result <- applySpatialAlignment(
         sm,
-        ST.data = st,
+        stData = st,
         method = "affine",
-        SM.landmarks = source_landmarks,
-        ST.landmarks = target_landmarks,
+        smLandmarks = source_landmarks,
+        stLandmarks = target_landmarks,
         return = "result",
         verbose = FALSE
     )
@@ -123,11 +123,11 @@ test_that("point-annotator y-x landmarks can be marked as preprocessed", {
     target <- processed_source + 5
 
     landmarks <- .sa_prepare_landmarks(
-        SM.landmarks = processed_source[, c(2, 1)],
-        ST.landmarks = target[, c(2, 1)],
+        smLandmarks = processed_source[, c(2, 1)],
+        stLandmarks = target[, c(2, 1)],
         preprocessing = preprocessing$matrix,
-        landmark_order = "yx",
-        SM_landmark_space = "preprocessed"
+        landmarkOrder = "yx",
+        smLandmarkSpace = "preprocessed"
     )
 
     expect_equal(landmarks$source, processed_source)
@@ -167,12 +167,12 @@ test_that("STalign integration is opt-in for local backend testing", {
 
     result <- applySpatialAlignment(
         sm,
-        ST.data = st,
+        stData = st,
         method = "lddmm",
-        SM.landmarks = source,
-        ST.landmarks = target,
+        smLandmarks = source,
+        stLandmarks = target,
         niter = 1,
-        lddmm.args = list(a = 10, epV = 20),
+        lddmmArgs = list(a = 10, epV = 20),
         device = "cpu",
         return = "result",
         verbose = FALSE

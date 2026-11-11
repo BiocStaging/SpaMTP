@@ -21,13 +21,13 @@
 #' ratio, especially with few retained peaks or few decoys, does not by itself
 #' demonstrate FDR control. Chemical identity requires independent evidence.
 #'
-#' @param observed_mz Numeric vector of observed m/z values (one per peak).
+#' @param observedMz Numeric vector of observed m/z values (one per peak).
 #' @param index A `spamtp_mz_index` from [buildMZAnnotationIndex()].
 #' @param ppm Mass tolerance in parts per million.
-#' @param ms1_spectrum Optional data frame with `mz` and `intensity` columns,
+#' @param ms1Spectrum Optional data frame with `mz` and `intensity` columns,
 #'   or a numeric m/z vector assigned unit intensities, used as isotope and
 #'   adduct-family context. It is shifted with the peaks.
-#' @param shifts_da Decoy shifts in Da. Each must exceed twice the tolerance
+#' @param shiftsDa Decoy shifts in Da. Each must exceed twice the tolerance
 #'   at the largest observed m/z. By default, -8, -5, 5 and 8 times that
 #'   tolerance half-width (`ppm` at the largest m/z). For `ppm = 0`, supply
 #'   nonzero shifts explicitly; no default width can be inferred.
@@ -53,8 +53,8 @@
 #' fdr$curve[fdr$curve$cutoff %in% c(0, 0.5), ]
 #' @export
 estimateAnnotationFDR <- function(
-    observed_mz, index, ppm = 5,
-    ms1_spectrum = NULL, shifts_da = NULL,
+    observedMz, index, ppm = 5,
+    ms1Spectrum = NULL, shiftsDa = NULL,
     cutoffs = seq(0, 1, by = 0.01), ...
 ) {
     if (!inherits(index, "spamtp_mz_index")) {
@@ -63,30 +63,30 @@ estimateAnnotationFDR <- function(
             call. = FALSE
         )
     }
-    observed_mz <- suppressWarnings(as.numeric(observed_mz))
-    if (!length(observed_mz) || any(!is.finite(observed_mz) | observed_mz <= 0)) {
-        stop("observed_mz must contain positive finite values.", call. = FALSE)
+    observedMz <- suppressWarnings(as.numeric(observedMz))
+    if (!length(observedMz) || any(!is.finite(observedMz) | observedMz <= 0)) {
+        stop("observedMz must contain positive finite values.", call. = FALSE)
     }
     if (!is.numeric(ppm) || length(ppm) != 1L || !is.finite(ppm) || ppm < 0) {
         stop("ppm must be a single non-negative number.", call. = FALSE)
     }
-    half_width <- ppm * 1e-6 * max(observed_mz)
-    if (is.null(shifts_da)) {
+    half_width <- ppm * 1e-6 * max(observedMz)
+    if (is.null(shiftsDa)) {
         if (ppm == 0) {
-            stop("Supply non-zero shifts_da when ppm = 0; exact matching has no tolerance width.",
+            stop("Supply non-zero shiftsDa when ppm = 0; exact matching has no tolerance width.",
                 call. = FALSE)
         }
-        shifts_da <- c(-8, -5, 5, 8) * half_width
+        shiftsDa <- c(-8, -5, 5, 8) * half_width
     }
-    if (!is.numeric(shifts_da) || !length(shifts_da) ||
-        any(!is.finite(shifts_da)) || any(abs(shifts_da) <= 2 * half_width)) {
+    if (!is.numeric(shiftsDa) || !length(shiftsDa) ||
+        any(!is.finite(shiftsDa)) || any(abs(shiftsDa) <= 2 * half_width)) {
         stop("Each decoy shift must exceed twice the tolerance at the largest ",
             "m/z (", signif(2 * half_width, 3), " Da).",
             call. = FALSE
         )
     }
-    ms1_spectrum <- .normalise_ms1_spectrum(ms1_spectrum)
-    if (min(observed_mz) + min(0, shifts_da) <= 0) {
+    ms1Spectrum <- .normalise_ms1_spectrum(ms1Spectrum)
+    if (min(observedMz) + min(0, shiftsDa) <= 0) {
         stop("Decoy shifts must leave every observed m/z positive.", call. = FALSE)
     }
     if (!is.numeric(cutoffs) || !length(cutoffs) ||
@@ -97,17 +97,17 @@ estimateAnnotationFDR <- function(
     formula_state <- new.env(parent = emptyenv())
     formula_state$unavailable <- character()
     best_for <- function(shift) {
-        query <- observed_mz + shift
-        spectrum <- if (is.null(ms1_spectrum)) {
+        query <- observedMz + shift
+        spectrum <- if (is.null(ms1Spectrum)) {
             NULL
         } else {
             data.frame(
-                mz = ms1_spectrum$mz + shift, intensity = ms1_spectrum$intensity
+                mz = ms1Spectrum$mz + shift, intensity = ms1Spectrum$intensity
             )
         }
         res <- withCallingHandlers(
             queryMZAnnotationIndex(query, index,
-                ppm = ppm, ms1_spectrum = spectrum, min_score = 0, ...
+                ppm = ppm, ms1Spectrum = spectrum, minScore = 0, ...
             ),
             spamtp_formula_warning = function(condition) {
                 formula_state$unavailable <- union(
@@ -125,11 +125,11 @@ estimateAnnotationFDR <- function(
         best[match(query, values)]
     }
 
-    sets <- c(0, shifts_da)
-    best <- vapply(sets, best_for, numeric(length(observed_mz)))
+    sets <- c(0, shiftsDa)
+    best <- vapply(sets, best_for, numeric(length(observedMz)))
     .warn_formula_evidence(formula_state$unavailable)
-    best <- matrix(best, nrow = length(observed_mz))
-    colnames(best) <- c("target", sprintf("decoy_%+.4gDa", shifts_da))
+    best <- matrix(best, nrow = length(observedMz))
+    colnames(best) <- c("target", sprintf("decoy_%+.4gDa", shiftsDa))
     annotated <- function(scores, cutoff) {
         if (cutoff <= 0) sum(scores > 0) else sum(scores >= cutoff)
     }
@@ -144,8 +144,8 @@ estimateAnnotationFDR <- function(
     structure(
         list(
             curve = curve,
-            best_scores = data.frame(mz = observed_mz, best, check.names = FALSE),
-            ppm = ppm, shifts_da = shifts_da
+            best_scores = data.frame(mz = observedMz, best, check.names = FALSE),
+            ppm = ppm, shifts_da = shiftsDa
         ),
         class = "spamtp_annotation_fdr"
     )
@@ -177,12 +177,12 @@ print.spamtp_annotation_fdr <- function(x, ...) {
 #' false-discovery rate. See the assumptions in [estimateAnnotationFDR()].
 #'
 #' @param fdr A `spamtp_annotation_fdr` object from [estimateAnnotationFDR()].
-#' @param target_fdr Largest acceptable decoy-to-target match ratio.
-#' @param min_peaks Smallest number of annotated target peaks a cutoff must
+#' @param targetFdr Largest acceptable decoy-to-target match ratio.
+#' @param minPeaks Smallest number of annotated target peaks a cutoff must
 #'   keep; estimates from a handful of peaks are too noisy to act on.
 #'
 #' @return The smallest score cutoff whose decoy-to-target ratio does not exceed
-#'   `target_fdr` while keeping at least `min_peaks` annotated peaks, or `NA`
+#'   `targetFdr` while keeping at least `minPeaks` annotated peaks, or `NA`
 #'   when no cutoff qualifies.
 #' @examples
 #' fdr <- structure(
@@ -192,14 +192,14 @@ print.spamtp_annotation_fdr <- function(x, ...) {
 #'     )),
 #'     class = "spamtp_annotation_fdr"
 #' )
-#' annotationScoreCutoff(fdr, target_fdr = 0.2)
+#' annotationScoreCutoff(fdr, targetFdr = 0.2)
 #' @export
-annotationScoreCutoff <- function(fdr, target_fdr = 0.1, min_peaks = 10) {
+annotationScoreCutoff <- function(fdr, targetFdr = 0.1, minPeaks = 10) {
     if (!inherits(fdr, "spamtp_annotation_fdr")) {
         stop("fdr must come from estimateAnnotationFDR().", call. = FALSE)
     }
-    ok <- is.finite(fdr$curve$fdr) & fdr$curve$fdr <= target_fdr &
-        fdr$curve$target_peaks >= max(1, min_peaks)
+    ok <- is.finite(fdr$curve$fdr) & fdr$curve$fdr <= targetFdr &
+        fdr$curve$target_peaks >= max(1, minPeaks)
     if (!any(ok)) {
         return(NA_real_)
     }
@@ -215,32 +215,32 @@ annotationScoreCutoff <- function(fdr, target_fdr = 0.1, min_peaks = 10) {
 #' not establish that excluded ions cannot occur or that retained matches
 #' are correct.
 #'
-#' @param maldi_matrix MALDI matrix name, as in [maldiMatrixRules()].
+#' @param maldiMatrix MALDI matrix name, as in [maldiMatrixRules()].
 #' @param polarity Optional polarity; defaults to the matrix's polarity.
-#' @param singly_charged Keep only singly charged rules.
-#' @param exclude_solvent Drop electrospray solvent and solvent-multimer rules.
-#' @param include_matrix_adducts Keep matrix-specific adduct rules.
+#' @param singlyCharged Keep only singly charged rules.
+#' @param excludeSolvent Drop electrospray solvent and solvent-multimer rules.
+#' @param includeMatrixAdducts Keep matrix-specific adduct rules.
 #'
 #' @return A character vector of rule names.
 #' @examples
 #' maldiAdductPreset("DHB")
 #' @export
 maldiAdductPreset <- function(
-    maldi_matrix, polarity = NULL,
-    singly_charged = TRUE, exclude_solvent = TRUE,
-    include_matrix_adducts = TRUE
+    maldiMatrix, polarity = NULL,
+    singlyCharged = TRUE, excludeSolvent = TRUE,
+    includeMatrixAdducts = TRUE
 ) {
-    rules <- maldiMatrixRules(maldi_matrix, polarity = polarity)
+    rules <- maldiMatrixRules(maldiMatrix, polarity = polarity)
     keep <- rep(TRUE, nrow(rules))
-    if (isTRUE(singly_charged)) keep <- keep & abs(rules$charge) == 1
-    if (isTRUE(exclude_solvent)) {
+    if (isTRUE(singlyCharged)) keep <- keep & abs(rules$charge) == 1
+    if (isTRUE(excludeSolvent)) {
         solvent <- grepl("ACN|CH3OH|IsoProp|DMSO|FA-|Hac|TFA", rules$name)
         if ("complexity" %in% names(rules)) {
             solvent <- solvent | rules$complexity %in% "solvent"
         }
         keep <- keep & !solvent
     }
-    if (!isTRUE(include_matrix_adducts) && "rule_class" %in% names(rules)) {
+    if (!isTRUE(includeMatrixAdducts) && "rule_class" %in% names(rules)) {
         keep <- keep & !rules$rule_class %in% "matrix_adduct"
     }
     unique(rules$name[keep])
@@ -260,36 +260,36 @@ maldiAdductPreset <- function(
 #' n-mers and the radical cation in positive mode, and deprotonated n-mers
 #' with water losses in negative mode.
 #'
-#' @param maldi_matrix One of `"dhb"`, `"chca"`, `"9aa"`, `"dan"` or
+#' @param maldiMatrix One of `"dhb"`, `"chca"`, `"9aa"`, `"dan"` or
 #'   `"norharmane"` (case-insensitive aliases accepted).
 #' @param polarity `"positive"` or `"negative"`.
-#' @param max_molecules Largest cluster size.
+#' @param maxMolecules Largest cluster size.
 #'
 #' @return A data frame with the ion label, cluster size, water losses and m/z.
 #' @examples
 #' head(matrixIonTable("DHB"))
 #' @export
 matrixIonTable <- function(
-    maldi_matrix = "dhb",
+    maldiMatrix = "dhb",
     polarity = c("positive", "negative"),
-    max_molecules = 3L
+    maxMolecules = 3L
 ) {
     polarity <- match.arg(polarity)
-    key <- .normalise_maldi_matrix(maldi_matrix)
+    key <- .normalise_maldi_matrix(maldiMatrix)
     formulas <- .matrix_formulas()
     if (!key %in% names(formulas)) {
-        stop("No matrix ion formula is registered for '", maldi_matrix, "'.",
+        stop("No matrix ion formula is registered for '", maldiMatrix, "'.",
             call. = FALSE
         )
     }
     m <- .spamtp_mass_constants()
     formula <- formulas[[key]]
-    .validateFeatureCount(max_molecules, "max_molecules")
+    .validateFeatureCount(maxMolecules, "max_molecules")
     mass <- unname(MetaboCoreUtils::calculateMass(formula))
     has_o <- .element_count(formula, "O") > 0
     label <- toupper(key)
-    rows <- lapply(seq_len(max_molecules), .matrixClusterIons,
-        mass = mass, has_o = has_o, label = label, polarity = polarity, masses = m
+    rows <- lapply(seq_len(maxMolecules), .matrixClusterIons,
+        mass = mass, hasO = has_o, label = label, polarity = polarity, masses = m
     )
     if (polarity == "positive") {
         rows <- c(rows, list(data.frame(
@@ -301,9 +301,9 @@ matrixIonTable <- function(
     out[order(out$mz), , drop = FALSE]
 }
 
-.matrixClusterIons <- function(n, mass, has_o, label, polarity, masses) {
+.matrixClusterIons <- function(n, mass, hasO, label, polarity, masses) {
     mm <- if (n == 1L) "M" else paste0(n, "M")
-    losses <- if (has_o) seq.int(0L, n) else 0L
+    losses <- if (hasO) seq.int(0L, n) else 0L
     water <- ifelse(losses == 0L, "",
         ifelse(losses == 1L, "-H2O", paste0("-", losses, "H2O"))
     )
@@ -331,10 +331,10 @@ matrixIonTable <- function(
 #' Flag peaks explained by MALDI matrix ions
 #'
 #' @param mz Numeric vector of observed m/z values.
-#' @param maldi_matrix Matrix name, as in [matrixIonTable()].
+#' @param maldiMatrix Matrix name, as in [matrixIonTable()].
 #' @param polarity `"positive"` or `"negative"`.
 #' @param ppm Mass tolerance in parts per million.
-#' @param max_molecules Largest matrix cluster considered.
+#' @param maxMolecules Largest matrix cluster considered.
 #'
 #' @return A data frame with one row per peak: `matrix_ion` (logical), the
 #'   matched ion label and the signed ppm error.
@@ -342,13 +342,13 @@ matrixIonTable <- function(
 #' flagMatrixPeaks(c(137.0238, 155.0344, 200.1), "DHB")
 #' @export
 flagMatrixPeaks <- function(
-    mz, maldi_matrix = "dhb",
+    mz, maldiMatrix = "dhb",
     polarity = c("positive", "negative"), ppm = 5,
-    max_molecules = 3L
+    maxMolecules = 3L
 ) {
     mz <- suppressWarnings(as.numeric(mz))
     if (any(!is.finite(mz))) stop("mz must be finite.", call. = FALSE)
-    ions <- matrixIonTable(maldi_matrix, match.arg(polarity), max_molecules)
+    ions <- matrixIonTable(maldiMatrix, match.arg(polarity), maxMolecules)
     hit <- vapply(mz, function(x) {
         err <- (x - ions$mz) / ions$mz * 1e6
         j <- which.min(abs(err))
@@ -437,8 +437,8 @@ flagMatrixPeaks <- function(
 #'   observations or constant profiles; such pairs do not pass that test.
 #' @param ppm Spacing tolerance in parts per million of the heavier peak.
 #' @param charge Ion charge (spacing is 1.00335 / charge).
-#' @param min_cor Smallest profile correlation accepted when a matrix is given.
-#' @param max_ratio Optional fixed upper bound on heavy/light intensity. By
+#' @param minCor Smallest profile correlation accepted when a matrix is given.
+#' @param maxRatio Optional fixed upper bound on heavy/light intensity. By
 #'   default it is 1.2 x 1.07% per carbon, with at most m/z x charge / 12
 #'   carbons in the lighter ion.
 #'
@@ -450,7 +450,7 @@ flagMatrixPeaks <- function(
 #' @export
 flagIsotopePeaks <- function(
     mz, intensity, ppm = 3, charge = 1L,
-    min_cor = 0.5, max_ratio = NULL
+    minCor = 0.5, maxRatio = NULL
 ) {
     mz <- suppressWarnings(as.numeric(mz))
     if (any(!is.finite(mz) | mz <= 0)) {
@@ -476,14 +476,14 @@ flagIsotopePeaks <- function(
         for (i in ord[lo:hi]) {
             if (prof$mean[i] <= 0) next
             ratio <- prof$mean[j] / prof$mean[i]
-            bound <- if (is.null(max_ratio)) {
+            bound <- if (is.null(maxRatio)) {
                 1.2 * 0.0107 * mz[i] * abs(charge) / 12
             } else {
-                max_ratio
+                maxRatio
             }
             r <- .profile_cor(prof$profiles, i, j)
             ok <- is.finite(ratio) && ratio > 0 && ratio <= bound &&
-                (is.null(prof$profiles) || (is.finite(r) && r >= min_cor))
+                (is.null(prof$profiles) || (is.finite(r) && r >= minCor))
             err <- (mz[j] - mz[i] - spacing) / mz[j] * 1e6
             if (ok && (is.null(best) || abs(err) < abs(best$err))) {
                 best <- list(i = i, err = err, ratio = ratio, bound = bound, r = r)
@@ -528,7 +528,7 @@ flagIsotopePeaks <- function(
 #' Links two peaks when their m/z difference matches an adduct exchange
 #' (for example `[M+Na]+` minus `[M+H]+`) or a water loss within `ppm`, and
 #' their spatial profiles correlate. Split peaks of one ion (features closer
-#' than `split_ppm` with correlated profiles) are linked as well. Connected
+#' than `splitPpm` with correlated profiles) are linked as well. Connected
 #' components are candidate molecules observed through several ions. Matrix
 #' cluster and salt families also form such chains, so peaks flagged by
 #' [flagMatrixPeaks()] or [flagIsotopePeaks()] should be passed as `exclude`.
@@ -537,9 +537,9 @@ flagIsotopePeaks <- function(
 #' @param intensity Features x observations matrix (rows in the order of
 #'   `mz`), for example per-pixel normalised intensities.
 #' @param ppm Spacing tolerance in parts per million of the heavier peak.
-#' @param min_cor Smallest profile correlation for a link.
+#' @param minCor Smallest profile correlation for a link.
 #' @param polarity Ion polarity; selects the spacing set.
-#' @param split_ppm Largest separation treated as a split peak (0 disables).
+#' @param splitPpm Largest separation treated as a split peak (0 disables).
 #' @param exclude Optional logical vector (one value per peak) or peak
 #'   indices to leave unlinked.
 #'
@@ -554,9 +554,9 @@ flagIsotopePeaks <- function(
 #' groupAdductPeaks(c(149.0444, 171.0264, 300.1), x)$groups
 #' @export
 groupAdductPeaks <- function(
-    mz, intensity, ppm = 3, min_cor = 0.5,
+    mz, intensity, ppm = 3, minCor = 0.5,
     polarity = c("positive", "negative"),
-    split_ppm = 0, exclude = NULL
+    splitPpm = 0, exclude = NULL
 ) {
     mz <- suppressWarnings(as.numeric(mz))
     if (any(!is.finite(mz) | mz <= 0)) {
@@ -570,14 +570,14 @@ groupAdductPeaks <- function(
     profiles <- .feature_profiles(mz, intensity)$profiles
     skip <- .exclusion_mask(exclude, length(mz))
     rel <- .adduct_relations(match.arg(polarity))
-    edges <- .adductCandidateEdges(mz, rel, ppm, split_ppm)
+    edges <- .adductCandidateEdges(mz, rel, ppm, splitPpm)
     if (nrow(edges)) {
         edges <- edges[!skip[edges$from] & !skip[edges$to], , drop = FALSE]
         edges$correlation <- vapply(seq_len(nrow(edges)), function(i) {
             .profile_cor(profiles, edges$from[i], edges$to[i])
         }, numeric(1))
         edges <- edges[is.finite(edges$correlation) &
-            edges$correlation >= min_cor, , drop = FALSE]
+            edges$correlation >= minCor, , drop = FALSE]
     } else {
         edges$correlation <- numeric()
     }
@@ -600,8 +600,8 @@ groupAdductPeaks <- function(
     )
 }
 
-.adductCandidateEdges <- function(mz, relations, ppm, split_ppm) {
-    if (split_ppm > 0) {
+.adductCandidateEdges <- function(mz, relations, ppm, splitPpm) {
+    if (splitPpm > 0) {
         relations <- rbind(
             relations,
             data.frame(relation = "split", delta = 0)
@@ -611,7 +611,7 @@ groupAdductPeaks <- function(
     relation <- rep(seq_len(nrow(relations)), length(mz))
     target <- mz[from] + relations$delta[relation]
     split <- relations$relation[relation] == "split"
-    tolerance <- target * ifelse(split, split_ppm, ppm) * 1e-6
+    tolerance <- target * ifelse(split, splitPpm, ppm) * 1e-6
     ord <- order(mz)
     lower <- findInterval(target - ifelse(split, 0, tolerance), mz[ord]) + 1L
     upper <- findInterval(target + tolerance, mz[ord])
@@ -660,7 +660,7 @@ groupAdductPeaks <- function(
 #' Assign identities to co-localised adduct groups
 #'
 #' Within each group from [groupAdductPeaks()], keeps compounds that explain
-#' at least `min_peaks` member peaks through at least two different adducts
+#' at least `minPeaks` member peaks through at least two different adducts
 #' in a per-peak candidate table, so compounds supported by a single ion are
 #' dropped. Each peak then takes the supported compounds that explain the
 #' most peaks of its group; several molecules chained into one group keep
@@ -668,11 +668,11 @@ groupAdductPeaks <- function(
 #'
 #' @param candidates Per-peak candidates with `observed_mz`, `ramp_ids`,
 #'   `adduct` and `score` columns, for example from
-#'   [queryMZAnnotationIndex()] with `min_score = 0`.
+#'   [queryMZAnnotationIndex()] with `minScore = 0`.
 #' @param groups The `groups` element of [groupAdductPeaks()].
-#' @param min_peaks Smallest number of member peaks a compound must explain.
-#' @param min_score Smallest per-peak score counted as support.
-#' @param match_ppm Tolerance for matching candidate m/z to group peaks.
+#' @param minPeaks Smallest number of member peaks a compound must explain.
+#' @param minScore Smallest per-peak score counted as support.
+#' @param matchPpm Tolerance for matching candidate m/z to group peaks.
 #'
 #' @return A list with `compounds` (one row per group and supported compound:
 #'   supporting peaks and adducts, summed and maximum peak scores) and
@@ -691,8 +691,8 @@ groupAdductPeaks <- function(
 #' annotateAdductGroups(cand, groups)$peaks
 #' @export
 annotateAdductGroups <- function(
-    candidates, groups, min_peaks = 2L,
-    min_score = 0, match_ppm = 0.5
+    candidates, groups, minPeaks = 2L,
+    minScore = 0, matchPpm = 0.5
 ) {
     need <- c("observed_mz", "ramp_ids", "adduct", "score")
     if (!all(need %in% names(candidates))) {
@@ -705,14 +705,14 @@ annotateAdductGroups <- function(
             call. = FALSE
         )
     }
-    min_peaks <- max(2L, as.integer(min_peaks))
-    multi <- groups[groups$group_size >= min_peaks, , drop = FALSE]
-    cand <- candidates[candidates$score >= min_score &
+    minPeaks <- max(2L, as.integer(minPeaks))
+    multi <- groups[groups$group_size >= minPeaks, , drop = FALSE]
+    cand <- candidates[candidates$score >= minScore &
         !is.na(candidates$ramp_ids), , drop = FALSE]
     if (!nrow(multi) || !nrow(cand)) {
         return(.empty_group_tables())
     }
-    cand$peak <- multi$peak[.match_mz(cand$observed_mz, multi$mz, match_ppm)]
+    cand$peak <- multi$peak[.match_mz(cand$observed_mz, multi$mz, matchPpm)]
     cand <- cand[!is.na(cand$peak), , drop = FALSE]
     if (!nrow(cand)) {
         return(.empty_group_tables())
@@ -751,7 +751,7 @@ annotateAdductGroups <- function(
             )
         }
     ))
-    compounds <- compounds[compounds$n_peaks >= min_peaks &
+    compounds <- compounds[compounds$n_peaks >= minPeaks &
         compounds$n_adducts >= 2, , drop = FALSE]
     if (!nrow(compounds)) {
         return(.empty_group_tables())
@@ -809,24 +809,24 @@ annotateAdductGroups <- function(
 #' compound occurs in the sample; selecting references by pathway membership
 #' also changes the background of downstream pathway analyses.
 #'
-#' @param chem_props RaMP chemical table with a `ramp_id` column.
+#' @param chemProps RaMP chemical table with a `ramp_id` column.
 #' @param analytehaspathway RaMP analyte-pathway table with `rampId` and
 #'   `pathwaySource` columns.
 #' @param sources Pathway sources to accept; the default keeps manually
 #'   curated databases.
 #'
-#' @return The subset of `chem_props`.
+#' @return The subset of `chemProps`.
 #' @examples
 #' chem <- data.frame(ramp_id = c("RAMP_C_1", "RAMP_C_2"))
 #' ahp <- data.frame(rampId = "RAMP_C_1", pathwaySource = "reactome")
 #' annotationDatabaseScope(chem, ahp)
 #' @export
 annotationDatabaseScope <- function(
-    chem_props, analytehaspathway,
+    chemProps, analytehaspathway,
     sources = c("reactome", "kegg", "wiki")
 ) {
-    if (!"ramp_id" %in% names(chem_props)) {
-        stop("chem_props needs a ramp_id column.", call. = FALSE)
+    if (!"ramp_id" %in% names(chemProps)) {
+        stop("chemProps needs a ramp_id column.", call. = FALSE)
     }
     if (!all(c("rampId", "pathwaySource") %in% names(analytehaspathway))) {
         stop("analytehaspathway needs rampId and pathwaySource columns.",
@@ -836,5 +836,5 @@ annotationDatabaseScope <- function(
     keep <- unique(analytehaspathway$rampId[
         analytehaspathway$pathwaySource %in% sources
     ])
-    chem_props[chem_props$ramp_id %in% keep, , drop = FALSE]
+    chemProps[chemProps$ramp_id %in% keep, , drop = FALSE]
 }

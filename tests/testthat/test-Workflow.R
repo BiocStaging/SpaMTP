@@ -79,7 +79,7 @@ test_that("independent modalities align to the chosen reference and audit unmatc
         protein = list(type = "proteomics", layer = "counts")
     )
     r <- runSpaMTPWorkflow(list(MS = source, RNA = x, protein = x), specs,
-        reference = "RNA", coordinate_units = "micrometres", npcs = 2,
+        reference = "RNA", coordinateUnits = "micrometres", npcs = 2,
         alignment = list(MS = list(method = "affine", alignment = transform), protein = list(method = "identity")),
         mapping = list(
             MS = list(method = "nearest", max_distance = 0.1),
@@ -102,7 +102,7 @@ test_that("nearest correspondence cannot cross samples or exceed the radius", {
     y$sample_id <- rep("other", ncol(y))
     expect_error(runSpaMTPWorkflow(list(MS = x, RNA = y),
         list(MS = workflowSpecs()$main, RNA = workflowSpecs()$RNA),
-        reference = "RNA", coordinate_units = "um", alignment = list(MS = list(method = "identity")),
+        reference = "RNA", coordinateUnits = "um", alignment = list(MS = list(method = "identity")),
         mapping = list(MS = list(method = "nearest", max_distance = 1))
     ), "Fewer than three")
 })
@@ -138,7 +138,7 @@ test_that("reports embed figures, escape labels and preserve existing output", {
     directory <- tempfile()
     on.exit(unlink(directory, recursive = TRUE))
     r <- runSpaMTPWorkflow(x, workflowSpecs()[1:2],
-        output_dir = directory, npcs = 2,
+        outputDir = directory, npcs = 2,
         title = "<script>alert('bad')</script>"
     )
     html <- paste(readLines(r$report), collapse = "\n")
@@ -186,7 +186,7 @@ test_that("normalized non-spatial inputs are retained and pathway members share 
         ),
         pathway = data.frame(pathwayRampId = c("P1", "P2", "P3"), pathwayName = c("one", "two", "three"))
     )
-    index <- buildPathwayIndex(db, gene_mapping = "ramp")
+    index <- buildPathwayIndex(db, geneMapping = "ramp")
     specs <- workflowSpecs()[1:2]
     specs$RNA <- list(
         type = "transcriptomics", layer = "data", normalization = "none", species = "custom",

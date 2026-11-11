@@ -75,8 +75,8 @@
             )
             small <- scaleSMData(small, assayName = "workflow")
             small <- runSpatialGraphPCA(small,
-                n_components = ncol(p$scores),
-                platform = config$platform, n_neighbors = config$neighbors, lambda = config$lambda,
+                nComponents = ncol(p$scores),
+                platform = config$platform, nNeighbors = config$neighbors, lambda = config$lambda,
                 verbose = FALSE
             )
             scores <- SingleCellExperiment::reducedDim(small, "SpatialPCA")
@@ -109,9 +109,9 @@
         previous <- SingleCellExperiment::reducedDim(object, "integrated")
         object <- multiOmicIntegration(object,
             modalities = unname(result$settings$assay_names),
-            reduction.list = unname(graph_names), dims.list = lapply(graph_names, function(n) {
+            reductionList = unname(graph_names), dimsList = lapply(graph_names, function(n) {
                 seq_len(ncol(SingleCellExperiment::reducedDim(object, n)))
-            }), return.intermediate = TRUE
+            }), returnIntermediate = TRUE
         )
         z <- SingleCellExperiment::reducedDim(object, "integrated")
         SingleCellExperiment::reducedDim(object, "workflow_joint_spatial") <- z

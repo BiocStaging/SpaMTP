@@ -11,9 +11,9 @@
 #' entirely in R. The backend summary records STalign's affine component as
 #' `affine_yx`; it is not the complete nonlinear LDDMM transformation.
 #'
-#' @param SM.data A `SpatialExperiment` containing the
+#' @param smData A `SpatialExperiment` containing the
 #'   moving SM coordinates.
-#' @param ST.data An optional matching spatial container with fixed coordinates.
+#' @param stData An optional matching spatial container with fixed coordinates.
 #'   It is required when computing an affine or LDDMM alignment, but is optional
 #'   when applying final coordinates supplied through `alignment`.
 #' @param alignment Optional precomputed alignment. Accepted inputs are a data
@@ -28,46 +28,44 @@
 #'   estimates a six-degree-of-freedom transformation from paired landmarks in
 #'   R. `"lddmm"` runs STalign's landmark-guided affine plus diffeomorphic
 #'   registration through Python.
-#' @param SM.fov Optional imgData image ID for the moving experiment. By
+#' @param smFov Optional imgData image ID for the moving experiment. By
 #'   default,
-#'   the first image in `SM.data` is used.
-#' @param ST.image Optional imgData image ID for the fixed experiment. By
-#'   default, the first image in `ST.data` is used.
-#' @param SM.boundary Compatibility label; coordinates are always read from
-#'   spatialCoords().
-#' @param SM.landmarks,ST.landmarks Matched landmark coordinates as two-column
+#'   the first image in `smData` is used.
+#' @param stImage Optional imgData image ID for the fixed experiment. By
+#'   default, the first image in `stData` is used.
+#' @param smLandmarks,stLandmarks Matched landmark coordinates as two-column
 #' matrices or data frames in x-y order. At least three non-collinear pairs are
 #'   required for `method = "affine"`. Landmarks are optional but strongly
 #'   recommended for `method = "lddmm"` when the sections are not already close.
 #'   ST landmarks must use the target coordinate system after any
-#'   `ST.scale.factor` has been applied.
-#' @param landmark.order Coordinate-column order in both landmark inputs.
+#'   `stScaleFactor` has been applied.
+#' @param landmarkOrder Coordinate-column order in both landmark inputs.
 #'   `"xy"` is the R/SpaMTP convention. Use `"yx"` for row-column arrays saved
 #'   by the notebook's point annotator.
-#' @param SM.landmark.space Whether SM landmarks use the `"original"` FOV
+#' @param smLandmarkSpace Whether SM landmarks use the `"original"` FOV
 #'   coordinates or the `"preprocessed"` coordinates after source scaling,
 #'   rotation, reflection, translation, and origin adjustment. Point-annotator
 #'   landmarks made from the rasterized notebook output are preprocessed.
-#' @param coordinate.columns Optional names or integer positions of the x and y
+#' @param coordinateColumns Optional names or integer positions of the x and y
 #'   columns in a precomputed coordinate table.
-#' @param cell.column Optional name or integer position of the cell/spot ID
+#' @param cellColumn Optional name or integer position of the cell/spot ID
 #'   column in a precomputed coordinate table. When no IDs are available, rows
 #'   must already be in the same order as the moving SM centroids.
-#' @param ST.scale.factor Optional fixed-coordinate scale factor. Supply a
+#' @param stScaleFactor Optional fixed-coordinate scale factor. Supply a
 #'   numeric value or a scale-factor name such as `"hires"` or `"lowres"` for
 #'   Visium images. `NULL` uses full-resolution coordinates.
-#' @param source.scale Numeric scalar or x-y vector applied to moving
+#' @param sourceScale Numeric scalar or x-y vector applied to moving
 #'   coordinates
 #'   before fitting. This reproduces the initial SM scaling step in the SMINT
 #'   notebooks.
-#' @param source.rotate Counter-clockwise rotation in degrees, around the
+#' @param sourceRotate Counter-clockwise rotation in degrees, around the
 #'   origin,
 #'   applied after scaling.
-#' @param source.flip Logical x-y vector indicating reflection around the
+#' @param sourceFlip Logical x-y vector indicating reflection around the
 #'   origin.
-#' @param source.translate Numeric x-y translation applied after scaling,
+#' @param sourceTranslate Numeric x-y translation applied after scaling,
 #'   reflection, and rotation.
-#' @param source.origin Optional numeric x-y lower bound. Coordinates are
+#' @param sourceOrigin Optional numeric x-y lower bound. Coordinates are
 #'   shifted
 #'   only where necessary so that their minima are at least this value. Use
 #'   `c(0, 0)` to reproduce the non-negative coordinate step in the notebook.
@@ -77,18 +75,18 @@
 #' @param device One of `"auto"`, `"cpu"`, or `"cuda"`. `"auto"` uses CUDA
 #'   when Torch reports that it is available.
 #' @param seed Random seed set for NumPy and Torch before LDDMM.
-#' @param lddmm.args Named list of additional arguments passed to
+#' @param lddmmArgs Named list of additional arguments passed to
 #'   `STalign.LDDMM()`. Values here override `niter` and `epV`.
 #' @param python Optional path to a Python executable containing `STalign` and
 #'   `torch`. It must be selected before reticulate initialises Python.
-#' @param alignment.name Name used to store alignment provenance in
-#'   `S4Vectors::metadata(SM.data)$spatial_alignment`.
+#' @param alignmentName Name used to store alignment provenance in
+#'   `S4Vectors::metadata(smData)$spatial_alignment`.
 #' @param store Logical; store lightweight provenance and diagnostics in the
 #'   returned object.
 #' @param return Either `"object"` (default) or `"result"`. The latter returns a
 #'   list containing the object, coordinate tables, diagnostics, parameters, and
 #'   lightweight backend information.
-#' @param diagnostics.max.points Maximum number of moving and fixed points used
+#' @param diagnosticsMaxPoints Maximum number of moving and fixed points used
 #'   for nearest-neighbour diagnostics.
 #' @param verbose Logical; print progress messages.
 #'
@@ -109,47 +107,46 @@
 #' )
 #' head(SpatialExperiment::spatialCoords(aligned))
 applySpatialAlignment <- function(
-    SM.data,
-    ST.data = NULL,
+    smData,
+    stData = NULL,
     alignment = NULL,
     method = c("lddmm", "affine"),
-    SM.fov = NULL,
-    ST.image = NULL,
-    SM.boundary = "centroids",
-    SM.landmarks = NULL,
-    ST.landmarks = NULL,
-    landmark.order = c("xy", "yx"),
-    SM.landmark.space = c("original", "preprocessed"),
-    coordinate.columns = NULL,
-    cell.column = NULL,
-    ST.scale.factor = NULL,
-    source.scale = 1,
-    source.rotate = 0,
-    source.flip = c(FALSE, FALSE),
-    source.translate = c(0, 0),
-    source.origin = NULL,
+    smFov = NULL,
+    stImage = NULL,
+    smLandmarks = NULL,
+    stLandmarks = NULL,
+    landmarkOrder = c("xy", "yx"),
+    smLandmarkSpace = c("original", "preprocessed"),
+    coordinateColumns = NULL,
+    cellColumn = NULL,
+    stScaleFactor = NULL,
+    sourceScale = 1,
+    sourceRotate = 0,
+    sourceFlip = c(FALSE, FALSE),
+    sourceTranslate = c(0, 0),
+    sourceOrigin = NULL,
     dx = 30,
     niter = 1000,
     epV = 200,
     device = c("auto", "cpu", "cuda"),
     seed = 1,
-    lddmm.args = list(),
+    lddmmArgs = list(),
     python = NULL,
-    alignment.name = "SMINT",
+    alignmentName = "SMINT",
     store = TRUE,
     return = c("object", "result"),
-    diagnostics.max.points = 10000,
+    diagnosticsMaxPoints = 10000,
     verbose = TRUE
 ) {
     method <- match.arg(method)
     device <- match.arg(device)
     return <- match.arg(return)
-    landmark.order <- match.arg(landmark.order)
-    SM.landmark.space <- match.arg(SM.landmark.space)
-    if (!is.character(alignment.name) || length(alignment.name) != 1L ||
-        is.na(alignment.name) || !nzchar(alignment.name)) {
+    landmarkOrder <- match.arg(landmarkOrder)
+    smLandmarkSpace <- match.arg(smLandmarkSpace)
+    if (!is.character(alignmentName) || length(alignmentName) != 1L ||
+        is.na(alignmentName) || !nzchar(alignmentName)) {
         stop(
-            "`alignment.name` must be one non-empty character string.",
+            "`alignmentName` must be one non-empty character string.",
             call. = FALSE
         )
     }
@@ -160,36 +157,36 @@ applySpatialAlignment <- function(
         }
     }
 
-    .sa_validate_spatial_container(SM.data, "SM.data")
-    SM.fov <- .sa_resolve_image(SM.data, SM.fov, "SM.fov")
-    source <- .sa_get_coordinates(SM.data, SM.fov)
+    .sa_validate_spatial_container(smData, "smData")
+    smFov <- .sa_resolve_image(smData, smFov, "smFov")
+    source <- .sa_get_coordinates(smData, smFov)
 
     preprocessing <- .sa_preprocess_coordinates(
         source[, c("x", "y"), drop = FALSE],
-        scale = source.scale,
-        rotate = source.rotate,
-        flip = source.flip,
-        translate = source.translate,
-        origin = source.origin
+        scale = sourceScale,
+        rotate = sourceRotate,
+        flip = sourceFlip,
+        translate = sourceTranslate,
+        origin = sourceOrigin
     )
     moving <- preprocessing$coordinates
     moving$cell <- source$cell
 
     target <- NULL
-    if (!is.null(ST.data)) {
-        .sa_validate_spatial_container(ST.data, "ST.data")
-        ST.image <- .sa_resolve_image(ST.data, ST.image, "ST.image")
-        target <- .sa_get_coordinates(ST.data, ST.image)
-        target_scale <- .sa_scale_factor(ST.data, ST.image, ST.scale.factor)
+    if (!is.null(stData)) {
+        .sa_validate_spatial_container(stData, "stData")
+        stImage <- .sa_resolve_image(stData, stImage, "stImage")
+        target <- .sa_get_coordinates(stData, stImage)
+        target_scale <- .sa_scale_factor(stData, stImage, stScaleFactor)
         target[, c("x", "y")] <- target[, c("x", "y"), drop = FALSE] * target_scale
     }
 
     landmarks <- .sa_prepare_landmarks(
-        SM.landmarks = SM.landmarks,
-        ST.landmarks = ST.landmarks,
+        smLandmarks = smLandmarks,
+        stLandmarks = stLandmarks,
         preprocessing = preprocessing$matrix,
-        landmark_order = landmark.order,
-        SM_landmark_space = SM.landmark.space
+        landmarkOrder = landmarkOrder,
+        smLandmarkSpace = smLandmarkSpace
     )
 
     backend <- "precomputed"
@@ -205,9 +202,9 @@ applySpatialAlignment <- function(
         if (!is.null(coordinates_payload)) {
             aligned <- .sa_match_coordinates(
                 coordinates_payload,
-                source_cells = source$cell,
-                coordinate_columns = coordinate.columns,
-                cell_column = cell.column
+                sourceCells = source$cell,
+                coordinateColumns = coordinateColumns,
+                cellColumn = cellColumn
             )
         } else if (!is.null(transformation)) {
             aligned_xy <- .sa_apply_transform(
@@ -231,7 +228,7 @@ applySpatialAlignment <- function(
     } else {
         if (is.null(target)) {
             stop(
-                "`ST.data` is required when `alignment` is NULL.",
+                "`stData` is required when `alignment` is NULL.",
                 call. = FALSE
             )
         }
@@ -239,7 +236,7 @@ applySpatialAlignment <- function(
         if (identical(method, "affine")) {
             if (is.null(landmarks)) {
                 stop(
-                    "Paired `SM.landmarks` and `ST.landmarks` are required for affine alignment.",
+                    "Paired `smLandmarks` and `stLandmarks` are required for affine alignment.",
                     call. = FALSE
                 )
             }
@@ -268,7 +265,7 @@ applySpatialAlignment <- function(
                 epV = epV,
                 device = device,
                 seed = seed,
-                lddmm.args = lddmm.args,
+                lddmmArgs = lddmmArgs,
                 python = python
             )
             aligned <- data.frame(
@@ -291,41 +288,39 @@ applySpatialAlignment <- function(
         original = source[, c("x", "y"), drop = FALSE],
         aligned = aligned[, c("x", "y"), drop = FALSE],
         target = if (is.null(target)) NULL else target[, c("x", "y"), drop = FALSE],
-        transformed_landmarks = transformed_landmarks,
-        target_landmarks = if (is.null(landmarks)) NULL else landmarks$target,
-        max_points = diagnostics.max.points
+        transformedLandmarks = transformed_landmarks,
+        targetLandmarks = if (is.null(landmarks)) NULL else landmarks$target,
+        maxPoints = diagnosticsMaxPoints
     )
 
     output <- .sa_set_fov_coordinates(
-        SM.data,
-        fov = SM.fov,
-        boundary = SM.boundary,
+        smData,
         aligned = aligned
     )
 
     parameters <- list(
         method = if (is.null(alignment)) method else "precomputed",
         backend = backend,
-        SM.fov = SM.fov,
-        ST.image = ST.image,
-        ST.scale.factor = ST.scale.factor,
-        source.scale = source.scale,
-        source.rotate = source.rotate,
-        source.flip = source.flip,
-        source.translate = source.translate,
-        source.origin = source.origin,
-        landmark.order = landmark.order,
-        SM.landmark.space = SM.landmark.space,
+        SM.fov = smFov,
+        ST.image = stImage,
+        ST.scale.factor = stScaleFactor,
+        source.scale = sourceScale,
+        source.rotate = sourceRotate,
+        source.flip = sourceFlip,
+        source.translate = sourceTranslate,
+        source.origin = sourceOrigin,
+        landmark.order = landmarkOrder,
+        SM.landmark.space = smLandmarkSpace,
         dx = if (identical(backend, "STalign-LDDMM")) dx else NULL,
         niter = if (identical(backend, "STalign-LDDMM")) niter else NULL,
         epV = if (identical(backend, "STalign-LDDMM")) epV else NULL,
         device = if (identical(backend, "STalign-LDDMM")) device else NULL,
         seed = if (identical(backend, "STalign-LDDMM")) seed else NULL,
-        lddmm.args = if (identical(backend, "STalign-LDDMM")) lddmm.args else NULL
+        lddmm.args = if (identical(backend, "STalign-LDDMM")) lddmmArgs else NULL
     )
 
     provenance <- list(
-        name = alignment.name,
+        name = alignmentName,
         engine = "SpaMTP::applySpatialAlignment",
         backend = backend,
         parameters = parameters,
@@ -337,7 +332,7 @@ applySpatialAlignment <- function(
 
     if (isTRUE(store)) {
         storedAlignments <- .storedData(output, "spatial_alignment") %||% list()
-        storedAlignments[[alignment.name]] <- provenance
+        storedAlignments[[alignmentName]] <- provenance
         output <- .setStoredData(output, "spatial_alignment", storedAlignments)
     }
 
@@ -455,22 +450,22 @@ applySpatialAlignment <- function(
 }
 
 
-.sa_scale_factor <- function(object, image, scale_factor) {
-    if (is.null(scale_factor)) {
+.sa_scale_factor <- function(object, image, scaleFactor) {
+    if (is.null(scaleFactor)) {
         return(1)
     }
-    if (is.numeric(scale_factor)) {
-        if (length(scale_factor) != 1L || !is.finite(scale_factor) || scale_factor <= 0) {
+    if (is.numeric(scaleFactor)) {
+        if (length(scaleFactor) != 1L || !is.finite(scaleFactor) || scaleFactor <= 0) {
             stop(
-                "Numeric `ST.scale.factor` must be one finite value greater than zero.",
+                "Numeric `stScaleFactor` must be one finite value greater than zero.",
                 call. = FALSE
             )
         }
-        return(as.numeric(scale_factor))
+        return(as.numeric(scaleFactor))
     }
-    if (!is.character(scale_factor) || length(scale_factor) != 1L || is.na(scale_factor)) {
+    if (!is.character(scaleFactor) || length(scaleFactor) != 1L || is.na(scaleFactor)) {
         stop(
-            "`ST.scale.factor` must be NULL, numeric, or one scale-factor name.",
+            "`stScaleFactor` must be NULL, numeric, or one scale-factor name.",
             call. = FALSE
         )
     }
@@ -482,7 +477,7 @@ applySpatialAlignment <- function(
             call. = FALSE
         )
     }
-    if (!scale_factor %in% c("scaleFactor", "hires", "lowres")) {
+    if (!scaleFactor %in% c("scaleFactor", "hires", "lowres")) {
         stop(
             "SpatialExperiment images provide a single `scaleFactor`; use that name, `hires`, or `lowres`.",
             call. = FALSE
@@ -575,12 +570,12 @@ applySpatialAlignment <- function(
     translate = c(0, 0),
     origin = NULL
 ) {
-    scale <- .sa_pair(scale, "source.scale")
-    if (any(scale == 0)) stop("`source.scale` cannot contain zero.", call. = FALSE)
-    flip <- .sa_pair(flip, "source.flip", mode = "logical")
-    translate <- .sa_pair(translate, "source.translate")
+    scale <- .sa_pair(scale, "sourceScale")
+    if (any(scale == 0)) stop("`sourceScale` cannot contain zero.", call. = FALSE)
+    flip <- .sa_pair(flip, "sourceFlip", mode = "logical")
+    translate <- .sa_pair(translate, "sourceTranslate")
     if (!is.numeric(rotate) || length(rotate) != 1L || !is.finite(rotate)) {
-        stop("`source.rotate` must be one finite number.", call. = FALSE)
+        stop("`sourceRotate` must be one finite number.", call. = FALSE)
     }
 
     angle <- rotate * pi / 180
@@ -609,34 +604,34 @@ applySpatialAlignment <- function(
 
 
 .sa_prepare_landmarks <- function(
-    SM.landmarks,
-    ST.landmarks,
+    smLandmarks,
+    stLandmarks,
     preprocessing,
-    landmark_order,
-    SM_landmark_space
+    landmarkOrder,
+    smLandmarkSpace
 ) {
-    if (is.null(SM.landmarks) && is.null(ST.landmarks)) {
+    if (is.null(smLandmarks) && is.null(stLandmarks)) {
         return(NULL)
     }
-    if (is.null(SM.landmarks) || is.null(ST.landmarks)) {
+    if (is.null(smLandmarks) || is.null(stLandmarks)) {
         stop(
-            "`SM.landmarks` and `ST.landmarks` must be supplied together.",
+            "`smLandmarks` and `stLandmarks` must be supplied together.",
             call. = FALSE
         )
     }
-    source <- .sa_landmark_matrix(SM.landmarks, "SM.landmarks")
-    target <- .sa_landmark_matrix(ST.landmarks, "ST.landmarks")
+    source <- .sa_landmark_matrix(smLandmarks, "SM.landmarks")
+    target <- .sa_landmark_matrix(stLandmarks, "ST.landmarks")
     if (nrow(source) != nrow(target)) {
         stop(
-            "`SM.landmarks` and `ST.landmarks` must contain the same number of rows.",
+            "`smLandmarks` and `stLandmarks` must contain the same number of rows.",
             call. = FALSE
         )
     }
-    if (identical(landmark_order, "yx")) {
+    if (identical(landmarkOrder, "yx")) {
         source <- source[, c(2L, 1L), drop = FALSE]
         target <- target[, c(2L, 1L), drop = FALSE]
     }
-    if (identical(SM_landmark_space, "original")) {
+    if (identical(smLandmarkSpace, "original")) {
         source <- .sa_apply_transform(source, preprocessing)
     }
     colnames(source) <- colnames(target) <- c("x", "y")
@@ -813,9 +808,9 @@ applySpatialAlignment <- function(
 
 .sa_match_coordinates <- function(
     coordinates,
-    source_cells,
-    coordinate_columns = NULL,
-    cell_column = NULL
+    sourceCells,
+    coordinateColumns = NULL,
+    cellColumn = NULL
 ) {
     coordinates <- as.data.frame(coordinates, check.names = FALSE)
     if (!nrow(coordinates)) stop(
@@ -823,7 +818,7 @@ applySpatialAlignment <- function(
         call. = FALSE
     )
 
-    if (is.null(coordinate_columns)) {
+    if (is.null(coordinateColumns)) {
         pairs <- list(
             c("x_final", "y_final"),
             c("x_transformed", "y_transformed"),
@@ -832,33 +827,33 @@ applySpatialAlignment <- function(
             c("aligned_x", "aligned_y"),
             c("x", "y")
         )
-        coordinate_columns <- NULL
+        coordinateColumns <- NULL
         for (pair in pairs) {
             if (all(pair %in% names(coordinates))) {
-                coordinate_columns <- pair
+                coordinateColumns <- pair
                 break
             }
         }
-        if (is.null(coordinate_columns) && ncol(coordinates) == 2L) {
-            coordinate_columns <- 1:2
+        if (is.null(coordinateColumns) && ncol(coordinates) == 2L) {
+            coordinateColumns <- 1:2
         }
     }
-    if (length(coordinate_columns) != 2L ||
-        (is.character(coordinate_columns) && !all(coordinate_columns %in% names(coordinates)))) {
+    if (length(coordinateColumns) != 2L ||
+        (is.character(coordinateColumns) && !all(coordinateColumns %in% names(coordinates)))) {
         stop(
-            "Could not identify aligned x-y columns. Supply `coordinate.columns = c(x, y)`.",
+            "Could not identify aligned x-y columns. Supply `coordinateColumns = c(x, y)`.",
             call. = FALSE
         )
     }
-    if (is.numeric(coordinate_columns) &&
-        any(coordinate_columns < 1 | coordinate_columns > ncol(coordinates))) {
+    if (is.numeric(coordinateColumns) &&
+        any(coordinateColumns < 1 | coordinateColumns > ncol(coordinates))) {
         stop(
-            "Numeric `coordinate.columns` are outside the coordinate table.",
+            "Numeric `coordinateColumns` are outside the coordinate table.",
             call. = FALSE
         )
     }
 
-    xy <- coordinates[, coordinate_columns, drop = FALSE]
+    xy <- coordinates[, coordinateColumns, drop = FALSE]
     xy[] <- lapply(xy, function(value) suppressWarnings(as.numeric(value)))
     if (any(!is.finite(as.matrix(xy)))) {
         stop(
@@ -867,45 +862,45 @@ applySpatialAlignment <- function(
         )
     }
 
-    if (is.null(cell_column)) {
+    if (is.null(cellColumn)) {
         candidates <- c("cell", "barcode", "spot", "id", "Cell", "Barcode")
         matches <- candidates[candidates %in% names(coordinates)]
-        cell_column <- if (length(matches)) matches[[1L]] else NULL
+        cellColumn <- if (length(matches)) matches[[1L]] else NULL
     }
 
     ids <- NULL
-    if (!is.null(cell_column)) {
-        if (length(cell_column) != 1L ||
-            (is.character(cell_column) && !cell_column %in% names(coordinates))) {
-            stop("Invalid `cell.column`.", call. = FALSE)
+    if (!is.null(cellColumn)) {
+        if (length(cellColumn) != 1L ||
+            (is.character(cellColumn) && !cellColumn %in% names(coordinates))) {
+            stop("Invalid `cellColumn`.", call. = FALSE)
         }
-        if (is.numeric(cell_column) &&
-            (cell_column < 1 || cell_column > ncol(coordinates))) {
+        if (is.numeric(cellColumn) &&
+            (cellColumn < 1 || cellColumn > ncol(coordinates))) {
             stop(
-                "Numeric `cell.column` is outside the coordinate table.",
+                "Numeric `cellColumn` is outside the coordinate table.",
                 call. = FALSE
             )
         }
-        ids <- as.character(coordinates[[cell_column]])
+        ids <- as.character(coordinates[[cellColumn]])
     } else {
         candidate_rownames <- rownames(coordinates)
         default_rownames <- identical(
             candidate_rownames,
             as.character(seq_len(nrow(coordinates)))
         )
-        if (!is.null(candidate_rownames) && !default_rownames && all(source_cells %in% candidate_rownames)) {
+        if (!is.null(candidate_rownames) && !default_rownames && all(sourceCells %in% candidate_rownames)) {
             ids <- candidate_rownames
         }
     }
 
     if (is.null(ids)) {
-        if (nrow(xy) != length(source_cells)) {
+        if (nrow(xy) != length(sourceCells)) {
             stop(
                 "Precomputed coordinates have no cell IDs and their row count does not match the SM FOV.",
                 call. = FALSE
             )
         }
-        ids <- source_cells
+        ids <- sourceCells
     }
     if (anyNA(ids) || any(!nzchar(ids)) || anyDuplicated(ids)) {
         stop(
@@ -913,7 +908,7 @@ applySpatialAlignment <- function(
             call. = FALSE
         )
     }
-    index <- match(source_cells, ids)
+    index <- match(sourceCells, ids)
     if (anyNA(index)) {
         stop(
             "Precomputed alignment is missing ", sum(is.na(index)),
@@ -922,7 +917,7 @@ applySpatialAlignment <- function(
         )
     }
     data.frame(
-        cell = source_cells,
+        cell = sourceCells,
         x = xy[[1L]][index],
         y = xy[[2L]][index],
         stringsAsFactors = FALSE
@@ -930,7 +925,7 @@ applySpatialAlignment <- function(
 }
 
 
-.sa_set_fov_coordinates <- function(object, fov, boundary, aligned) {
+.sa_set_fov_coordinates <- function(object, aligned) {
     .requireExperiment(object, "SpatialExperiment")
     index <- match(colnames(object), aligned$cell)
     if (anyNA(index)) {
@@ -956,7 +951,7 @@ applySpatialAlignment <- function(
     epV,
     device,
     seed,
-    lddmm.args,
+    lddmmArgs,
     python
 ) {
     if (!requireNamespace("reticulate", quietly = TRUE)) {
@@ -983,11 +978,11 @@ applySpatialAlignment <- function(
     if (niter != floor(niter) || seed != floor(seed)) {
         stop("`niter` and `seed` must be whole numbers.", call. = FALSE)
     }
-    if (!is.list(lddmm.args) || is.null(names(lddmm.args)) && length(lddmm.args)) {
-        stop("`lddmm.args` must be a named list.", call. = FALSE)
+    if (!is.list(lddmmArgs) || is.null(names(lddmmArgs)) && length(lddmmArgs)) {
+        stop("`lddmmArgs` must be a named list.", call. = FALSE)
     }
-    if (length(lddmm.args) && any(!nzchar(names(lddmm.args)))) {
-        stop("Every entry in `lddmm.args` must have a name.", call. = FALSE)
+    if (length(lddmmArgs) && any(!nzchar(names(lddmmArgs)))) {
+        stop("Every entry in `lddmmArgs` must have a name.", call. = FALSE)
     }
     protected <- c(
         "xI",
@@ -1003,11 +998,11 @@ applySpatialAlignment <- function(
         "xv",
         "device"
     )
-    if (any(names(lddmm.args) %in% protected)) {
+    if (any(names(lddmmArgs) %in% protected)) {
         stop(
-            "`lddmm.args` cannot override internal arguments: ",
+            "`lddmmArgs` cannot override internal arguments: ",
             paste(
-                intersect(names(lddmm.args), protected),
+                intersect(names(lddmmArgs), protected),
                 collapse = ", "
             ), ".",
             call. = FALSE
@@ -1102,14 +1097,14 @@ applySpatialAlignment <- function(
         epV = as.numeric(epV),
         device = selected_device
     )
-    arguments[names(lddmm.args)] <- lddmm.args
+    arguments[names(lddmmArgs)] <- lddmmArgs
 
     fit <- tryCatch(
         do.call(stalign$LDDMM, arguments),
         error = function(error) {
             stop(
                 "STalign LDDMM failed: ", conditionMessage(error),
-                ". Check coordinate scale, landmarks, `dx`, and `lddmm.args`.",
+                ". Check coordinate scale, landmarks, `dx`, and `lddmmArgs`.",
                 call. = FALSE
             )
         }
@@ -1164,14 +1159,14 @@ applySpatialAlignment <- function(
     original,
     aligned,
     target,
-    transformed_landmarks,
-    target_landmarks,
-    max_points
+    transformedLandmarks,
+    targetLandmarks,
+    maxPoints
 ) {
-    if (!is.numeric(max_points) || length(max_points) != 1L ||
-        !is.finite(max_points) || max_points < 2) {
+    if (!is.numeric(maxPoints) || length(maxPoints) != 1L ||
+        !is.finite(maxPoints) || maxPoints < 2) {
         stop(
-            "`diagnostics.max.points` must be one finite number >= 2.",
+            "`diagnosticsMaxPoints` must be one finite number >= 2.",
             call. = FALSE
         )
     }
@@ -1191,7 +1186,7 @@ applySpatialAlignment <- function(
     )
     if (!is.null(target)) {
         sample_rows <- function(n) {
-            if (n <= max_points) seq_len(n) else unique(round(seq(1, n, length.out = max_points)))
+            if (n <= maxPoints) seq_len(n) else unique(round(seq(1, n, length.out = maxPoints)))
         }
         target_sample <- as.matrix(target[sample_rows(nrow(target)), , drop = FALSE])
         before_sample <- as.matrix(original[sample_rows(nrow(original)), , drop = FALSE])
@@ -1207,8 +1202,8 @@ applySpatialAlignment <- function(
         output$nearest_target_before <- summarize_distance(before_sample)
         output$nearest_target_after <- summarize_distance(after_sample)
     }
-    if (!is.null(transformed_landmarks) && !is.null(target_landmarks)) {
-        output$landmark_rmse <- sqrt(mean((transformed_landmarks - target_landmarks)^2))
+    if (!is.null(transformedLandmarks) && !is.null(targetLandmarks)) {
+        output$landmark_rmse <- sqrt(mean((transformedLandmarks - targetLandmarks)^2))
     }
     output
 }

@@ -123,7 +123,7 @@ registry[
 
 `loadSpaMTPDatabase()` validates file size and checksum and retains provenance.
 Use `offline = TRUE` to reuse verified local files or cached downloads.
-Set `local_dir` to the directory containing the published RDS files when
+Set `localDir` to the directory containing the published RDS files when
 staging resources on a shared system.
 
 ```{r production-resources}
@@ -143,7 +143,7 @@ Their historical labels are stored separately in `archived_lipid_candidates`.
 
 `buildMZAnnotationIndex()` indexes the verified RaMP `chem_props` table using
 potassium adducts (`M+K`, positive mode). `annotateSM()` searches within 5 ppm;
-`min_score = 0` retains matched candidates for review. The database's
+`minScore = 0` retains matched candidates for review. The database's
 precomputed structure features are reused automatically. `annotationCandidates()`
 lists the stored candidate records for each measured ion, ranked by score.
 
@@ -155,8 +155,8 @@ index <- buildMZAnnotationIndex(database$chem_props,
 )
 annotated <- annotateSM(ions,
     index = index, adducts = "M+K",
-    polarity = "positive", ppm = 5, min_score = 0,
-    return.only.annotated = FALSE, save.intermediate = TRUE, verbose = FALSE
+    polarity = "positive", ppm = 5, minScore = 0,
+    returnOnlyAnnotated = FALSE, saveIntermediate = TRUE, verbose = FALSE
 )
 rowData(annotated)[, c("mz", "archived_lipid_candidates")]
 candidates <- annotationCandidates(annotated, distinct = FALSE)

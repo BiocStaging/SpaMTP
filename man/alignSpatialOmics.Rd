@@ -5,29 +5,29 @@
 \title{Align two spatial experiments using an affine transformation}
 \usage{
 alignSpatialOmics(
-  sm.data,
-  st.data,
+  smData,
+  stData,
   transformation = NULL,
-  image.slice = NULL,
-  msi.pixel.multiplier = 1,
-  shiny.host = "127.0.0.1",
-  shiny.port = NULL,
+  imageSlice = NULL,
+  msiPixelMultiplier = 1,
+  shinyHost = "127.0.0.1",
+  shinyPort = NULL,
   verbose = FALSE
 )
 }
 \arguments{
-\item{sm.data, st.data}{Source and reference SpatialExperiment objects, each
+\item{smData, stData}{Source and reference SpatialExperiment objects, each
 containing one tissue sample.}
 
 \item{transformation}{A 3 by 3 homogeneous matrix mapping source coordinates
 to reference coordinates, or NULL for interactive alignment.}
 
-\item{image.slice}{Optional reference image ID in imgData(st.data).}
+\item{imageSlice}{Optional reference image ID in imgData(st.data).}
 
-\item{msi.pixel.multiplier}{Explicit initial scaling of source coordinates.
+\item{msiPixelMultiplier}{Explicit initial scaling of source coordinates.
 Defaults to one. Applied before transformation, including GUI transforms.}
 
-\item{shiny.host, shiny.port}{Host and optional port for the interactive app.}
+\item{shinyHost, shinyPort}{Host and optional port for the interactive app.}
 
 \item{verbose}{Show alignment messages.}
 }

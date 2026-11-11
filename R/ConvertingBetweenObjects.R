@@ -419,7 +419,7 @@ spatialExperimentToSeurat <- function(
 #' Convert a Cardinal object to an optional Seurat object
 #'
 #' @param data A Cardinal `MSImagingExperiment` with aligned spectra.
-#' @param seurat.coord Optional replacement coordinates with `X_new` and
+#' @param seuratCoord Optional replacement coordinates with `X_new` and
 #'   `Y_new` columns.
 #' @param assay Name of the Seurat assay.
 #' @param verbose Show conversion messages.
@@ -436,14 +436,14 @@ spatialExperimentToSeurat <- function(
 #' }
 cardinalToSeurat <- function(
     data,
-    seurat.coord = NULL,
+    seuratCoord = NULL,
     assay = "Spatial",
     verbose = TRUE
 ) {
-    if (!is.null(seurat.coord)) {
+    if (!is.null(seuratCoord)) {
         pixelData <- Cardinal::pixelData(data)
-        pixelData[["x"]] <- seurat.coord$X_new
-        pixelData[["y"]] <- seurat.coord$Y_new
+        pixelData[["x"]] <- seuratCoord$X_new
+        pixelData[["y"]] <- seuratCoord$Y_new
         Cardinal::pixelData(data) <- pixelData
     }
     verbose_message(
@@ -503,7 +503,7 @@ binnedCardinalToSeurat <- function(
 #' @param assay Seurat assay to convert.
 #' @param layer Exact Seurat expression layer name, read with
 #'   `SeuratObject::LayerData()`. See [seuratToSpatialExperiment()].
-#' @param run_col Optional cell-metadata column containing run identifiers.
+#' @param runCol Optional cell-metadata column containing run identifiers.
 #' @param verbose Show conversion messages.
 #'
 #' @return A Cardinal `MSImagingExperiment`.
@@ -520,7 +520,7 @@ convertSeuratToCardinal <- function(
     data,
     assay = "Spatial",
     layer = "counts",
-    run_col = NULL,
+    runCol = NULL,
     verbose = TRUE
 ) {
     verbose_message(
@@ -528,12 +528,12 @@ convertSeuratToCardinal <- function(
         verbose = verbose
     )
     object <- seuratToSpatialExperiment(data, assay = assay, layer = layer)
-    if (!is.null(run_col)) {
+    if (!is.null(runCol)) {
         columnData <- as.data.frame(SummarizedExperiment::colData(object))
-        if (!run_col %in% colnames(columnData)) {
-            stop("Run column `", run_col, "` was not found.", call. = FALSE)
+        if (!runCol %in% colnames(columnData)) {
+            stop("Run column `", runCol, "` was not found.", call. = FALSE)
         }
-        columnData$run <- factor(columnData[[run_col]])
+        columnData$run <- factor(columnData[[runCol]])
         SummarizedExperiment::colData(object) <- S4Vectors::DataFrame(columnData)
     }
     spatialExperimentToCardinal(object, assayName = layer)

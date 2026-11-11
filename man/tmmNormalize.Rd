@@ -5,17 +5,17 @@
 \title{Performs TMM normalization between categories based on a specified ident}
 \usage{
 tmmNormalize(
-  combined.obj,
+  combinedObj,
   ident,
   refIdent,
-  normalisation.type = "CPM",
-  CPM.scale.factor = 1e+06,
+  normalizationType = "CPM",
+  cpmScaleFactor = 1e+06,
   assay = "main",
   assayName = "counts"
 )
 }
 \arguments{
-\item{combined.obj}{Bioconductor experiment that contains groups being
+\item{combinedObj}{Bioconductor experiment that contains groups being
 normalized.}
 
 \item{ident}{Character string defining the column name or ident group to
@@ -24,12 +24,12 @@ normalize between.}
 \item{refIdent}{Character string specifying one class/group type to use as a
 reference for TMM normalisation.}
 
-\item{normalisation.type}{Character string defining the normalization method
+\item{normalizationType}{Character string defining the normalization method
 to run. Options are either c("CPM", "TIC", "LogNormalize") which represent
 counts per million (CPM), Total Ion Current (TIC) normalization or Log
 Normalization, respectively (default = "CPM").}
 
-\item{CPM.scale.factor}{Numeric value that sets the scale factor for
+\item{cpmScaleFactor}{Numeric value that sets the scale factor for
 pixel/spot level normalization. Following normalization the total intensity
 value across each pixel will equal this value (default = 1e6).}
 

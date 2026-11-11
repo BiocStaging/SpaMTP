@@ -5,25 +5,25 @@
 \title{Visualise Significant Pathways}
 \usage{
 visualisePathways(
-  SpaMTP,
-  pathway_df,
+  object,
+  pathwayDf,
   assay = "main",
   assayName = "counts",
-  min_n = 3,
-  p_val_threshold = 0.1,
+  minN = 3,
+  pValThreshold = 0.1,
   method = "ward.D2",
   verbose = TRUE,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
   ...
 )
 }
 \arguments{
-\item{SpaMTP}{A SpatialExperiment used for fishersPathwayAnalysis.}
+\item{object}{A SpatialExperiment used for fishersPathwayAnalysis.}
 
-\item{pathway_df}{Dataframe containing the pathway enrichment results (output
+\item{pathwayDf}{Dataframe containing the pathway enrichment results (output
 from SpaMTP::fishersPathwayAnalysis function).}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
@@ -33,10 +33,10 @@ is \code{"main"} for the primary experiment.}
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{min_n}{Integer value specifying the minimum number of analytes required
+\item{minN}{Integer value specifying the minimum number of analytes required
 to be present in a pathway (default = 3).}
 
-\item{p_val_threshold}{The p-val cutoff to keep the pathways generated from
+\item{pValThreshold}{The p-val cutoff to keep the pathways generated from
 fisher exact test (default = "0.1").}
 
 \item{method}{Character string defining the statistical method used to
@@ -48,11 +48,11 @@ FALSE these messages will be suppressed (default = TRUE).}
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for pathway lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for pathway lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
 \item{...}{The arguments pass to stats::hclust}
 }
@@ -68,11 +68,11 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 enrichment <- fishersPathwayAnalysis(list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
     universe = list(metabolites = paste0("RAMP_C_", 1:3)),
-    database = spamtp_example$database, min_path_size = 1,
-    pathway_all_info = TRUE, verbose = FALSE
+    database = spamtp_example$database, minPathSize = 1,
+    pathwayAllInfo = TRUE, verbose = FALSE
 )
 visualisePathways(spe, enrichment,
-    assay = "main", min_n = 1,
-    p_val_threshold = 1, database = spamtp_example$database, verbose = FALSE
+    assay = "main", minN = 1,
+    pValThreshold = 1, database = spamtp_example$database, verbose = FALSE
 )
 }

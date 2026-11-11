@@ -5,8 +5,8 @@ test_that("multiOmicIntegration restores future connection diagnostics", {
         try(
             multiOmicIntegration(
                 NULL,
-                reduction.list = list("missing-a", "missing-b"),
-                dims.list = list(1, 1)
+                reductionList = list("missing-a", "missing-b"),
+                dimsList = list(1, 1)
             ),
             silent = TRUE
         )

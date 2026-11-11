@@ -24,7 +24,7 @@ test_that("decoy FDR counts real matches and rejects shifts inside tolerance", {
     expect_error(
         estimateAnnotationFDR(targets, index,
             ppm = 5,
-            shifts_da = c(-0.001, 0.001)
+            shiftsDa = c(-0.001, 0.001)
         ),
         "twice the tolerance"
     )
@@ -36,7 +36,7 @@ test_that("decoys find chance matches when shifted onto another compound", {
     gaba <- min(index$expected_mz) # GABA [M+H]+
     fdr <- estimateAnnotationFDR(gaba - 0.004, index,
         ppm = 5,
-        shifts_da = c(-0.004, 0.004), cutoffs = 0
+        shiftsDa = c(-0.004, 0.004), cutoffs = 0
     )
     expect_equal(fdr$curve$target_peaks, 0)
     expect_equal(fdr$curve$decoy_peaks, 0.5)
@@ -65,7 +65,7 @@ test_that("score cutoff is the smallest one meeting the target FDR", {
     )
     expect_equal(annotationScoreCutoff(fdr, 0.5), 0.1)
     expect_equal(annotationScoreCutoff(fdr, 0.1), 0.5)
-    expect_true(is.na(annotationScoreCutoff(fdr, 0.1, min_peaks = 20)))
+    expect_true(is.na(annotationScoreCutoff(fdr, 0.1, minPeaks = 20)))
     expect_true(is.na(annotationScoreCutoff(fdr, 0.01)))
     expect_error(annotationScoreCutoff(list()), "estimateAnnotationFDR")
 })
@@ -79,7 +79,7 @@ test_that("MALDI preset drops multiply charged and solvent adducts", {
     expect_true(all(c("M+H", "M+Na", "M+K") %in% preset))
     expect_false("M+2H" %in% preset)
     expect_true(any(grepl("DHB", preset)))
-    no_matrix <- maldiAdductPreset("DHB", include_matrix_adducts = FALSE)
+    no_matrix <- maldiAdductPreset("DHB", includeMatrixAdducts = FALSE)
     expect_false(any(grepl("DHB", no_matrix)))
 })
 
@@ -125,7 +125,7 @@ test_that("isotope flags require co-localisation when profiles are given", {
         base, abs(stats::rnorm(40)) * 0.14
     )
     mz <- c(399.1436, 400.1466, 500.2, 501.2033)
-    flags <- flagIsotopePeaks(mz, profiles, ppm = 3, min_cor = 0.5)
+    flags <- flagIsotopePeaks(mz, profiles, ppm = 3, minCor = 0.5)
     expect_equal(flags$isotope, c(FALSE, TRUE, FALSE, FALSE))
     expect_gt(flags$correlation[2], 0.9)
 })
@@ -150,14 +150,14 @@ test_that("co-localised adduct peaks group, uncorrelated ones do not", {
         f$mh, f$mna, f$mh - f$m$proton + f$m$potassium_ion,
         f$mh * (1 + 3e-6)
     )
-    g <- groupAdductPeaks(mz, profiles, ppm = 3, min_cor = 0.5, split_ppm = 5)
+    g <- groupAdductPeaks(mz, profiles, ppm = 3, minCor = 0.5, splitPpm = 5)
     expect_equal(g$groups$group[1], g$groups$group[2])
     expect_false(g$groups$group[3] == g$groups$group[1])
     expect_equal(g$groups$group[4], g$groups$group[1])
     expect_setequal(g$edges$relation, c("Na-H", "split"))
     # excluded peaks stay singletons
     gx <- groupAdductPeaks(mz, profiles,
-        ppm = 3, min_cor = 0.5, split_ppm = 5,
+        ppm = 3, minCor = 0.5, splitPpm = 5,
         exclude = c(FALSE, TRUE, FALSE, FALSE)
     )
     expect_equal(gx$groups$group_size[2], 1L)
@@ -184,12 +184,12 @@ test_that("group identities need support from two different adducts", {
     expect_equal(a$peaks$ramp_ids, c("RAMP_C_A", "RAMP_C_A"))
     expect_equal(a$peaks$n_identities, c(1L, 1L))
     expect_equal(nrow(annotateAdductGroups(cand, groups,
-        min_score = 0.35
+        minScore = 0.35
     )$peaks), 0)
     # candidate m/z off by rounding still matches its peak
     cand$observed_mz <- round(cand$observed_mz, 3)
     expect_equal(nrow(annotateAdductGroups(cand, groups,
-        match_ppm = 5
+        matchPpm = 5
     )$peaks), 2)
     cand$ramp_ids[1] <- NA
     expect_equal(nrow(annotateAdductGroups(cand, groups)$peaks), 0)

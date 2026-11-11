@@ -5,45 +5,45 @@
 \title{Heatmap of Differentially Expressed Metabolites}
 \usage{
 demsHeatmap(
-  edgeR_output,
+  edgerOutput,
   n = 5,
-  only.pos = FALSE,
-  FDR.threshold = 0.05,
-  logfc.threshold = 0.5,
-  order.by = "FDR",
+  onlyPos = FALSE,
+  fdrThreshold = 0.05,
+  logFCThreshold = 0.5,
+  orderBy = "FDR",
   scale = "row",
   color = (grDevices::colorRampPalette(c("navy", "white", "red")))(50),
-  cluster_cols = FALSE,
-  cluster_rows = TRUE,
-  fontsize_row = 15,
-  fontsize_col = 15,
-  cutree_cols = 9,
+  clusterCols = FALSE,
+  clusterRows = TRUE,
+  fontsizeRow = 15,
+  fontsizeCol = 15,
+  cutreeCols = 9,
   silent = TRUE,
-  plot_annotations_column = NULL,
-  save_to_path = NULL,
-  plot.save.width = 20,
-  plot.save.height = 20,
-  nlabels.to.show = NULL,
-  annotation_colors = NULL
+  plotAnnotationsColumn = NULL,
+  saveToPath = NULL,
+  plotSaveWidth = 20,
+  plotSaveHeight = 20,
+  nlabelsToShow = NULL,
+  annotationColors = NULL
 )
 }
 \arguments{
-\item{edgeR_output}{A list containing outputs from edgeR analysis (from
+\item{edgerOutput}{A list containing outputs from edgeR analysis (from
 findAllDEMs()). This includes pseudo-bulked counts and DEMs.}
 
 \item{n}{A numeric integer that defines the number of UP and DOWN regulated
 peaks to plot (default = 5).}
 
-\item{only.pos}{Boolean indicating if only positive markers should be
+\item{onlyPos}{Boolean indicating if only positive markers should be
 returned (default = FALSE).}
 
-\item{FDR.threshold}{Numeric value that defines the FDR threshold to use for
+\item{fdrThreshold}{Numeric value that defines the FDR threshold to use for
 defining most significant results (default = 0.05).}
 
-\item{logfc.threshold}{Numeric value that defines the logFC threshold to use
+\item{logFCThreshold}{Numeric value that defines the logFC threshold to use
 for filtering significant results (default = 0.5).}
 
-\item{order.by}{Ranking column: \code{FDR}, \code{logFC}, \code{mean_auc} or \code{mean_cohen}.
+\item{orderBy}{Ranking column: \code{FDR}, \code{logFC}, \code{mean_auc} or \code{mean_cohen}.
 Descriptive native marker results default to \code{mean_auc}; other inputs use
 \code{FDR}. FDR ranking is unavailable for descriptive marker results.}
 
@@ -54,43 +54,43 @@ Corresponding values are "row", "column" and "none"}
 \item{color}{A vector of colors used in heatmap (default =
 grDevices::colorRampPalette(c("navy", "white", "red"))(50)).}
 
-\item{cluster_cols}{Boolean value determining if columns should be clustered
+\item{clusterCols}{Boolean value determining if columns should be clustered
 or hclust object (default = FALSE).}
 
-\item{cluster_rows}{Boolean value determining if rows should be clustered or
+\item{clusterRows}{Boolean value determining if rows should be clustered or
 hclust object (default = TRUE).}
 
-\item{fontsize_row}{A numeric value defining the fontsize of rownames
+\item{fontsizeRow}{A numeric value defining the fontsize of rownames
 (default = 15).}
 
-\item{fontsize_col}{A numeric value defining the fontsize of colnames
+\item{fontsizeCol}{A numeric value defining the fontsize of colnames
 (default = 15).}
 
-\item{cutree_cols}{A numeric value defining the number of clusters the
+\item{cutreeCols}{A numeric value defining the number of clusters the
 columns are divided into, based on the hierarchical clustering(using
 cutree), if cols are not clustered, the argument is ignored (default = 9).}
 
 \item{silent}{Boolean value indicating if the plot should not be draw
 (default = TRUE).}
 
-\item{plot_annotations_column}{Character string indicating the column name
+\item{plotAnnotationsColumn}{Character string indicating the column name
 that contains the metabolite annotations to plot. Annotations = TRUE must
 be used in findAllDEMs() for edgeR output to include annotations. If
-plot_annotations_column = NULL, m/z vaues will be plotted (default = NULL).}
+plotAnnotationsColumn = NULL, m/z vaues will be plotted (default = NULL).}
 
-\item{save_to_path}{Character string defining the full filepath and name of
+\item{saveToPath}{Character string defining the full filepath and name of
 the plot to be saved as.}
 
-\item{plot.save.width}{Integer value representing the width of the saved pdf
+\item{plotSaveWidth}{Integer value representing the width of the saved pdf
 plot (default = 20).}
 
-\item{plot.save.height}{Integer value representing the height of the saved
+\item{plotSaveHeight}{Integer value representing the height of the saved
 pdf plot (default = 20).}
 
-\item{nlabels.to.show}{Numeric value defining the number of annotations to
+\item{nlabelsToShow}{Numeric value defining the number of annotations to
 show per m/z (default = NULL).}
 
-\item{annotation_colors}{List for specifying annotation_row and
+\item{annotationColors}{List for specifying annotation_row and
 annotation_col track colors manually. Check pheatmap R-Package
 documentation for details. If set to 'NA', default coloring will be used
 (default = NA).}
@@ -109,12 +109,12 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 markers <- findAllDEMs(spe,
     ident = "region", method = "markers",
-    min_region_size = 3, spatial_blocks = 0, verbose = FALSE
+    minRegionSize = 3, spatialBlocks = 0, verbose = FALSE
 )
 if (requireNamespace("pheatmap", quietly = TRUE)) {
     heatmap <- demsHeatmap(markers,
-        n = 2, order.by = "mean_auc",
-        logfc.threshold = 0, silent = TRUE
+        n = 2, orderBy = "mean_auc",
+        logFCThreshold = 0, silent = TRUE
     )
     heatmap
 }

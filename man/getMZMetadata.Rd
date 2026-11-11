@@ -8,7 +8,7 @@ getMZMetadata(
   obj,
   mz,
   assay = "main",
-  metadata.column = "all_IsomerNames",
+  metadataColumn = "all_IsomerNames",
   separate = TRUE
 )
 }
@@ -21,7 +21,7 @@ for.}
 \item{assay}{Primary or alternative experiment containing the annotated
 m/z metadata. Defaults to \code{"main"}.}
 
-\item{metadata.column}{Character string corresponding to the assay feature
+\item{metadataColumn}{Character string corresponding to the assay feature
 metadata column to extract (default = "all_IsomerNames").}
 
 \item{separate}{Boolean indicating whether to separate the metadata string
@@ -39,8 +39,8 @@ Gets values from a single metadata column for a respective m/z value.
 data(spamtp_example)
 spe <- spamtp_example$experiment
 getMZMetadata(spe, mz = "ion1")
-# getMZMetadata(SpaMTP, mz = "mz-100", metadata.column = "all_IsomerNames")
+# getMZMetadata(SpaMTP, mz = "mz-100", metadataColumn = "all_IsomerNames")
 
 ##### Example for getting metabolite annotation IDs for a m/z value
-# getMZMetadata(SpaMTP, mz = "mz-100", metadata.column = "all_Isomers")
+# getMZMetadata(SpaMTP, mz = "mz-100", metadataColumn = "all_Isomers")
 }

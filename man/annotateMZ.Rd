@@ -5,27 +5,27 @@
 \title{Annotate one or more observed m/z values}
 \usage{
 annotateMZ(
-  observed_mz,
+  observedMz,
   db = NULL,
   index = NULL,
   polarity = NULL,
   adducts = NULL,
   rules = NULL,
-  maldi_matrix = NULL,
+  maldiMatrix = NULL,
   ppm = 5,
-  ms1_spectrum = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  infer_structure = c("auto", "never", "always"),
-  structure_backend = c("auto", "native"),
+  ms1Spectrum = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  inferStructure = c("auto", "never", "always"),
+  structureBackend = c("auto", "native"),
   BPPARAM = BiocParallel::SerialParam(),
-  min_structure_score = 0.05,
+  minStructureScore = 0.05,
   ...
 )
 }
 \arguments{
-\item{observed_mz}{Numeric vector of observed m/z values.}
+\item{observedMz}{Numeric vector of observed m/z values.}
 
 \item{db}{Metabolite database used when \code{index} is \code{NULL}.}
 
@@ -41,21 +41,21 @@ space selected by the matrix profile or polarity.}
 
 \item{rules}{Optional custom rule table.}
 
-\item{maldi_matrix}{Optional MALDI matrix/reagent profile used to select
+\item{maldiMatrix}{Optional MALDI matrix/reagent profile used to select
 rules automatically when \code{rules} is \code{NULL}.}
 
 \item{ppm}{Mass tolerance in ppm.}
 
-\item{ms1_spectrum}{Optional contextual spectrum.}
+\item{ms1Spectrum}{Optional contextual spectrum.}
 
-\item{database_version}{SpaMTPdb/RaMP version used when \code{db = NULL}.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used when \code{db = NULL}.}
 
-\item{database_source}{Database source used when \code{db = NULL}; see
+\item{databaseSource}{Database source used when \code{db = NULL}; see
 \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
-\item{infer_structure, structure_backend, BPPARAM, min_structure_score}{Structure-aware
+\item{inferStructure, structureBackend, BPPARAM, min_structure_score}{Structure-aware
 rule-selection arguments passed to \code{\link[=buildMZAnnotationIndex]{buildMZAnnotationIndex()}}.}
 
 \item{...}{Additional arguments passed to \code{\link[=queryMZAnnotationIndex]{queryMZAnnotationIndex()}}.}

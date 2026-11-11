@@ -14,13 +14,13 @@ spe <- normalizeSMData(spe, "LogNormalize", verbose = FALSE)
 spe <- scaleSMData(spe)
 spe <- suppressWarnings(runMetabolicPCA(spe, npcs = 2))
 spe <- runSpatialGraphPCA(spe,
-    n_components = 2, n_neighbors = 2,
+    nComponents = 2, nNeighbors = 2,
     platform = "ST", verbose = FALSE
 )
 spe <- getKmeanClusters(spe, clusters = 2)
 spe <- addTranscriptome(spe, values[1:3, ])
 spe <- suppressWarnings(multiOmicIntegration(spe,
-    dims.list = list(1:2, 1:2), verbose = FALSE
+    dimsList = list(1:2, 1:2), verbose = FALSE
 ))
 subset <- subsetSPM(spe, subset = region == "a")
 stopifnot(

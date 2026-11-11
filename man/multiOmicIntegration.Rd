@@ -7,46 +7,46 @@
 \title{Integrate paired modalities using native PCA embeddings}
 \usage{
 multiOmicIntegration(
-  multiomic.data,
-  reduction.list = list("spm.pca", "spt.pca"),
-  dims.list = list(1:30, 1:30),
-  return.intermediate = FALSE,
+  multiomicData,
+  reductionList = list("spm.pca", "spt.pca"),
+  dimsList = list(1:30, 1:30),
+  returnIntermediate = FALSE,
   verbose = FALSE,
   modalities = c("main", "transcriptome"),
   ...
 )
 
 \S4method{multiOmicIntegration}{SpatialExperiment}(
-  multiomic.data,
-  reduction.list = list("spm.pca", "spt.pca"),
-  dims.list = list(1:30, 1:30),
-  return.intermediate = FALSE,
+  multiomicData,
+  reductionList = list("spm.pca", "spt.pca"),
+  dimsList = list(1:30, 1:30),
+  returnIntermediate = FALSE,
   verbose = FALSE,
   modalities = c("main", "transcriptome"),
   ...
 )
 
 \S4method{multiOmicIntegration}{ANY}(
-  multiomic.data,
-  reduction.list = list("spm.pca", "spt.pca"),
-  dims.list = list(1:30, 1:30),
-  return.intermediate = FALSE,
+  multiomicData,
+  reductionList = list("spm.pca", "spt.pca"),
+  dimsList = list(1:30, 1:30),
+  returnIntermediate = FALSE,
   verbose = FALSE,
   modalities = c("main", "transcriptome"),
   ...
 )
 }
 \arguments{
-\item{multiomic.data}{A SpatialExperiment with a primary modality and paired
+\item{multiomicData}{A SpatialExperiment with a primary modality and paired
 alternative experiments in \code{SingleCellExperiment::altExps()}.}
 
-\item{reduction.list}{Reduction names for the primary MSI and alternative
+\item{reductionList}{Reduction names for the primary MSI and alternative
 modalities (default = list("spm.pca", "spt.pca")).}
 
-\item{dims.list}{List containing the numeric range of principle component
+\item{dimsList}{List containing the numeric range of principle component
 dimension to include for each modality (default = list(1:30,1:30)).}
 
-\item{return.intermediate}{Retain per-modality PCA results in reducedDims().}
+\item{returnIntermediate}{Retain per-modality PCA results in reducedDims().}
 
 \item{verbose}{Show progress messages (default = FALSE).}
 
@@ -70,6 +70,6 @@ the historical WNN workflow remains in the published-workflow branch.
 \examples{
 data(spamtp_example)
 spe <- spamtp_example$experiment
-integrated <- multiOmicIntegration(spe, dims.list = list(1:2, 1:2))
+integrated <- multiOmicIntegration(spe, dimsList = list(1:2, 1:2))
 head(SingleCellExperiment::reducedDim(integrated, "integrated"))
 }

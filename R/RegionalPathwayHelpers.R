@@ -26,22 +26,22 @@
 }
 
 .regionalLeadingEdge <- function(
-    ids, analyte_types, metabolite_de, gene_source, ranks, gene_results
+    ids, analyteTypes, metaboliteDe, geneSource, ranks, geneResults
 ) {
     ids <- unique(unlist(ids))
     metabolites <- genes <- NULL
-    if ("metabolites" %in% analyte_types) {
-        metabolites <- metabolite_de[
-            which(metabolite_de$ramp_id %in% ids),
+    if ("metabolites" %in% analyteTypes) {
+        metabolites <- metaboliteDe[
+            which(metaboliteDe$ramp_id %in% ids),
         ] %>%
             dplyr::mutate(adduct_info = paste0(
                 .data$observed_mz, "[", .data$Adduct, "]"
             )) %>%
             dplyr::filter(!duplicated(.data$adduct_info))
     }
-    if ("genes" %in% analyte_types) {
-        genes <- gene_source[which(
-            gene_source$rampId %in% ids & grepl("RAMP_G", gene_source$rampId)
+    if ("genes" %in% analyteTypes) {
+        genes <- geneSource[which(
+            geneSource$rampId %in% ids & grepl("RAMP_G", geneSource$rampId)
         ), ]
     }
     data.frame(
@@ -55,10 +55,10 @@
             collapse = ";"
         ),
         leadingEdge_genes = paste0(genes$commonName, collapse = ";"),
-        met_regulation = if ("metabolites" %in% analyte_types) {
+        met_regulation = if ("metabolites" %in% analyteTypes) {
             .regionalRegulation(ranks, ids, "RAMP_C")
         } else "",
-        rna_regulation = if (gene_results) {
+        rna_regulation = if (geneResults) {
             .regionalRegulation(ranks, ids, "RAMP_G")
         } else ""
     )

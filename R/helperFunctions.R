@@ -1,15 +1,15 @@
 #' Helper function for suppressing function progress messages
 #'
-#' @param message_text Character string containing the message being shown
+#' @param messageText Character string containing the message being shown
 #' @param verbose Boolean indicating whether to show the message. If TRUE the
 #'   message will be show, else the messsage will be suppressed (default =
 #'   TRUE).
 #' @noRd
 #' @noRd
 #' @noRd
-verbose_message <- function(message_text, verbose) {
+verbose_message <- function(messageText, verbose) {
     if (verbose) {
-        message(message_text)
+        message(messageText)
     }
 }
 

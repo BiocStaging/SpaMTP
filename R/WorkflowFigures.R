@@ -15,13 +15,13 @@
         )
 }
 
-.wf_analysis_plots <- function(result, max_points) {
+.wf_analysis_plots <- function(result, maxPoints) {
     plots <- list()
     obj <- result$object
     n <- ncol(obj)
     field <- result$region_analysis$field
     md <- as.data.frame(SummarizedExperiment::colData(obj))
-    idx <- .wf_preview_indices(md, field, max_points)
+    idx <- .wf_preview_indices(md, field, maxPoints)
     point_size <- if (length(idx) < 300L) 1.8 else if (length(idx) < 1500L) 1.2 else 0.85
     xy <- SpatialExperiment::spatialCoords(obj)
     spatial <- all(c("x", "y") %in% colnames(xy)) && all(is.finite(xy))
@@ -197,10 +197,10 @@
             head(t[order(-t$mean_auc, t$gene), , drop = FALSE], 3)
         }))
         heat <- demsHeatmap(m,
-            n = 3, only.pos = TRUE, logfc.threshold = 0,
-            order.by = "mean_auc", fontsize_row = 8, fontsize_col = 10,
+            n = 3, onlyPos = TRUE, logFCThreshold = 0,
+            orderBy = "mean_auc", fontsizeRow = 8, fontsizeCol = 10,
             color = grDevices::colorRampPalette(c("#3b5b92", "#f7f7f3", "#b73e45"))(101),
-            annotation_colors = palette
+            annotationColors = palette
         )
         plots[[paste0("markers_heatmap_", name)]] <- .wf_figure(cowplot::ggdraw(heat$gtable),
             width = 11, height = max(5, length(heat$selected_features) * 0.23 + 2),
@@ -291,14 +291,14 @@
                 spatialMZPlot(obj[, idx],
                     mzs = chosen,
                     assay = result$settings$assay_names[[name]], assayName = "workflow", images = unique(images$image_id),
-                    combine = FALSE, pt.size.factor = point_size, image.alpha = .6,
-                    min.cutoff = "q02", max.cutoff = "q98", keep.scale = "none"
+                    combine = FALSE, ptSizeFactor = point_size, imageAlpha = .6,
+                    minCutoff = "q02", maxCutoff = "q98", keepScale = "none"
                 )
             } else {
                 imageMZPlot(obj[, idx],
                     mzs = chosen, assay = result$settings$assay_names[[name]],
-                    assayName = "workflow", combine = FALSE, dark.background = FALSE, size = point_size,
-                    cols = c("#eef0f1", "#714068"), min.cutoff = "q02", max.cutoff = "q98", scale = "none"
+                    assayName = "workflow", combine = FALSE, darkBackground = FALSE, size = point_size,
+                    cols = c("#eef0f1", "#714068"), minCutoff = "q02", maxCutoff = "q98", scale = "none"
                 )
             }
             panel <- lapply(panel, function(p) {
@@ -463,7 +463,7 @@
         regional <- p$regional
         if (!is.null(regional) && nrow(regional)) {
             figure <- plotRegionalPathways(regional,
-                num_display = 10, text_size = 10,
+                numDisplay = 10, textSize = 10,
                 database = result$resources[[name]]$pathway_index$raw_resources)
             plots[[paste0("pathway_regional_", name)]] <- .wf_figure(figure,
                 width = 14, height = 7,
@@ -535,7 +535,7 @@
 #'         main = list(type = "metabolomics", layer = "logcounts"),
 #'         transcriptome = list(type = "transcriptomics", layer = "logcounts")
 #'     ),
-#'     npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+#'     npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
 #'     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 #' )
 #' figures <- plotSpaMTPWorkflow(fit)

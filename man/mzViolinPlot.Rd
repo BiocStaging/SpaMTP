@@ -6,17 +6,17 @@
 \usage{
 mzViolinPlot(
   data,
-  group.by = NULL,
+  groupBy = NULL,
   mzs = NULL,
   assay = "main",
   assayName = "counts",
   title = "Expression",
-  x.lab = "var",
-  y.lab = "intensity",
-  show.points = TRUE,
-  bottom.cutoff = NULL,
-  top.cutoff = NULL,
-  log.data = FALSE,
+  xLab = "var",
+  yLab = "intensity",
+  showPoints = TRUE,
+  bottomCutoff = NULL,
+  topCutoff = NULL,
+  logData = FALSE,
   cols = NULL,
   verbose = FALSE
 )
@@ -25,7 +25,7 @@ mzViolinPlot(
 \item{data}{Bioconductor experiment containing the metabolomic intensity
 data.}
 
-\item{group.by}{Name of the \code{colData()} column to group by (default = NULL).}
+\item{groupBy}{Name of the \code{colData()} column to group by (default = NULL).}
 
 \item{mzs}{Vector of characters defining which features (m/z's) to label on
 the plot. If \code{NULL} no features will be labeled (default = NULL).}
@@ -37,22 +37,22 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{title}{Character string of the plot title (default = "Expression").}
 
-\item{x.lab}{Character string of the x-axis label (default = "var").}
+\item{xLab}{Character string of the x-axis label (default = "var").}
 
-\item{y.lab}{Character string of the y-axis label (default = "intensity").}
+\item{yLab}{Character string of the y-axis label (default = "intensity").}
 
-\item{show.points}{Boolean value describing whether to show each individual
+\item{showPoints}{Boolean value describing whether to show each individual
 data point (default = TRUE).}
 
-\item{bottom.cutoff}{Numeric value defining the percent of data to exclude
-for the lower end of the distribution. A bottom.cutoff = 0.05 will remove
+\item{bottomCutoff}{Numeric value defining the percent of data to exclude
+for the lower end of the distribution. A bottomCutoff = 0.05 will remove
 the bottom 5\% of data point (default = NULL).}
 
-\item{top.cutoff}{Numeric value defining the percent of data to exclude for
-the upper end of the distribution. A top.cutoff = 0.05 will remove the top
+\item{topCutoff}{Numeric value defining the percent of data to exclude for
+the upper end of the distribution. A topCutoff = 0.05 will remove the top
 5\% of data point (default = NULL).}
 
-\item{log.data}{Boolean value indicating whether to log transform the y-axis
+\item{logData}{Boolean value indicating whether to log transform the y-axis
 values (default = FALSE).}
 
 \item{cols}{Vector of strings defining the colours to use for plotting. This
@@ -72,6 +72,6 @@ Generates a violin plot of spatial metabolic intensity data
 data(spamtp_example)
 spe <- spamtp_example$experiment
 if (requireNamespace("scater", quietly = TRUE)) {
-    mzViolinPlot(spe, group.by = "region", mzs = c("ion1", "ion3"))
+    mzViolinPlot(spe, groupBy = "region", mzs = c("ion1", "ion3"))
 }
 }

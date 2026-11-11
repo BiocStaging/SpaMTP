@@ -152,7 +152,7 @@ spectralBinning <- function(
 #' @param assayName Matrix layer or SpatialExperiment assay to bin.
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param method Aggregation method.
-#' @param return.only.mtx Return only the binned matrix.
+#' @param returnOnlyMtx Return only the binned matrix.
 #'
 #' @return A binned `SpatialExperiment` or matrix.
 #' @export
@@ -167,7 +167,7 @@ methods::setGeneric(
                      assay = "main",
                      assayName = "counts",
                      method = c("sum", "mean", "max", "min"),
-                     return.only.mtx = FALSE
+                     returnOnlyMtx = FALSE
     ) {
         methods::standardGeneric("binSpaMTP")
     }
@@ -185,7 +185,7 @@ methods::setMethod(
                      assay = "main",
                      assayName = "counts",
                      method = c("sum", "mean", "max", "min"),
-                     return.only.mtx = FALSE
+                     returnOnlyMtx = FALSE
     ) {
         method <- match.arg(method)
         if (assay %in% SingleCellExperiment::altExpNames(data)) {
@@ -202,7 +202,7 @@ methods::setMethod(
             assayName,
             method
         )
-        if (isTRUE(return.only.mtx)) {
+        if (isTRUE(returnOnlyMtx)) {
             return(matrix)
         }
         mz <- suppressWarnings(as.numeric(sub("^mz-", "", rownames(matrix))))
@@ -258,21 +258,21 @@ methods::setMethod(
                      assay = "main",
                      assayName = "counts",
                      method = c("sum", "mean", "max", "min"),
-                     return.only.mtx = FALSE
+                     returnOnlyMtx = FALSE
     ) {
         .binCardinal(
             data,
             resolution,
             units,
             match.arg(method),
-            return.only.mtx
+            returnOnlyMtx
         )
     }
 )
 
-.binCardinal <- function(data, resolution, units, method, return.only.mtx) {
+.binCardinal <- function(data, resolution, units, method, returnOnlyMtx) {
     binned <- .binCardinalData(data, resolution, units, method)
-    if (isTRUE(return.only.mtx)) {
+    if (isTRUE(returnOnlyMtx)) {
         return(Cardinal::spectra(binned))
     }
     cardinalToSpatialExperiment(binned)
@@ -280,7 +280,7 @@ methods::setMethod(
 
 .binCardinalData <- function(
     data, resolution, units, method,
-    mass.range = NULL, verbose = NULL
+    massRange = NULL, verbose = NULL
 ) {
     if (length(resolution) != 1L || !is.numeric(resolution) ||
         !is.finite(resolution) || resolution <= 0) {
@@ -291,9 +291,9 @@ methods::setMethod(
         x = data, resolution = resolution,
         units = match.arg(units, c("ppm", "mz")), method = method
     )
-    if (!is.null(mass.range)) arguments$mass.range <- mass.range
+    if (!is.null(massRange)) arguments$mass.range <- massRange
     if (!is.null(verbose)) arguments$verbose <- verbose
-    if (methods::is(data, "MSImagingArrays") && is.null(mass.range)) {
+    if (methods::is(data, "MSImagingArrays") && is.null(massRange)) {
         # Cardinal's default reference is inferred from the first spectrum.
         # Inspect one mass vector at a time to cover all pixels without creating
         # a dense intensity matrix or discarding peaks unique to later spectra.
@@ -317,14 +317,14 @@ methods::setMethod(
     "binSpaMTP", "MSImagingArrays",
     function(
         data, resolution, units = "ppm", assay = "main", assayName = "counts",
-                     method = c("sum", "mean", "max", "min"), return.only.mtx = FALSE
+                     method = c("sum", "mean", "max", "min"), returnOnlyMtx = FALSE
     ) {
         .binCardinal(
             data,
             resolution,
             units,
             match.arg(method),
-            return.only.mtx
+            returnOnlyMtx
         )
     }
 )
@@ -341,7 +341,7 @@ methods::setMethod(
                      assay = "main",
                      assayName = "counts",
                      method = c("sum", "mean", "max", "min"),
-                     return.only.mtx = FALSE
+                     returnOnlyMtx = FALSE
     ) {
         .requireExperiment(data, "SpatialExperiment")
     }

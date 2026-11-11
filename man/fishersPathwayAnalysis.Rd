@@ -5,49 +5,49 @@
 \title{Fisher Exact Tests for Pathway Enrichment}
 \usage{
 fishersPathwayAnalysis(
-  Analyte,
-  max_path_size = 500,
-  min_path_size = 5,
+  analytes,
+  maxPathSize = 500,
+  minPathSize = 5,
   alternative = "greater",
-  pathway_all_info = FALSE,
-  pval_cutoff = NULL,
+  pathwayAllInfo = FALSE,
+  pvalCutoff = NULL,
   verbose = TRUE,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
   universe = NULL,
-  gene_mapping = c("auto", "hgnc", "ramp"),
-  gene_reference = NULL,
-  gene_index = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  geneMapping = c("auto", "hgnc", "ramp"),
+  geneReference = NULL,
+  geneIndex = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
-  pathway_index = NULL,
+  pathwayIndex = NULL,
   ...
 )
 }
 \arguments{
-\item{Analyte}{Foreground analytes as a named list with elements \code{genes},
+\item{analytes}{Foreground analytes as a named list with elements \code{genes},
 \code{metabolites} and/or \code{mzs}. Identifiers are matched case-insensitively to
 source IDs (e.g. \code{gene_symbol:TP53}, \code{hmdb:HMDB0000122}), known RaMP IDs,
 then common names for otherwise unmatched queries. Duplicate mappings to
 the same RaMP ID count once. m/z values may be numeric or numeric strings,
 optionally prefixed with \verb{mz-} or \code{mz_}.}
 
-\item{max_path_size}{Maximum pathway size within the analysis universe
+\item{maxPathSize}{Maximum pathway size within the analysis universe
 (inclusive; default 500).}
 
-\item{min_path_size}{Minimum pathway size within the analysis universe
+\item{minPathSize}{Minimum pathway size within the analysis universe
 (inclusive; positive integer, default 5).}
 
 \item{alternative}{Fisher test alternative: \code{"greater"}, \code{"less"} or
 \code{"two.sided"}.}
 
-\item{pathway_all_info}{Include names, input IDs and m/z adduct information
+\item{pathwayAllInfo}{Include names, input IDs and m/z adduct information
 for foreground members of each pathway. Does not change the tests.}
 
-\item{pval_cutoff}{Optional BH-adjusted p-value (FDR) cutoff in \verb{[0, 1]}.
+\item{pvalCutoff}{Optional BH-adjusted p-value (FDR) cutoff in \verb{[0, 1]}.
 Applied only after correcting over all eligible pathways.}
 
 \item{verbose}{Whether to print progress messages. Mapping warnings are
@@ -58,14 +58,14 @@ Identifier analysis requires \code{source_df}, \code{analyte}, \code{analytehasp
 and \code{pathway}; m/z analysis additionally uses \code{chem_props} unless \code{db}
 or \code{index} is supplied through \code{...}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for pathway lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for pathway lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
 \item{universe}{Optional measured background, in the same named-list format
-as \code{Analyte}. Supply all analytes eligible for foreground selection, not
+as \code{analytes}. Supply all analytes eligible for foreground selection, not
 just significant hits. Foreground and universe must specify the same
 biological modalities (genes and/or compounds; \code{mzs} and \code{metabolites}
 both denote compounds). All mapped foreground IDs must belong to the
@@ -75,32 +75,32 @@ When \code{NULL}, use all pathway-linked IDs of the specified modalities in
 the database, before pathway-size filtering; mapped foreground IDs without
 pathway membership are then excluded with a warning.}
 
-\item{gene_mapping}{\code{"auto"} uses HGNC identity harmonization for official
+\item{geneMapping}{\code{"auto"} uses HGNC identity harmonization for official
 SpaMTPdb resources and for custom bundles with \code{gene_reference} or
-\code{gene_index}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
+\code{geneIndex}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
 RaMP-only mapping for historical reproduction or a curated non-human
 database. Custom bundles without a reference use RaMP-only mapping in auto
 mode and never trigger a reference download.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_index}{Optional index built from the same source table by
+\item{geneIndex}{Optional index built from the same source table by
 \code{\link[=buildGeneMappingIndex]{buildGeneMappingIndex()}}. Multiple RaMP records of a resolved HGNC gene
 have their pathway memberships united and count once. Conflicting RaMP
 records and ambiguous symbols are excluded and recorded in the audit.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
@@ -113,11 +113,11 @@ A data frame sorted by \code{p_val}, retaining the columns \code{pathway_name},
 \code{pathway_id}, \code{type}, \code{pathwayCategory}, \code{p_val}, \code{fdr}, \code{ratio},
 \code{analytes_in_pathways} (overlap) and \code{total_in_pathways} (size within the
 universe). Also includes \code{pathwayRampId}, \code{foreground_analytes_number}
-and \code{background_analytes_number}. \code{pathway_all_info = TRUE} adds member
+and \code{background_analytes_number}. \code{pathwayAllInfo = TRUE} adds member
 information. The \code{enrichment} attribute records mapped foreground and
 universe IDs, unmapped inputs, excluded foreground IDs, universe source,
 alternative, size limits and the number of tests before output filtering.
-Its \code{gene_mapping} entry contains per-input mapping status, gene groups,
+Its \code{geneMapping} entry contains per-input mapping status, gene groups,
 excluded conflicting RaMP records and versioned reference provenance.
 }
 \description{
@@ -149,6 +149,6 @@ data(spamtp_example)
 db <- spamtp_example$database
 fishersPathwayAnalysis(list(genes = c("GENE1", "GENE2")),
     universe = list(genes = paste0("GENE", 1:8)), database = db,
-    min_path_size = 2, verbose = FALSE
+    minPathSize = 2, verbose = FALSE
 )
 }

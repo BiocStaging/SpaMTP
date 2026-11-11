@@ -8,7 +8,7 @@ summarizeFeatures(
   data,
   features = NULL,
   groupBy,
-  assay = "main",
+  assay = NULL,
   assayName = "counts"
 )
 }
@@ -19,7 +19,9 @@ summarizeFeatures(
 
 \item{groupBy}{A colData column defining groups. Missing labels are excluded.}
 
-\item{assay}{Main or alternative experiment name.}
+\item{assay}{Main or alternative experiment name. With \code{NULL} (default),
+explicit feature IDs are found in the main experiment first and then in
+paired alternative experiments, as in \code{\link[=plotSpatialFeature]{plotSpatialFeature()}}.}
 
 \item{assayName}{Expression assay name. See \link{experimentAccess} for the
 distinction between an experiment and its expression matrices.}

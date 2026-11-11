@@ -5,23 +5,23 @@
 \title{MALDI-plausible adduct rules}
 \usage{
 maldiAdductPreset(
-  maldi_matrix,
+  maldiMatrix,
   polarity = NULL,
-  singly_charged = TRUE,
-  exclude_solvent = TRUE,
-  include_matrix_adducts = TRUE
+  singlyCharged = TRUE,
+  excludeSolvent = TRUE,
+  includeMatrixAdducts = TRUE
 )
 }
 \arguments{
-\item{maldi_matrix}{MALDI matrix name, as in \code{\link[=maldiMatrixRules]{maldiMatrixRules()}}.}
+\item{maldiMatrix}{MALDI matrix name, as in \code{\link[=maldiMatrixRules]{maldiMatrixRules()}}.}
 
 \item{polarity}{Optional polarity; defaults to the matrix's polarity.}
 
-\item{singly_charged}{Keep only singly charged rules.}
+\item{singlyCharged}{Keep only singly charged rules.}
 
-\item{exclude_solvent}{Drop electrospray solvent and solvent-multimer rules.}
+\item{excludeSolvent}{Drop electrospray solvent and solvent-multimer rules.}
 
-\item{include_matrix_adducts}{Keep matrix-specific adduct rules.}
+\item{includeMatrixAdducts}{Keep matrix-specific adduct rules.}
 }
 \value{
 A character vector of rule names.

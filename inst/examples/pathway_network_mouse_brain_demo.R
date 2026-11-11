@@ -37,13 +37,13 @@ mouseBrainNetworks <- function(object, database, outputDir,
     # Recompute scored annotations; do not reuse the archive's mass-only cache.
     object <- SpaMTP::annotateSM(object,
         db = database$chem_props,
-        assay = "main", raw.mz.column = "mz", ppm = 5,
-        polarity = "positive", maldi_matrix = "DHB",
-        ms1_spectrum = spectrum, min_score = 0,
-        return.only.annotated = FALSE, save.intermediate = TRUE
+        assay = "main", rawMzColumn = "mz", ppm = 5,
+        polarity = "positive", maldiMatrix = "DHB",
+        ms1Spectrum = spectrum, minScore = 0,
+        returnOnlyAnnotated = FALSE, saveIntermediate = TRUE
     )
     object <- SpaMTP::normalizeSMData(object,
-        normalisation.type = "LogNormalize", verbose = FALSE
+        normalizationType = "LogNormalize", verbose = FALSE
     )
     SummarizedExperiment::assay(object, "workflow") <-
         SummarizedExperiment::assay(object, "logcounts") / log(2)
@@ -51,14 +51,14 @@ mouseBrainNetworks <- function(object, database, outputDir,
     # Mouse genes are retained in altExp(), but are not mapped to human HGNC.
     # This demonstration tests compound sets, not mouse gene pathways.
     index <- SpaMTP::buildPathwayIndex(database,
-        gene_mapping = "ramp", organism = "Mus musculus"
+        geneMapping = "ramp", organism = "Mus musculus"
     )
     object <- SpaMTP::createPathwayAssay(object,
         assay = "main",
         assayName = "workflow", outputExperiment = "compound", database = database,
-        pathway_index = index, organism = "Mus musculus",
-        annotation_source = "current", annotation_score_threshold = 0.05,
-        metabolite_ambiguity = "exclude", verbose = FALSE
+        pathwayIndex = index, organism = "Mus musculus",
+        annotationSource = "current", annotationScoreThreshold = 0.05,
+        metaboliteAmbiguity = "exclude", verbose = FALSE
     )
     compounds <- SingleCellExperiment::altExp(object, "compound")
     result <- list(
@@ -82,7 +82,7 @@ mouseBrainNetworks <- function(object, database, outputDir,
         markers <- SpaMTP::findAllDEMs(object,
             ident = ident,
             assay = "compound", assayName = "workflow", method = "markers",
-            spatial_blocks = 0, verbose = FALSE
+            spatialBlocks = 0, verbose = FALSE
         )
         result$markers <- markers
         if (identical(markers$status, "completed")) {
@@ -97,8 +97,8 @@ mouseBrainNetworks <- function(object, database, outputDir,
                 1234,
                 SpaMTP::findRegionalPathways(object,
                     ident = ident,
-                    ranks = list(metabolites = ranks), pathway_index = index,
-                    min_path_size = minPathSize, max_path_size = maxPathSize,
+                    ranks = list(metabolites = ranks), pathwayIndex = index,
+                    minPathSize = minPathSize, maxPathSize = maxPathSize,
                     organism = "Mus musculus", verbose = FALSE
                 )
             )
@@ -116,13 +116,13 @@ mouseBrainNetworks <- function(object, database, outputDir,
             dir.create(folder)
             result$networks[[mode]] <- SpaMTP::pathwayNetworkPlots(object,
                 ident = ident, regpathway = result$regional,
-                DE.list = list(metabolites = result$markers$DEMs),
-                SM_assay = "compound", smAssayName = "workflow",
-                analyte_types = "metabolites", metabolite_detection = mode,
-                database = database, pathway_index = index,
+                deList = list(metabolites = result$markers$DEMs),
+                smAssay = "compound", smAssayName = "workflow",
+                analyteTypes = "metabolites", metaboliteDetection = mode,
+                database = database, pathwayIndex = index,
                 organism = "Mus musculus", image = NULL, path = folder,
-                top_n_pathways = 4, max_nodes = 350,
-                max_spatial_points = 10000, verbose = FALSE
+                topNPathways = 4, maxNodes = 350,
+                maxSpatialPoints = 10000, verbose = FALSE
             )
         }
     } else {
@@ -159,7 +159,7 @@ runMouseBrainNetworkDemo <- function(nativeDir = NULL, databaseDir = NULL,
             "analytehaspathway", "pathway", "ramp_db_metadata",
             "ramp_wikipathway", "ramp_reactome", "ramp_kegg", "ramp_hmdb"
         ),
-        version = "3.0.7", local_dir = databaseDir, offline = offline
+        version = "3.0.7", localDir = databaseDir, offline = offline
     )
     mouseBrainNetworks(object, database, outputDir, ident = ident)
 }

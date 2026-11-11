@@ -196,9 +196,9 @@ test_that("workflow readers preserve configured resources and explicit offline m
     withr::local_options(list(SpaMTPdb.resource_dir = "configured-resources"))
     calls <- list()
     testthat::local_mocked_bindings(loadSpaMTPDatabase = function(resources,
-                                                                  version, local_dir, offline) {
+                                                                  version, localDir, offline) {
         calls$db <<- list(
-            version = version, local_dir = local_dir,
+            version = version, local_dir = localDir,
             offline = offline, configured = getOption("SpaMTPdb.resource_dir")
         )
         stop("reader captured")
@@ -294,8 +294,8 @@ test_that("the installed network demo uses native effects and preserves paired R
     result <- demo$mouseBrainNetworks(object, db, file.path(parent, "networks"),
         ident = "region", minPathSize = 2
     )
-    expect_false(annotationArgs$return.only.annotated)
-    expect_identical(annotationArgs$maldi_matrix, "DHB")
+    expect_false(annotationArgs$returnOnlyAnnotated)
+    expect_identical(annotationArgs$maldiMatrix, "DHB")
     expect_identical(result$status, "completed")
     expect_identical(
         SummarizedExperiment::assay(result$object, "counts"),

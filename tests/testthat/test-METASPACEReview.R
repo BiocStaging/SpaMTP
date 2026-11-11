@@ -28,22 +28,22 @@ test_that("METASPACE null URLs remain list entries through pagination and image 
     expect_length(ann$isotopeImages[[1]], 2L)
     expect_null(ann$isotopeImages[[1]][[2]]$url)
     expect_true(is.na(ann$rhoSpectral[2]))
-    local_mocked_bindings(.metaspace_image_pixels = function(img_info, ...) {
-        if (is.null(img_info$url)) NULL else matrix(1:6, 2)
+    local_mocked_bindings(.metaspace_image_pixels = function(imgInfo, ...) {
+        if (is.null(imgInfo$url)) NULL else matrix(1:6, 2)
     })
-    imgs <- client$all_annotation_images("fixture", only_first_isotope = FALSE)
+    imgs <- client$all_annotation_images("fixture", onlyFirstIsotope = FALSE)
     expect_length(imgs, 2L)
     expect_length(imgs[[1]], 2L)
     expect_equal(imgs[[1]][[1]], matrix(1:6, 2))
     expect_null(imgs[[1]][[2]])
-    expect_null(client$get_ion_image_pixels("fixture", "C6H12O6", "+H", isotope_idx = 2))
+    expect_null(client$get_ion_image_pixels("fixture", "C6H12O6", "+H", isotopeIdx = 2))
 })
 
 test_that("METASPACE duplicate display masses and missing images preserve alignment", {
     client <- metaspace_review_client()
     local_mocked_bindings(metaspaceClient = function(...) client,
-        .metaspace_image_pixels = function(img_info, ...) {
-            if (is.null(img_info$url)) NULL else matrix(1:6, 2)
+        .metaspace_image_pixels = function(imgInfo, ...) {
+            if (is.null(imgInfo$url)) NULL else matrix(1:6, 2)
         })
     out <- getMetaspace("fixture", verbose = FALSE)
     expect_false(anyDuplicated(rownames(out$annotations)) > 0)
@@ -67,7 +67,7 @@ test_that("METASPACE decoding supports grayscale, alpha masks and Python-style c
     metadata <- list(url = response$url, minIntensity = 0, maxIntensity = 100)
     image <- .metaspace_image_pixels(metadata, relative = FALSE)
     expect_equal(image, pixels * 100, tolerance = 1e-7)
-    clipped <- .metaspace_image_pixels(metadata, relative = FALSE, hotspot_clipping = TRUE)
+    clipped <- .metaspace_image_pixels(metadata, relative = FALSE, hotspotClipping = TRUE)
     expect_equal(max(clipped), unname(stats::quantile(c(20, 40, 60, 80, 100), 0.99)))
     rgba <- array(1, dim = c(1, 2, 4))
     rgba[1, 1, 4] <- 0

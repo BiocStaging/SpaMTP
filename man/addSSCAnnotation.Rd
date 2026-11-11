@@ -4,12 +4,12 @@
 \alias{addSSCAnnotation}
 \title{Adds Cardinal ssc segmentation annotation to m/z count data object}
 \usage{
-addSSCAnnotation(data, data_ssc, resolution)
+addSSCAnnotation(data, dataSsc, resolution)
 }
 \arguments{
 \item{data}{A Cardinal Object containing the raw/binned m/z count data.}
 
-\item{data_ssc}{A Cardinal Object containing the ssc segmentation results.
+\item{dataSsc}{A Cardinal Object containing the ssc segmentation results.
 Note: Cardinal's spatialShrunkenCentroids() must be run to generate this
 object.}
 

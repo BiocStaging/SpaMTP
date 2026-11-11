@@ -8,7 +8,7 @@
 #'
 #' @param file Character string defining the directory path of the file and the
 #'   file name.
-#' @param mass.range Optional two-element mass range for binning. Requires
+#' @param massRange Optional two-element mass range for binning. Requires
 #'   resolution; raw spectral filtering should be performed in Cardinal.
 #' @param resolution Numeric value defining the the accuracy to which the m/z
 #'   values will be binned after reading. This value can be in either "ppm" or
@@ -42,7 +42,7 @@
 #' unlink(folder, recursive = TRUE)
 loadSM <- function(
     file,
-    mass.range = NULL,
+    massRange = NULL,
     resolution = NA,
     units = "ppm",
     verbose = TRUE,
@@ -58,8 +58,8 @@ loadSM <- function(
         )
     }
     binned <- length(resolution) == 1L && !is.na(resolution)
-    if (!binned && (!is.null(mass.range) || identical(returnType, "SpatialExperiment"))) {
-        stop("Supply resolution for mass.range filtering or a rectangular output container.",
+    if (!binned && (!is.null(massRange) || identical(returnType, "SpatialExperiment"))) {
+        stop("Supply resolution for massRange filtering or a rectangular output container.",
             call. = FALSE
         )
     }
@@ -72,7 +72,7 @@ loadSM <- function(
     if (binned) {
         data <- .binCardinalData(
             data = data,
-            mass.range = mass.range,
+            massRange = massRange,
             resolution = resolution,
             units = units,
             method = "sum",
@@ -103,17 +103,17 @@ loadSM <- function(
 #' nonzero, and a sparse matrix otherwise. Missing entries count as stored
 #' values when choosing the representation.
 #'
-#' @param mtx.file Character string defining the path of the spatial metabolomic
+#' @param mtxFile Character string defining the path of the spatial metabolomic
 #'   image matrix .csv file.
 #' @param assay Label stored in mainExpName(); intensities are in the counts
 #'   assay.
 #' @param verbose Boolean indicating whether to show the message. If TRUE, the
 #'   message will be shown; else, it will be suppressed (default = TRUE).
-#' @param feature.start.column Numeric value defining the start index containing
+#' @param featureStartColumn Numeric value defining the start index containing
 #'   the x, y, and m/z value columns within the table (default = 1).
-#' @param mz.prefix Character string matching the prefix string in front of each
+#' @param mzPrefix Character string matching the prefix string in front of each
 #'   m/z name (default = NULL).
-#' @param project.name Character string defining the name of the sample to be
+#' @param projectName Character string defining the name of the sample to be
 #'   assigned as `orig.ident` (default = "SpaMTP").
 #' @param returnType Output container; only `"SpatialExperiment"` is supported.
 #'
@@ -144,34 +144,34 @@ loadSM <- function(
 #'     x = 1:4, y = c(0, 0, 1, 1),
 #'     mz100 = c(1, 3, 2, 4), mz200 = c(4, 2, 3, 1)
 #' ), file, row.names = FALSE)
-#' spe <- readSMMatrix(file, mz.prefix = "mz", verbose = FALSE)
+#' spe <- readSMMatrix(file, mzPrefix = "mz", verbose = FALSE)
 #' SpatialExperiment::spatialCoords(spe)
 #' unlink(file)
 readSMMatrix <- function(
-    mtx.file,
+    mtxFile,
     assay = "Spatial",
     verbose = TRUE,
-    feature.start.column = 1,
-    mz.prefix = NULL,
-    project.name = "SpaMTP",
+    featureStartColumn = 1,
+    mzPrefix = NULL,
+    projectName = "SpaMTP",
     returnType = "SpatialExperiment"
 ) {
     returnType <- match.arg(returnType)
 
-    verbose_message(message_text = "Reading mtx file.... ", verbose = verbose)
+    verbose_message(messageText = "Reading mtx file.... ", verbose = verbose)
 
-    data <- as.data.frame(data.table::fread(mtx.file, integer64 = "double"))
+    data <- as.data.frame(data.table::fread(mtxFile, integer64 = "double"))
 
-    if (feature.start.column > 0) {
+    if (featureStartColumn > 0) {
         verbose_message(
-            message_text = paste0(
+            messageText = paste0(
                 "Spliting matrix data from column ",
-                feature.start.column,
+                featureStartColumn,
                 " onwards .... "
             ),
             verbose = verbose
         )
-        data <- data[, feature.start.column:dim(data)[2]]
+        data <- data[, featureStartColumn:dim(data)[2]]
     }
 
     if ("x" %in% colnames(data) && "y" %in% colnames(data)) {
@@ -200,8 +200,8 @@ readSMMatrix <- function(
     rownames(coords) <- barcodes
 
     rawNames <- colnames(data)
-    if (!is.null(mz.prefix)) {
-        rawNames <- sub(mz.prefix, "", rawNames)
+    if (!is.null(mzPrefix)) {
+        rawNames <- sub(mzPrefix, "", rawNames)
     }
     rawNames <- sub("^mz-", "", rawNames)
     mz <- suppressWarnings(as.numeric(rawNames))
@@ -213,8 +213,8 @@ readSMMatrix <- function(
     }
     featureNames <- make.unique(paste0("mz-", rawNames))
 
-    if (is.null(project.name)) {
-        project.name <- "SpaMTP"
+    if (is.null(projectName)) {
+        projectName <- "SpaMTP"
     }
 
     intensity <- t(as.matrix(data))
@@ -229,7 +229,7 @@ readSMMatrix <- function(
         row.names = featureNames
     )
     pixelData <- S4Vectors::DataFrame(
-        orig.ident = rep(project.name, length(barcodes)),
+        orig.ident = rep(projectName, length(barcodes)),
         row.names = barcodes
     )
     object <- SpatialExperiment::SpatialExperiment(
@@ -237,7 +237,7 @@ readSMMatrix <- function(
         rowData = featureData,
         colData = pixelData,
         spatialCoords = as.matrix(coords[, c("x", "y"), drop = FALSE]),
-        sample_id = project.name
+        sample_id = projectName
     )
     S4Vectors::metadata(object)$spamtp_assay_name <- assay
     SingleCellExperiment::mainExpName(object) <- assay

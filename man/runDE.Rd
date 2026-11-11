@@ -5,44 +5,45 @@
 \title{Run limma contrasts on log-transformed technical pools}
 \usage{
 runDE(
-  pooled_data,
+  pooledData,
   data,
   ident,
-  output_dir,
-  run_name,
-  logFC_threshold,
-  annotation.column,
+  outputDir,
+  runName,
+  foldChangeThreshold,
+  annotationColumn,
   assay,
-  return.individual = FALSE,
+  returnIndividual = FALSE,
   verbose = TRUE
 )
 }
 \arguments{
-\item{pooled_data}{A SingleCellExperiment object which contains the pooled
+\item{pooledData}{A SingleCellExperiment object which contains the pooled
 pseudo-replicate data.}
 
 \item{data}{The original SummarizedExperiment, including SingleCellExperiment
 or SpatialExperiment, supplying pixel groups and feature annotations.}
 
-\item{ident}{Column in \code{colData(data)} and \code{colData(pooled_data)} defining
+\item{ident}{Column in \code{colData(data)} and \code{colData(pooledData)} defining
 groups.}
 
-\item{output_dir}{Existing directory for output CSV tables, or NULL to omit
+\item{outputDir}{Existing directory for output CSV tables, or NULL to omit
 file output.}
 
-\item{run_name}{A character string defining the title of this DE analysis
+\item{runName}{A character string defining the title of this DE analysis
 (will be used when saving DEMs to .csv file).}
 
-\item{logFC_threshold}{Fold-change threshold passed as
-\code{log2(logFC_threshold)} to \code{limma::treat()} (default = 1.2).}
+\item{foldChangeThreshold}{Fold-change ratio, a finite number at least 1,
+passed as \code{log2(foldChangeThreshold)} to \code{limma::treat()}. For example,
+1.2 tests against a 20 percent change and 2 tests against a twofold change.}
 
-\item{annotation.column}{Column in the selected experiment's \code{rowData()}
+\item{annotationColumn}{Column in the selected experiment's \code{rowData()}
 containing feature annotations, or NULL to omit annotations.}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name in \code{data}.
-Pooled expression is always read from \code{counts(pooled_data)}.}
+Pooled expression is always read from \code{counts(pooledData)}.}
 
-\item{return.individual}{Boolean value defining whether to return a list of
+\item{returnIndividual}{Boolean value defining whether to return a list of
 individual edgeR objects for each designated ident. If FALSE, one merged
 edgeR object will be returned (default = FALSE).}
 
@@ -72,9 +73,9 @@ pooled <- runPooling(spe,
     assayName = "counts", verbose = FALSE
 )
 result <- runDE(pooled, spe,
-    ident = "region", output_dir = NULL,
-    run_name = "example", logFC_threshold = 1.2,
-    annotation.column = "all_IsomerNames", assay = "main", verbose = FALSE
+    ident = "region", outputDir = NULL,
+    runName = "example", foldChangeThreshold = 1.2,
+    annotationColumn = "all_IsomerNames", assay = "main", verbose = FALSE
 )
 head(result$DEMs)
 }

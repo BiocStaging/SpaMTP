@@ -5,16 +5,16 @@
 \title{Compute PCA on a selected experiment}
 \usage{
 runMetabolicPCA(
-  SpaMTP,
+  object,
   npcs = 30,
-  variance_explained_threshold = 0.9,
+  varianceExplainedThreshold = 0.9,
   assay = "main",
   assayName = "counts",
-  show_variance_plot = FALSE,
-  bin_resolution = NULL,
-  resolution_units = "ppm",
-  bin_method = "sum",
-  reduction.name = "pca",
+  showVariancePlot = FALSE,
+  binResolution = NULL,
+  resolutionUnits = "ppm",
+  binMethod = "sum",
+  reductionName = "pca",
   verbose = TRUE,
   features = NULL,
   scale = FALSE,
@@ -22,13 +22,13 @@ runMetabolicPCA(
 )
 }
 \arguments{
-\item{SpaMTP}{A SingleCellExperiment, including SpatialExperiment, containing
+\item{object}{A SingleCellExperiment, including SpatialExperiment, containing
 the selected primary or alternative experiment.}
 
 \item{npcs}{Positive number of PCs, capped by matrix dimensions. NULL uses
 the variance threshold.}
 
-\item{variance_explained_threshold}{Cumulative variance fraction in (0, 1],
+\item{varianceExplainedThreshold}{Cumulative variance fraction in (0, 1],
 used only when npcs is NULL.}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
@@ -37,24 +37,24 @@ used only when npcs is NULL.}
 (default = \code{"counts"}), read with \code{SummarizedExperiment::assay()}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{show_variance_plot}{Whether to store a variance plot in
-\code{metadata(SpaMTP)$reduction_plots[[reduction.name]]} (default = FALSE).
+\item{showVariancePlot}{Whether to store a variance plot in
+\code{metadata(SpaMTP)$reduction_plots[[reductionName]]} (default = FALSE).
 The plot is returned with the object and is never printed automatically.}
 
-\item{bin_resolution}{Numeric value defining the resolution to use for
+\item{binResolution}{Numeric value defining the resolution to use for
 binning m/z peaks. If set to \code{NULL}, no binning will be performed (default
 = NULL).}
 
-\item{resolution_units}{Character string specifying the units of the
-\code{bin_resolution}. Either 'ppm' or 'mz' can be provided. \code{bin_resolution}
+\item{resolutionUnits}{Character string specifying the units of the
+\code{binResolution}. Either 'ppm' or 'mz' can be provided. \code{binResolution}
 must be provided for this parameter to be implemented (default = "ppm").}
 
-\item{bin_method}{Character string defining the method to use for binning
+\item{binMethod}{Character string defining the method to use for binning
 respective m/z peaks that fall within a bin. Options for this parameter can
-be one of "sum", "mean", "max" or "min". \code{bin_resolution} must be provided
+be one of "sum", "mean", "max" or "min". \code{binResolution} must be provided
 for this parameter to be implemented (default = "sum").}
 
-\item{reduction.name}{Name in \code{SingleCellExperiment::reducedDimNames(SpaMTP)}
+\item{reductionName}{Name in \code{SingleCellExperiment::reducedDimNames(SpaMTP)}
 for the resulting embedding (default = \code{"pca"}). Even when the input
 expression is in an alternative experiment, the embedding is stored in
 the parent object's \code{reducedDim()}.}

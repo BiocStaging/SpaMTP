@@ -35,7 +35,7 @@ fit <- runSpaMTPWorkflow(spe,
         main = list(type = "metabolomics", layer = "logcounts"),
         transcriptome = list(type = "transcriptomics", layer = "logcounts")
     ),
-    npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+    npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 )
 figures <- plotSpaMTPWorkflow(fit)

@@ -62,7 +62,7 @@ across sources.
 # Choose an analysis and its display
 
 Choose the display for your question. The linked examples share the same
-`pathway_index` for identifier mapping and memberships.
+`pathwayIndex` for identifier mapping and memberships.
 
 | Question | Analysis and display | Worked example |
 |:--|:--|:--|
@@ -87,10 +87,10 @@ data(spamtp_example)
 enrichment <- fishersPathwayAnalysis(
     list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
     universe = list(metabolites = paste0("RAMP_C_", 1:3)),
-    database = spamtp_example$database, min_path_size = 1,
-    pathway_all_info = TRUE, verbose = FALSE)
+    database = spamtp_example$database, minPathSize = 1,
+    pathwayAllInfo = TRUE, verbose = FALSE)
 visualisePathways(spamtp_example$experiment, enrichment,
-    assay = "main", min_n = 1, p_val_threshold = 1,
+    assay = "main", minN = 1, pValThreshold = 1,
     database = spamtp_example$database, verbose = FALSE)
 ```
 

@@ -20,7 +20,7 @@ test_that("RaMP graph migration expands entities split by a newer release", {
     )
     migration <- environment$.rgu_build_id_migration(
         "RAMP_C_old", analyte, previous, current,
-        manual_overrides = data.frame(
+        manualOverrides = data.frame(
             old_id = character(), new_id = character(), evidence = character()
         )
     )

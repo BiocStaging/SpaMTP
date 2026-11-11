@@ -1,8 +1,8 @@
 # Download only images with URLs; missing isotopes remain explicit NULL entries.
-.metaspace_image_pixels <- function(img_info, relative = TRUE, hotspot_clipping = FALSE) {
-    if (is.null(img_info$url) || !nzchar(img_info$url)) return(NULL)
+.metaspace_image_pixels <- function(imgInfo, relative = TRUE, hotspotClipping = FALSE) {
+    if (is.null(imgInfo$url) || !nzchar(imgInfo$url)) return(NULL)
     # ---- download PNG
-    response <- httr::GET(img_info$url)
+    response <- httr::GET(imgInfo$url)
     httr::stop_for_status(response)
     img_raw <- httr::content(response, "raw")
     img <- png::readPNG(img_raw)
@@ -19,8 +19,8 @@
     }
 
     # ---- scale to real intensity
-    lo <- img_info$minIntensity %||% 0
-    hi <- img_info$maxIntensity %||% 1
+    lo <- imgInfo$minIntensity %||% 0
+    hi <- imgInfo$maxIntensity %||% 1
 
     # Perform scaling (0-1 normalized to min/max intensity)
     intensities <- lo + intensity_data * (hi - lo)
@@ -36,7 +36,7 @@
     # If relative=FALSE, intensities are absolute (raw counts).
 
     # ---- hotspot clipping (Always apply to the final intensity values)
-    if (hotspot_clipping && hi > 0) { # Only clip if there's actual signal
+    if (hotspotClipping && hi > 0) { # Only clip if there's actual signal
         # Match the Python client's 99th percentile above the visible floor.
         positive_intensities <- intensities[intensities > max(intensities) / 256]
         if (length(positive_intensities) > 0) {
@@ -58,7 +58,7 @@
 #'   METASPACE GraphQL API.
 #'
 #' @param host Character string specifying the METASPACE host URL (default = "https://metaspace2020.org").
-#' @param api_key Optional. Your METASPACE API key for accessing private
+#' @param apiKey Optional. Your METASPACE API key for accessing private
 #'   datasets. If accessing a public dataset this can be left as `NULL` (default
 #'   = NULL).
 #' @param BPPARAM BiocParallel parameters for downloading annotation images.
@@ -81,7 +81,7 @@
 #' # Querying the remote service requires an internet connection.
 #' if (interactive()) client$get_info("2020-12-07_03h16m14s")
 metaspaceClient <- function(
-    host = "https://metaspace2020.org", api_key = NULL,
+    host = "https://metaspace2020.org", apiKey = NULL,
     BPPARAM = BiocParallel::SerialParam()
 ) {
     graphql_url <- paste0(host, "/graphql")
@@ -90,7 +90,7 @@ metaspaceClient <- function(
     ##  GraphQL executor
     query_graphql <- function(query, variables = list()) {
         hdr <- list(`Content-Type` = "application/json", `Source` = "api")
-        if (!is.null(api_key)) hdr$Authorization <- paste0("Api-Key ", api_key)
+        if (!is.null(apiKey)) hdr$Authorization <- paste0("Api-Key ", apiKey)
         headers <- do.call(add_headers, hdr)
 
         resp <- POST(graphql_url,
@@ -115,11 +115,11 @@ metaspaceClient <- function(
 
     ##  1. annotation table (with pagination)
     get_dataset_results <- function(
-        dataset_id, fdr = 0.1,
+        datasetId, fdr = 0.1,
                                             database = c("HMDB", "v4"),
-                                            include_chem_mods = FALSE,
-                                            include_neutral_losses = FALSE,
-                                            page_size = 100
+                                            includeChemMods = FALSE,
+                                            includeNeutralLosses = FALSE,
+                                            pageSize = 100
     ) {
         # ---- get DB ID
         db_res <- query_graphql("query { allMolecularDBs { id name version } }")
@@ -137,8 +137,8 @@ metaspaceClient <- function(
 
         # ---- construct filter
         filter <- list(fdrLevel = fdr, databaseId = db_id)
-        if (!include_chem_mods) filter$hasChemMod <- FALSE
-        if (!include_neutral_losses) filter$hasNeutralLoss <- FALSE
+        if (!includeChemMods) filter$hasChemMod <- FALSE
+        if (!includeNeutralLosses) filter$hasNeutralLoss <- FALSE
 
         # ---- GraphQL query with pagination
         q <- "
@@ -165,8 +165,8 @@ metaspaceClient <- function(
         offset <- 0
         repeat {
             vars <- list(
-                filter = filter, dFilter = list(ids = dataset_id),
-                limit = page_size, offset = offset
+                filter = filter, dFilter = list(ids = datasetId),
+                limit = pageSize, offset = offset
             )
             res <- query_graphql(q, vars)
 
@@ -208,7 +208,7 @@ metaspaceClient <- function(
 
 
     ##  2. dataset metadata
-    get_dataset_info <- function(dataset_id) {
+    get_dataset_info <- function(datasetId) {
         q <- "
       query($id:String!){dataset(id:$id){
         id name status uploadDT polarity ionisationSource
@@ -217,7 +217,7 @@ metaspaceClient <- function(
         adducts submitter{id name} group{id name}
         databases{id name version}
       }}"
-        res <- query_graphql(q, list(id = dataset_id))
+        res <- query_graphql(q, list(id = datasetId))
         if (is.null(res$dataset)) stop("Dataset not found")
         res$dataset
     }
@@ -235,11 +235,11 @@ metaspaceClient <- function(
 
     ##  4. robust pixel extractor (MODIFIED TO RETURN FULL MATRIX)
     get_ion_image_pixels <- function(
-        dataset_id, sum_formula, adduct,
+        datasetId, sumFormula, adduct,
                                              fdr = 0.1, database = c("HMDB", "v4"),
-                                             chem_mod = NULL, neutral_loss = NULL,
-                                             isotope_idx = 1, relative = TRUE,
-                                             hotspot_clipping = FALSE
+                                             chemMod = NULL, neutralLoss = NULL,
+                                             isotopeIdx = 1, relative = TRUE,
+                                             hotspotClipping = FALSE
     ) {
         # ---- DB id
         db_res <- query_graphql("query{allMolecularDBs{id name version}}")
@@ -254,57 +254,57 @@ metaspaceClient <- function(
 
         # ---- filter
         filter <- list(
-            sumFormula = sum_formula, adduct = adduct,
+            sumFormula = sumFormula, adduct = adduct,
             databaseId = db_id, fdrLevel = fdr
         )
-        if (!is.null(chem_mod) && chem_mod != "") filter$chemMod <- chem_mod
-        if (!is.null(neutral_loss) && neutral_loss != "") filter$neutralLoss <- neutral_loss
+        if (!is.null(chemMod) && chemMod != "") filter$chemMod <- chemMod
+        if (!is.null(neutralLoss) && neutralLoss != "") filter$neutralLoss <- neutralLoss
 
         q <- "
       query($filter:AnnotationFilter!,$dFilter:DatasetFilter){
         allAnnotations(filter:$filter,datasetFilter:$dFilter){
           isotopeImages{url mz maxIntensity minIntensity totalIntensity}
         }}"
-        vars <- list(filter = filter, dFilter = list(ids = dataset_id))
+        vars <- list(filter = filter, dFilter = list(ids = datasetId))
         res <- query_graphql(q, vars)
         if (!length(res$allAnnotations)) stop("Annotation not found")
         available <- res$allAnnotations[[1]]$isotopeImages
-        if (length(isotope_idx) != 1L || !is.finite(isotope_idx) ||
-            isotope_idx < 1 || isotope_idx != floor(isotope_idx)) {
-            stop("isotope_idx must be a positive integer.", call. = FALSE)
+        if (length(isotopeIdx) != 1L || !is.finite(isotopeIdx) ||
+            isotopeIdx < 1 || isotopeIdx != floor(isotopeIdx)) {
+            stop("isotopeIdx must be a positive integer.", call. = FALSE)
         }
-        if (isotope_idx > length(available) || is.null(available[[isotope_idx]]$url)) {
+        if (isotopeIdx > length(available) || is.null(available[[isotopeIdx]]$url)) {
             return(NULL)
         }
-        img_info <- available[[isotope_idx]]
+        img_info <- available[[isotopeIdx]]
 
-        .metaspace_image_pixels(img_info, relative, hotspot_clipping)
+        .metaspace_image_pixels(img_info, relative, hotspotClipping)
     }
 
 
     ##  5. Python-style all_annotation_images
     all_annotation_images <- function(
-        dataset_id,
+        datasetId,
                                               fdr = 0.1,
                                               database = c("HMDB", "v4"),
-                                              only_first_isotope = TRUE,
+                                              onlyFirstIsotope = TRUE,
                                               relative = TRUE,
-                                              hotspot_clipping = FALSE
+                                              hotspotClipping = FALSE
     ) {
         ann_df <- get_dataset_results(
-            dataset_id,
+            datasetId,
             fdr = fdr,
             database = database
         )
         if (nrow(ann_df) == 0) stop("No annotations found at FDR ", fdr)
 
         get_single_image <- function(row) {
-            isotope_idx <- if (only_first_isotope) 1 else seq_along(row$isotopeImages[[1]])
+            isotope_idx <- if (onlyFirstIsotope) 1 else seq_along(row$isotopeImages[[1]])
 
             lapply(isotope_idx, function(idx) {
                 images <- row$isotopeImages[[1]]
                 img_info <- if (idx <= length(images)) images[[idx]] else NULL
-                img_df <- .metaspace_image_pixels(img_info, relative, hotspot_clipping)
+                img_df <- .metaspace_image_pixels(img_info, relative, hotspotClipping)
                 if (is.null(img_df) || !nrow(img_df)) {
                     return(NULL)
                 }
@@ -337,15 +337,15 @@ metaspaceClient <- function(
 #' @description The main user-facing function to download annotations and ion
 #'   images for a METASPACE dataset.
 #'
-#' @param dataset_id Character string of the METASPACE dataset ID.
+#' @param datasetId Character string of the METASPACE dataset ID.
 #' @param fdr Numeric, the FDR level threshold (default = 0.1).
 #' @param database Character vector, specifying the database name and version
 #'   (default = c("HMDB", "v4")).
-#' @param include_images Logical, if TRUE, downloads all ion image matrices
+#' @param includeImages Logical, if TRUE, downloads all ion image matrices
 #'   (default = TRUE).
-#' @param api_key Optional character string, your METASPACE API key (default =
+#' @param apiKey Optional character string, your METASPACE API key (default =
 #'   NULL).
-#' @param isotope_idx Integer, index of the isotope image to download for all
+#' @param isotopeIdx Integer, index of the isotope image to download for all
 #'   annotations (1 for main peak) (default = 1).
 #' @param relative Logical, if TRUE, normalizes pixel intensities (0-1 range)
 #'   (default = TRUE).
@@ -366,36 +366,36 @@ metaspaceClient <- function(
 #' # Requires the METASPACE service and an internet connection.
 #' if (interactive()) {
 #'     result <- getMetaspace("2020-12-07_03h16m14s",
-#'         include_images = FALSE,
+#'         includeImages = FALSE,
 #'         verbose = FALSE
 #'     )
 #'     head(result$annotations)
 #' }
 getMetaspace <- function(
-    dataset_id,
+    datasetId,
     fdr = 0.1,
     database = c("HMDB", "v4"),
-    include_images = TRUE,
-    api_key = NULL,
-    isotope_idx = 1,
+    includeImages = TRUE,
+    apiKey = NULL,
+    isotopeIdx = 1,
     relative = TRUE,
     verbose = TRUE,
     BPPARAM = BiocParallel::SerialParam(progressbar = verbose)
 ) {
-    sm <- metaspaceClient(api_key = api_key)
-    if (!is.numeric(isotope_idx) || length(isotope_idx) != 1L ||
-        !is.finite(isotope_idx) || isotope_idx < 1 || isotope_idx != floor(isotope_idx)) {
-        stop("isotope_idx must be a positive integer.", call. = FALSE)
+    sm <- metaspaceClient(apiKey = apiKey)
+    if (!is.numeric(isotopeIdx) || length(isotopeIdx) != 1L ||
+        !is.finite(isotopeIdx) || isotopeIdx < 1 || isotopeIdx != floor(isotopeIdx)) {
+        stop("isotopeIdx must be a positive integer.", call. = FALSE)
     }
 
-    ann_df <- sm$get_results(dataset_id, fdr = fdr, database = database)
+    ann_df <- sm$get_results(datasetId, fdr = fdr, database = database)
     if (nrow(ann_df) == 0) stop("No annotations at FDR ", fdr)
     ann_df <- ann_df[order(ann_df$mz), ]
     mz_names <- make.unique(sprintf("%.5f", ann_df$mz))
     rownames(ann_df) <- mz_names
 
     images <- NULL
-    if (include_images) {
+    if (includeImages) {
         verbose_message(
             paste0(
                 "Downloading ",
@@ -407,7 +407,7 @@ getMetaspace <- function(
         mats <- BiocParallel::bplapply(seq_len(nrow(ann_df)), function(i) {
             row <- ann_df[i, , drop = FALSE]
             available <- row$isotopeImages[[1]]
-            img_info <- if (isotope_idx <= length(available)) available[[isotope_idx]] else NULL
+            img_info <- if (isotopeIdx <= length(available)) available[[isotopeIdx]] else NULL
             .metaspace_image_pixels(img_info, relative = relative)
         }, BPPARAM = BPPARAM)
         names(mats) <- mz_names
@@ -422,7 +422,7 @@ getMetaspace <- function(
 #'
 #' @description Transforms the list of 2D ion image matrices from \code{getMetaspace} into a single matrix suitable for spatial analysis packages.
 #'
-#' @param metaspace_data A list object returned by \code{getMetaspace}.
+#' @param metaspaceData A list object returned by \code{getMetaspace}.
 #' @param transform Logical. If TRUE, transposes each image matrix before
 #'   flattening (e.g., to align coordinate systems) (default = FALSE).
 #' @param verbose Boolean indicating whether to show the message. If TRUE the
@@ -438,28 +438,28 @@ getMetaspace <- function(
 #' images <- list(`100.00000` = matrix(1:6, 2), `200.00000` = matrix(6:1, 2))
 #' metaspaceToFeatureMatrix(list(images = images), verbose = FALSE)
 metaspaceToFeatureMatrix <- function(
-    metaspace_data,
+    metaspaceData,
     transform = FALSE,
     verbose = TRUE
 ) {
-    if (is.null(metaspace_data$images) || length(metaspace_data$images) == 0) {
-        stop("Input 'metaspace_data' does not contain image matrices. Ensure include_images=TRUE was used.")
+    if (is.null(metaspaceData$images) || length(metaspaceData$images) == 0) {
+        stop("Input 'metaspaceData' does not contain image matrices. Ensure includeImages=TRUE was used.")
     }
-    missing_images <- vapply(metaspace_data$images, is.null, logical(1))
+    missing_images <- vapply(metaspaceData$images, is.null, logical(1))
     if (all(missing_images)) {
         stop("No downloadable ion images are available for this selection.", call. = FALSE)
     }
     if (any(missing_images)) {
         warning("Omitting ", sum(missing_images), " annotation(s) without an ion image from the feature matrix.",
             call. = FALSE)
-        metaspace_data$images <- metaspace_data$images[!missing_images]
+        metaspaceData$images <- metaspaceData$images[!missing_images]
     }
     if (transform) {
-        metaspace_data$images <- lapply(metaspace_data$images, t)
+        metaspaceData$images <- lapply(metaspaceData$images, t)
     }
 
     # 1. Extract first image to get dimensions and create column names
-    first_image <- metaspace_data$images[[1]]
+    first_image <- metaspaceData$images[[1]]
 
 
     if (!is.matrix(first_image)) {
@@ -480,12 +480,12 @@ metaspaceToFeatureMatrix <- function(
     # The final matrix will be (Features x Pixels)
 
     verbose_message(paste0(
-        "Combining ", length(metaspace_data$images),
+        "Combining ", length(metaspaceData$images),
         " annotations into a feature matrix..."
     ), verbose)
 
     # Check for consistency
-    consistent <- vapply(metaspace_data$images, function(mat) {
+    consistent <- vapply(metaspaceData$images, function(mat) {
         is.matrix(mat) && nrow(mat) == h && ncol(mat) == w
     }, logical(1))
     if (!all(consistent)) {
@@ -496,7 +496,7 @@ metaspaceToFeatureMatrix <- function(
         )
     }
 
-    flat_images_list <- lapply(metaspace_data$images, as.vector)
+    flat_images_list <- lapply(metaspaceData$images, as.vector)
 
     # Combine list of vectors into a matrix (Features x Pixels)
     feature_matrix <- do.call(rbind, flat_images_list)
@@ -505,7 +505,7 @@ metaspaceToFeatureMatrix <- function(
     colnames(feature_matrix) <- pixel_names
 
     verbose_message(
-        message_text = paste0(
+        messageText = paste0(
             "Conversion complete. Matrix dimensions: ",
             paste(dim(feature_matrix), collapse = " rows x "),
             " columns"
@@ -525,11 +525,11 @@ metaspaceToFeatureMatrix <- function(
 #' Coordinates are stored in `spatialCoords()` without redundant copies in
 #' `colData()`; dataset and acquisition metadata remain in `colData()`.
 #'
-#' @param dataset_id Character string of the METASPACE dataset ID.
+#' @param datasetId Character string of the METASPACE dataset ID.
 #' @param fdr Numeric, the FDR level threshold (default = 0.1).
 #' @param database Character vector, specifying the database name and version
 #'   (default = c("HMDB", "v4")).
-#' @param api_key Optional character string, your METASPACE API key (default =
+#' @param apiKey Optional character string, your METASPACE API key (default =
 #'   NULL).
 #' @param relative Logical, if TRUE, normalizes pixel intensities (0-1 range)
 #'   (default = FALSE).
@@ -555,10 +555,10 @@ metaspaceToFeatureMatrix <- function(
 #'     plotSpatialFeature(spe, rownames(spe)[1])
 #' }
 loadMetaspace <- function(
-    dataset_id,
+    datasetId,
     fdr = 0.1,
     database = c("HMDB", "v4"),
-    api_key = NULL,
+    apiKey = NULL,
     relative = FALSE,
     transform = FALSE,
     verbose = TRUE,
@@ -568,22 +568,22 @@ loadMetaspace <- function(
     returnType <- match.arg(returnType)
 
     verbose_message(
-        message_text = paste0(
+        messageText = paste0(
             "Downloading dataset [",
-            dataset_id,
+            datasetId,
             "] from METASPACE... "
         ),
         verbose = verbose
     )
 
     data <- getMetaspace(
-        dataset_id = dataset_id, fdr = fdr, database = database,
-        include_images = TRUE, api_key = api_key, relative = relative,
+        datasetId = datasetId, fdr = fdr, database = database,
+        includeImages = TRUE, apiKey = apiKey, relative = relative,
         verbose = verbose, BPPARAM = BPPARAM
     )
 
     verbose_message(
-        message_text = "Gathering metabolite intensity values per pixel ...",
+        messageText = "Gathering metabolite intensity values per pixel ...",
         verbose = verbose
     )
 
@@ -605,7 +605,7 @@ loadMetaspace <- function(
     featureNames <- make.unique(paste0("mz-", features))
     rownames(sparse_matrix) <- featureNames
     pixel_metadata <- S4Vectors::DataFrame(
-        metaspace_dataset = rep(dataset_id, length(pixels)),
+        metaspace_dataset = rep(datasetId, length(pixels)),
         fdr_threshold = rep(fdr, length(pixels)),
         database = rep(paste(database, collapse = "-"), length(pixels)),
         row.names = pixels
@@ -634,10 +634,10 @@ loadMetaspace <- function(
         rowData = S4Vectors::DataFrame(featureMetadata),
         colData = S4Vectors::DataFrame(pixel_metadata),
         spatialCoords = as.matrix(pixel_data[, c("x", "y"), drop = FALSE]),
-        sample_id = dataset_id
+        sample_id = datasetId
     )
     S4Vectors::metadata(object)$metaspace <- list(
-        dataset_id = dataset_id,
+        dataset_id = datasetId,
         fdr = fdr,
         database = database,
         relative = relative

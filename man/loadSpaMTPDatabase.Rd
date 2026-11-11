@@ -9,7 +9,7 @@ loadSpaMTPDatabase(
   version = "latest",
   source = c("auto", "spamtpdb"),
   database = NULL,
-  local_dir = NULL,
+  localDir = NULL,
   hub = NULL,
   offline = FALSE,
   refresh = FALSE,
@@ -28,7 +28,7 @@ resources through SpaMTPdb.}
 \item{database}{Optional named list containing the requested resources. When
 supplied, no Hub lookup is performed.}
 
-\item{local_dir}{Optional directory containing staged SpaMTPdb \code{.rds} files.}
+\item{localDir}{Optional directory containing staged SpaMTPdb \code{.rds} files.}
 
 \item{hub}{Optional pre-created \code{AnnotationHub} object passed to SpaMTPdb.}
 

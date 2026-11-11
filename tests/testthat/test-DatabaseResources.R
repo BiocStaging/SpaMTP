@@ -24,7 +24,7 @@ test_that("SpaMTPdb resources load from an offline staging directory", {
     database <- loadSpaMTPDatabase(
         "ramp_db_metadata",
         source = "spamtpdb",
-        local_dir = staging,
+        localDir = staging,
         offline = TRUE,
         refresh = TRUE,
         verify = FALSE
@@ -102,7 +102,7 @@ test_that("the native companion example works with the software annotation engin
     index <- buildMZAnnotationIndex(database, adducts = "M+H")
     result <- annotateSM(object,
         index = index, adducts = "M+H",
-        return.only.annotated = FALSE, verbose = FALSE
+        returnOnlyAnnotated = FALSE, verbose = FALSE
     )
     expect_identical(dim(result), dim(object))
     expect_identical(SummarizedExperiment::rowData(result)$all_IsomerNames[1], "2HG")

@@ -7,10 +7,10 @@
 analyzeSpaMTPRegions(
   result,
   regions = NULL,
-  min_region_size = 3,
+  minRegionSize = 3,
   native = list(),
   markers = TRUE,
-  spatial_blocks = 6
+  spatialBlocks = 6
 )
 }
 \arguments{
@@ -19,7 +19,7 @@ analyzeSpaMTPRegions(
 \item{regions}{A colData column for regions; NULL uses the workflow group,
 or workflow_cluster if clustering was requested. No labels are invented.}
 
-\item{min_region_size}{Minimum observations in both a region and its
+\item{minRegionSize}{Minimum observations in both a region and its
 reference.}
 
 \item{native}{Named settings: moran, graph_pca, max_points (600),
@@ -29,7 +29,7 @@ Graph PCA separately and uses it in the comparative analysis.}
 
 \item{markers}{Compute native scran marker scores through findAllDEMs.}
 
-\item{spatial_blocks}{Number of coordinate-only blocks per sample for marker
+\item{spatialBlocks}{Number of coordinate-only blocks per sample for marker
 sensitivity; zero disables block omission. These are not biological
 replicates.}
 }
@@ -63,9 +63,9 @@ fit <- runSpaMTPWorkflow(spe,
         main = list(type = "metabolomics", layer = "logcounts"),
         transcriptome = list(type = "transcriptomics", layer = "logcounts")
     ),
-    npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+    npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 )
-fit <- analyzeSpaMTPRegions(fit, regions = "region", spatial_blocks = 0)
+fit <- analyzeSpaMTPRegions(fit, regions = "region", spatialBlocks = 0)
 fit$region_analysis$summary
 }

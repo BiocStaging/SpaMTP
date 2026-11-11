@@ -7,18 +7,18 @@
 calculateSingleAnnotationStatistics(
   mz,
   data,
-  mz.assay = "main",
-  pathway.assay = "pathway",
+  mzAssay = "main",
+  pathwayAssay = "pathway",
   mzAssayName = "counts",
   pathwayAssayName = "pathwayScores",
-  corr_threshold = 0,
-  corr_weight = 1,
-  n_weight = 1,
+  corrThreshold = 0,
+  corrWeight = 1,
+  nWeight = 1,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  mz.ppm = 5
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  mzPpm = 5
 )
 }
 \arguments{
@@ -26,9 +26,9 @@ calculateSingleAnnotationStatistics(
 
 \item{data}{A SingleCellExperiment or SpatialExperiment with paired altExp.}
 
-\item{mz.assay}{Primary experiment ("main") or alternative MSI experiment.}
+\item{mzAssay}{Primary experiment ("main") or alternative MSI experiment.}
 
-\item{pathway.assay}{Alternative experiment containing pathway-level scores.}
+\item{pathwayAssay}{Alternative experiment containing pathway-level scores.}
 
 \item{mzAssayName}{Expression assay in the MSI experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
@@ -36,17 +36,17 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 \item{pathwayAssayName}{Expression assay in the pathway experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{corr_threshold}{Minimum signed pathway correlation.}
+\item{corrThreshold}{Minimum signed pathway correlation.}
 
-\item{corr_weight, n_weight}{Non-negative weights, not both zero.}
+\item{corrWeight, nWeight}{Non-negative weights, not both zero.}
 
 \item{database}{Optional named list from loadSpaMTPDatabase.}
 
-\item{database_version, database_source, database_local_dir}{Database
+\item{databaseVersion, databaseSource, databaseLocalDir}{Database
 selection;
 see loadSpaMTPDatabase.}
 
-\item{mz.ppm}{Maximum ppm distance for a numeric m/z query (default 5).
+\item{mzPpm}{Maximum ppm distance for a numeric m/z query (default 5).
 Equally close features require an exact character feature ID.}
 }
 \value{
@@ -84,7 +84,7 @@ Duplicate candidate IDs are counted once.
 data(spamtp_example)
 spe <- spamtp_example$experiment
 index <- buildPathwayIndex(spamtp_example$database)
-spe <- createPathwayObject(spe, assay = "transcriptome", pathway_index = index)
+spe <- createPathwayObject(spe, assay = "transcriptome", pathwayIndex = index)
 calculateSingleAnnotationStatistics(149.04445, spe,
     database = spamtp_example$database
 )

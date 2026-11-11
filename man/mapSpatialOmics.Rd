@@ -5,57 +5,57 @@
 \title{Map metabolite intensities to transcriptomic pixels or cells}
 \usage{
 mapSpatialOmics(
-  SM.data,
-  ST.data,
-  ST.hires = FALSE,
-  SM.assay = "main",
-  ST.assay = "main",
-  SM.pixel.width = NULL,
-  overlap.threshold = 0.2,
+  smData,
+  stData,
+  stHires = FALSE,
+  smAssay = "main",
+  stAssay = "main",
+  smPixelWidth = NULL,
+  overlapThreshold = 0.2,
   annotations = TRUE,
-  add.metadata = TRUE,
-  merge.unique.metadata = TRUE,
-  map.data = FALSE,
-  new_SPT.assay = "transcriptome",
-  new_SPM.assay = "main",
+  addMetadata = TRUE,
+  mergeUniqueMetadata = TRUE,
+  mapData = FALSE,
+  newSptAssay = "transcriptome",
+  newSpmAssay = "main",
   verbose = FALSE,
-  ST.radius = NULL,
-  ST.polygons = NULL,
+  stRadius = NULL,
+  stPolygons = NULL,
   dropUnmapped = FALSE
 )
 }
 \arguments{
-\item{SM.data, ST.data}{SpatialExperiment objects with aligned coordinates.}
+\item{smData, stData}{SpatialExperiment objects with aligned coordinates.}
 
-\item{ST.hires}{Use point-in-pixel mapping for high-resolution target cells.}
+\item{stHires}{Use point-in-pixel mapping for high-resolution target cells.}
 
-\item{SM.assay, ST.assay}{Primary (\code{"main"}) or alternative experiment names
+\item{smAssay, stAssay}{Primary (\code{"main"}) or alternative experiment names
 in the source and target containers; see \link{experimentAccess}. These select
 modalities, not individual expression matrices.}
 
-\item{SM.pixel.width}{Square MSI pixel width in coordinate units. NULL
+\item{smPixelWidth}{Square MSI pixel width in coordinate units. NULL
 estimates the median positive nearest-neighbour distance within samples.}
 
-\item{overlap.threshold}{Minimum fraction of target area covered by a pixel.}
+\item{overlapThreshold}{Minimum fraction of target area covered by a pixel.}
 
 \item{annotations}{Preserve MSI rowData and annotation provenance.}
 
-\item{add.metadata}{Include summaries of source pixel metadata in colData.}
+\item{addMetadata}{Include summaries of source pixel metadata in colData.}
 
-\item{merge.unique.metadata}{Remove duplicate values in source summaries.}
+\item{mergeUniqueMetadata}{Remove duplicate values in source summaries.}
 
-\item{map.data}{Map all source assays; FALSE maps counts only.}
+\item{mapData}{Map all source assays; FALSE maps counts only.}
 
-\item{new_SPT.assay}{Name of the transcriptome alternative experiment.}
+\item{newSptAssay}{Name of the transcriptome alternative experiment.}
 
-\item{new_SPM.assay}{Name of the primary metabolomics experiment.}
+\item{newSpmAssay}{Name of the primary metabolomics experiment.}
 
 \item{verbose}{Show progress messages.}
 
-\item{ST.radius}{Target spot radius, scalar or one per target pixel, in
+\item{stRadius}{Target spot radius, scalar or one per target pixel, in
 spatial coordinate units; alternatively supply ST.polygons.}
 
-\item{ST.polygons}{An sf polygon object with a cell column matching ST.data.}
+\item{stPolygons}{An sf polygon object with a cell column matching ST.data.}
 
 \item{dropUnmapped}{Remove targets without matching MSI pixels. FALSE keeps
 zero-filled intensities and marks these pixels with mapped = FALSE.}
@@ -75,8 +75,8 @@ spot/polygon area. Matching MSI intensities are averaged with equal weights.
 data(spamtp_example)
 spe <- spamtp_example$experiment
 mapped <- mapSpatialOmics(spe, spe,
-    ST.hires = TRUE, SM.pixel.width = 1,
-    ST.assay = "transcriptome"
+    stHires = TRUE, smPixelWidth = 1,
+    stAssay = "transcriptome"
 )
 table(mapped$mapped)
 }

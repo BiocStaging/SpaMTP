@@ -6,32 +6,32 @@
 \usage{
 massIntensityPlot(
   data,
-  group.by = NULL,
-  split.by = NULL,
+  groupBy = NULL,
+  splitBy = NULL,
   cols = NULL,
   assay = "main",
   assayName = "counts",
-  label.annotations = FALSE,
-  annotation.column = "all_IsomerNames",
-  mz.labels = NULL,
-  metabolite.labels = NULL,
+  labelAnnotations = FALSE,
+  annotationColumn = "all_IsomerNames",
+  mzLabels = NULL,
+  metaboliteLabels = NULL,
   xlab = "m/z",
   ylab = "intensity",
-  mass.range = NULL,
-  y.lim = NULL,
+  massRange = NULL,
+  yLim = NULL,
   labelCex = 5,
   labelAdj = -1,
   labelOffset = 0,
   labelCol = "#eb4034",
-  nlabels.to.show = NULL
+  nlabelsToShow = NULL
 )
 }
 \arguments{
 \item{data}{A SpatialExperiment or aligned Cardinal experiment.}
 
-\item{group.by}{Optional colData column defining overlaid groups.}
+\item{groupBy}{Optional colData column defining overlaid groups.}
 
-\item{split.by}{Optional colData column defining separate panels; mutually
+\item{splitBy}{Optional colData column defining separate panels; mutually
 exclusive with group.by.}
 
 \item{cols}{Optional group colours.}
@@ -41,20 +41,20 @@ exclusive with group.by.}
 \item{assayName}{Expression assay.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{label.annotations}{Display annotations instead of m/z labels.}
+\item{labelAnnotations}{Display annotations instead of m/z labels.}
 
-\item{annotation.column}{Annotation column in rowData.}
+\item{annotationColumn}{Annotation column in rowData.}
 
-\item{mz.labels}{Numeric m/z values to label using nearest measured peaks.}
+\item{mzLabels}{Numeric m/z values to label using nearest measured peaks.}
 
-\item{metabolite.labels}{Metabolite names to label; mutually exclusive with
+\item{metaboliteLabels}{Metabolite names to label; mutually exclusive with
 mz.labels.}
 
 \item{xlab, ylab}{Axis labels.}
 
-\item{mass.range}{Optional two-value displayed mass range.}
+\item{massRange}{Optional two-value displayed mass range.}
 
-\item{y.lim}{Optional y-axis limits.}
+\item{yLim}{Optional y-axis limits.}
 
 \item{labelCex}{Text size.}
 
@@ -62,7 +62,7 @@ mz.labels.}
 
 \item{labelCol}{Text colour.}
 
-\item{nlabels.to.show}{Maximum annotations displayed per feature.}
+\item{nlabelsToShow}{Maximum annotations displayed per feature.}
 }
 \value{
 A ggplot.
@@ -73,5 +73,5 @@ Feature masses come from rowData, so arbitrary feature IDs are supported.
 \examples{
 data(spamtp_example)
 spe <- spamtp_example$experiment
-massIntensityPlot(spe, group.by = "region")
+massIntensityPlot(spe, groupBy = "region")
 }

@@ -4,19 +4,19 @@
 \alias{annotationScoreCutoff}
 \title{Choose a cutoff from the mass-shift diagnostic}
 \usage{
-annotationScoreCutoff(fdr, target_fdr = 0.1, min_peaks = 10)
+annotationScoreCutoff(fdr, targetFdr = 0.1, minPeaks = 10)
 }
 \arguments{
 \item{fdr}{A \code{spamtp_annotation_fdr} object from \code{\link[=estimateAnnotationFDR]{estimateAnnotationFDR()}}.}
 
-\item{target_fdr}{Largest acceptable decoy-to-target match ratio.}
+\item{targetFdr}{Largest acceptable decoy-to-target match ratio.}
 
-\item{min_peaks}{Smallest number of annotated target peaks a cutoff must
+\item{minPeaks}{Smallest number of annotated target peaks a cutoff must
 keep; estimates from a handful of peaks are too noisy to act on.}
 }
 \value{
 The smallest score cutoff whose decoy-to-target ratio does not exceed
-\code{target_fdr} while keeping at least \code{min_peaks} annotated peaks, or \code{NA}
+\code{targetFdr} while keeping at least \code{minPeaks} annotated peaks, or \code{NA}
 when no cutoff qualifies.
 }
 \description{
@@ -32,5 +32,5 @@ fdr <- structure(
     )),
     class = "spamtp_annotation_fdr"
 )
-annotationScoreCutoff(fdr, target_fdr = 0.2)
+annotationScoreCutoff(fdr, targetFdr = 0.2)
 }

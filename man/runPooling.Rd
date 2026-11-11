@@ -4,10 +4,10 @@
 \alias{runPooling}
 \title{Pools Bioconductor experiment into random pools for pseudo-bulking.}
 \usage{
-runPooling(data.filt, idents, n, assay, assayName, seed = 1234, verbose = TRUE)
+runPooling(dataFilt, idents, n, assay, assayName, seed = 1234, verbose = TRUE)
 }
 \arguments{
-\item{data.filt}{A Bioconductor experiment containing count values for
+\item{dataFilt}{A Bioconductor experiment containing count values for
 pooling.}
 
 \item{idents}{A character string defining the idents column to pool the data

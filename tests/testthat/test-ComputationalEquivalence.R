@@ -80,8 +80,8 @@ test_that("matrix-free Graph PCA retains the dense solution on wide inputs", {
             spatialCoords = cbind(x = seq_len(n) %% 7, y = seq_len(n) %/% 7)
         )
         fit <- runSpatialGraphPCA(object,
-            n_components = 4, lambda = .7,
-            platform = "ST", n_neighbors = 4, fast = TRUE, verbose = FALSE
+            nComponents = 4, lambda = .7,
+            platform = "ST", nNeighbors = 4, fast = TRUE, verbose = FALSE
         )
         A <- as.matrix(S4Vectors::metadata(fit)$spatialGraphs$SpatialKNN)
         input <- t(as.matrix(E))

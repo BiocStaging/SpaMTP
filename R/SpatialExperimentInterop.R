@@ -621,7 +621,10 @@ methods::setGeneric(
 # Values for each feature from the primary experiment or, failing that, the
 # one alternative experiment that holds both the feature and the assay.
 .spatialFeatureValues <- function(x, features, assayName) {
-    experiments <- c(list(main = x), as.list(SingleCellExperiment::altExps(x)))
+    experiments <- list(main = x)
+    if (inherits(x, "SingleCellExperiment")) {
+        experiments <- c(experiments, as.list(SingleCellExperiment::altExps(x)))
+    }
     experiments <- Filter(
         function(e) assayName %in% SummarizedExperiment::assayNames(e),
         experiments

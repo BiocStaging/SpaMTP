@@ -6,7 +6,7 @@
 \usage{
 loadSM(
   file,
-  mass.range = NULL,
+  massRange = NULL,
   resolution = NA,
   units = "ppm",
   verbose = TRUE,
@@ -18,7 +18,7 @@ loadSM(
 \item{file}{Character string defining the directory path of the file and the
 file name.}
 
-\item{mass.range}{Optional two-element mass range for binning. Requires
+\item{massRange}{Optional two-element mass range for binning. Requires
 resolution; raw spectral filtering should be performed in Cardinal.}
 
 \item{resolution}{Numeric value defining the the accuracy to which the m/z

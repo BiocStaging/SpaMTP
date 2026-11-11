@@ -20,7 +20,7 @@ test_that("PCA stores a variance plot without opening a graphics device", {
     object <- nativeFixture()
     device <- grDevices::dev.cur()
     result <- runMetabolicPCA(object,
-        npcs = 2, show_variance_plot = TRUE,
+        npcs = 2, showVariancePlot = TRUE,
         verbose = FALSE
     )
     expect_identical(grDevices::dev.cur(), device)
@@ -34,19 +34,19 @@ test_that("regional enrichment stays silent and preserves explicit parallel para
         analytehaspathway = data.frame(rampId = ids[1:8], pathwayRampId = "P1"),
         pathway = data.frame(pathwayRampId = "P1", pathwayName = "one")
     )
-    index <- buildPathwayIndex(db, gene_mapping = "ramp", organism = "custom")
+    index <- buildPathwayIndex(db, geneMapping = "ramp", organism = "custom")
     ranks <- withr::with_seed(11, matrix(stats::rnorm(40),
         dimnames = list(ids, "A")
     ))
     expect_output(result <- findRegionalPathways(
         ranks = list(genes = ranks),
-        pathway_index = index, min_path_size = 3, verbose = FALSE
+        pathwayIndex = index, minPathSize = 3, verbose = FALSE
     ), NA)
     expect_equal(nrow(result), 1L)
     parameter <- BiocParallel::SerialParam(progressbar = FALSE)
     expect_identical(findRegionalPathways(
         ranks = list(genes = ranks),
-        pathway_index = index, min_path_size = 3, verbose = FALSE,
+        pathwayIndex = index, minPathSize = 3, verbose = FALSE,
         BPPARAM = parameter
     ), result)
 })
@@ -63,12 +63,12 @@ test_that("METASPACE downloads respect BPPARAM and leave session options alone",
                     isotopeImages = I(list(list(list(url = "B")), list(list(url = "A"))))
                 )
             },
-            get_ion_image_pixels = function(sum_formula, ...) {
+            get_ion_image_pixels = function(sumFormula, ...) {
                 stop("Image metadata should not be queried again")
             }
         )
-    }, .metaspace_image_pixels = function(img_info, ...) {
-        matrix(if (img_info$url == "A") 1 else 2, 2, 2)
+    }, .metaspace_image_pixels = function(imgInfo, ...) {
+        matrix(if (imgInfo$url == "A") 1 else 2, 2, 2)
     })
     result <- getMetaspace("offline-test", verbose = FALSE, BPPARAM = parameter)
     expect_identical(names(result$images), c("100.00000", "200.00000"))

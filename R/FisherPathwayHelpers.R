@@ -40,7 +40,7 @@
 
 # Map source IDs first, then common names for otherwise unmatched queries.
 # Keep all distinct RaMP mappings, but never count aliases as separate analytes.
-.fisher_map_ids <- function(ids, type, source, known_ids) {
+.fisher_map_ids <- function(ids, type, source, knownIds) {
     query <- unique(tolower(ids))
     source <- source[grepl(paste0("^RAMP_", type, "_"), source$rampId), , drop = FALSE]
     key <- tolower(source$sourceId)
@@ -49,8 +49,8 @@
         input = key[selected],
         rampId = source$rampId[selected]
     )
-    direct <- known_ids[grepl(paste0("^RAMP_", type, "_"), known_ids) &
-        tolower(known_ids) %in% query]
+    direct <- knownIds[grepl(paste0("^RAMP_", type, "_"), knownIds) &
+        tolower(knownIds) %in% query]
     result <- rbind(
         result,
         data.frame(input = tolower(direct), rampId = direct)
@@ -72,7 +72,7 @@
     resources,
     args,
     verbose,
-    gene_index = NULL
+    geneIndex = NULL
 ) {
     source <- as.data.frame(resources$source_df)
     known_ids <- unique(c(
@@ -86,10 +86,10 @@
     gene_audit <- NULL
     for (key in c("genes", "metabolites")) {
         ids <- unique(c(foreground[[key]], universe[[key]]))
-        if (key == "genes" && !is.null(gene_index)) {
+        if (key == "genes" && !is.null(geneIndex)) {
             gene_audit <- .map_gene_index(
                 as.character(ids),
-                gene_index,
+                geneIndex,
                 verbose = FALSE
             )
             keep <- gene_audit$status %in% c("mapped", "mapped_ramp_only")
@@ -116,7 +116,7 @@
         )
         if (is.null(args$db) && is.null(args$index)) args$db <- resources$chem_props
         annotations <- do.call(annotateTable, c(list(
-            mz_df = data.frame(row_id = seq_along(masses), mz = masses),
+            mzDf = data.frame(row_id = seq_along(masses), mz = masses),
             verbose = verbose
         ), args))
         # The current engine can also wrap legacy chemical databases without RaMP

@@ -57,7 +57,7 @@
             .experimentForAssay(object, result$settings$assay_names[[b]])
         query <- lapply(anchors, function(anchor) {
             t <- findCorrelatedFeatures(paired,
-                mz = anchor, ST.assay = "target",
+                mz = anchor, stAssay = "target",
                 smAssayName = "workflow", stAssayName = "workflow", nfeatures = NULL,
                 covariates = fields, features = list(metabolite = anchor, gene = targets)
             )

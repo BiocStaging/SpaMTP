@@ -43,21 +43,21 @@ test_that("shared membership and coverage are identical in Fisher and expression
     expect_equal(idx$conflicting_members$conflict, "RAMP_G_5")
     original <- f$object
     mapped <- createPathwayAssay(original,
-        analyte_type = "genes", assay = "transcriptome",
-        assayName = "logcounts", outputExperiment = "gene_ids", pathway_index = idx
+        analyteType = "genes", assay = "transcriptome",
+        assayName = "logcounts", outputExperiment = "gene_ids", pathwayIndex = idx
     )
     E <- .assayData(mapped, "gene_ids", "logcounts")
     expect_identical(rownames(E), c("RAMP_G_1", "RAMP_G_3", "RAMP_G_4"))
     expect_equal(as.matrix(E), `rownames<-`(log1p(f$expression), rownames(E)))
     expect_identical(SummarizedExperiment::assayNames(SingleCellExperiment::altExp(mapped, "gene_ids")), "logcounts")
-    direct <- createPathwayObject(original, assay = "transcriptome", assayName = "logcounts", pathway_index = idx)
-    indirect <- createPathwayObject(mapped, assay = "gene_ids", pathway_index = idx)
+    direct <- createPathwayObject(original, assay = "transcriptome", assayName = "logcounts", pathwayIndex = idx)
+    indirect <- createPathwayObject(mapped, assay = "gene_ids", pathwayIndex = idx)
     scores <- .assayData(direct, "pathway", "pathwayScores")
     expect_equal(scores, .assayData(indirect, "pathway", "pathwayScores"))
     expected <- as.numeric(scale(colSums(log1p(f$expression[1:2, ])) / sqrt(2)))
     expect_equal(as.numeric(scores["P1", ]), expected)
     fisher <- fishersPathwayAnalysis(list(genes = "GENEA"),
-        universe = list(genes = rownames(f$expression)), pathway_index = idx, min_path_size = 1,
+        universe = list(genes = rownames(f$expression)), pathwayIndex = idx, minPathSize = 1,
         verbose = FALSE
     )
     coverage <- S4Vectors::metadata(SingleCellExperiment::altExp(direct, "pathway"))$pathway_mapping$coverage
@@ -80,7 +80,7 @@ test_that("shared membership and coverage are identical in Fisher and expression
 
 test_that("symbol, previous symbol, stable ID and equivalent RaMP expression agree", {
     f <- pathwayClosureFixture()
-    expected <- createPathwayObject(f$object, assay = "transcriptome", pathway_index = f$index)
+    expected <- createPathwayObject(f$object, assay = "transcriptome", pathwayIndex = f$index)
     for (ids in list(
         c("OLDA", "GENEB", "GENEC"), c("101", "102", "103"),
         c("RAMP_G_2", "RAMP_G_3", "RAMP_G_4")
@@ -89,7 +89,7 @@ test_that("symbol, previous symbol, stable ID and equivalent RaMP expression agr
         rna <- SingleCellExperiment::altExp(x, "transcriptome")
         rownames(rna) <- ids
         SingleCellExperiment::altExp(x, "transcriptome") <- rna
-        observed <- createPathwayObject(x, assay = "transcriptome", pathway_index = f$index)
+        observed <- createPathwayObject(x, assay = "transcriptome", pathwayIndex = f$index)
         expect_equal(.assayData(observed, "pathway", "pathwayScores"), .assayData(expected, "pathway", "pathwayScores"))
     }
     x <- f$object
@@ -97,22 +97,22 @@ test_that("symbol, previous symbol, stable ID and equivalent RaMP expression agr
     rna <- rna[c(1, 1, 2, 3), ]
     rownames(rna) <- c("GENEA", "OLDA", "GENEB", "GENEC")
     SingleCellExperiment::altExp(x, "transcriptome") <- rna
-    duplicated <- createPathwayObject(x, assay = "transcriptome", pathway_index = f$index)
+    duplicated <- createPathwayObject(x, assay = "transcriptome", pathwayIndex = f$index)
     expect_equal(.assayData(duplicated, "pathway", "pathwayScores"), .assayData(expected, "pathway", "pathwayScores"))
     SummarizedExperiment::assay(rna, "counts")[2, ] <- 3 * f$expression[1, ]
     SingleCellExperiment::altExp(x, "transcriptome") <- rna
-    expect_error(createPathwayAssay(x, "genes", "transcriptome", pathway_index = f$index), "Multiple expression")
-    averaged <- createPathwayAssay(x, "genes", "transcriptome", pathway_index = f$index, duplicate_genes = "mean")
+    expect_error(createPathwayAssay(x, "genes", "transcriptome", pathwayIndex = f$index), "Multiple expression")
+    averaged <- createPathwayAssay(x, "genes", "transcriptome", pathwayIndex = f$index, duplicateGenes = "mean")
     expect_equal(as.numeric(.assayData(averaged, "pathway")["RAMP_G_1", ]), 2 * as.numeric(f$expression[1, ]))
 })
 
 test_that("named plots use score-object members and reject ambiguous display names", {
     skip_if_not_installed("scater")
     f <- pathwayClosureFixture()
-    object <- createPathwayObject(f$object, assay = "transcriptome", pathway_index = f$index)
+    object <- createPathwayObject(f$object, assay = "transcriptome", pathwayIndex = f$index)
     expected <- .assayData(object, "pathway", "pathwayScores")
-    reduced <- plotPathways(c("P1", "P2"), f$object, assay = "transcriptome", pathway_index = f$index)
-    spatial <- plotPathwaysSpatially(c("P1", "P2"), f$object, assay = "transcriptome", pathway_index = f$index)
+    reduced <- plotPathways(c("P1", "P2"), f$object, assay = "transcriptome", pathwayIndex = f$index)
+    spatial <- plotPathwaysSpatially(c("P1", "P2"), f$object, assay = "transcriptome", pathwayIndex = f$index)
     for (id in c("P1", "P2")) expect_identical(spatial[[id]]$data$score, unname(expected[id, ]))
     for (plots in list(reduced, spatial)) {
         expect_identical(attr(plots, "pathway_coverage")$used_size, c(2L, 2L))
@@ -122,32 +122,32 @@ test_that("named plots use score-object members and reject ambiguous display nam
             expect_true(length(ggplot2::ggplot_build(plots[[id]])$data) > 0)
         }
     }
-    expect_error(plotPathways("shared name", f$object, assay = "transcriptome", pathway_index = f$index), "ambiguous")
+    expect_error(plotPathways("shared name", f$object, assay = "transcriptome", pathwayIndex = f$index), "ambiguous")
 })
 
 test_that("coverage records zero overlap and size exclusions without changing the universe", {
     f <- pathwayClosureFixture()
     result <- fishersPathwayAnalysis(list(genes = "GENEC"),
         universe = list(genes = rownames(f$expression)),
-        pathway_index = f$index, min_path_size = 1, verbose = FALSE
+        pathwayIndex = f$index, minPathSize = 1, verbose = FALSE
     )
     expect_equal(result$p_val[result$pathwayRampId == "P1"], 1)
     expect_equal(result$background_analytes_number, c(3L, 3L))
-    scored <- createPathwayObject(f$object, assay = "transcriptome", pathway_index = f$index, remove.nans = FALSE)
+    scored <- createPathwayObject(f$object, assay = "transcriptome", pathwayIndex = f$index, removeNans = FALSE)
     expect_true(all(is.na(.assayData(scored, "pathway", "pathwayScores")["unmeasured", ])))
     expect_error(createPathwayObject(f$object,
-        assay = "transcriptome", pathway_index = f$index,
-        min_path_size = 3
+        assay = "transcriptome", pathwayIndex = f$index,
+        minPathSize = 3
     ), "No pathways")
     changed <- f$database
     changed$analytehaspathway$pathwayRampId[1] <- "P2"
     expect_error(createPathwayObject(f$object,
         assay = "transcriptome", database = changed,
-        pathway_index = f$index
+        pathwayIndex = f$index
     ), "does not match")
     x <- f$object
     S4Vectors::metadata(x)$SpaMTPData <- list(organism = "Mus musculus")
-    expect_error(createPathwayObject(x, assay = "transcriptome", pathway_index = f$index), "species")
+    expect_error(createPathwayObject(x, assay = "transcriptome", pathwayIndex = f$index), "species")
 })
 
 test_that("GESECA receives canonical expression and pathway IDs instead of display names", {
@@ -158,13 +158,13 @@ test_that("GESECA receives canonical expression and pathway IDs instead of displ
     )
     f$index <- buildPathwayIndex(f$database)
     seen <- NULL
-    local_mocked_bindings(geseca = function(pathways, E, BPPARAM, ...) {
+    local_mocked_bindings(geseca = function(pathways, expression, BPPARAM, ...) {
         expect_s4_class(BPPARAM, "SerialParam")
         expect_false(BiocParallel::bpprogressbar(BPPARAM))
-        seen <<- list(pathways = pathways, E = E)
+        seen <<- list(pathways = pathways, E = expression)
         data.frame(pathway = names(pathways))
     }, .package = "fgsea")
-    result <- runRAMPGeseca(f$expression, pathway_index = f$index)
+    result <- runRAMPGeseca(f$expression, pathwayIndex = f$index)
     expect_setequal(rownames(seen$E), c("RAMP_G_1", "RAMP_G_3", "RAMP_G_4"))
     expect_setequal(names(seen$pathways), c("P1", "P2"))
     expect_setequal(seen$pathways$P1, c("RAMP_G_1", "RAMP_G_3"))
@@ -183,8 +183,8 @@ test_that("compound-only indices without crossreferences are reusable in Fisher"
     )
     index <- buildPathwayIndex(db)
     result <- fishersPathwayAnalysis(list(metabolites = "RAMP_C_1"),
-        universe = list(metabolites = c("RAMP_C_1", "RAMP_C_2")), pathway_index = index,
-        min_path_size = 1, verbose = FALSE
+        universe = list(metabolites = c("RAMP_C_1", "RAMP_C_2")), pathwayIndex = index,
+        minPathSize = 1, verbose = FALSE
     )
     expect_equal(result$p_val, c(.5, 1))
     coverage <- attr(result, "pathway_coverage")
@@ -205,7 +205,7 @@ test_that("RaMP-only assays exclude unmapped symbols from the measured universe"
     )
     index <- buildPathwayIndex(db)
     expect_warning(mapped <- createPathwayAssay(f$object, "genes", "transcriptome",
-        assayName = "logcounts", pathway_index = index
+        assayName = "logcounts", pathwayIndex = index
     ), "unresolved in RaMP-only")
     target <- SingleCellExperiment::altExp(mapped, "pathway")
     expect_identical(rownames(target), c("RAMP_G_1", "RAMP_G_2"))
@@ -214,8 +214,8 @@ test_that("RaMP-only assays exclude unmapped symbols from the measured universe"
         c("mapped_ramp_only", "mapped_ramp_only", "unmapped")
     )
     fisher <- suppressWarnings(fishersPathwayAnalysis(list(genes = "GENEA"),
-        universe = list(genes = rownames(f$expression)), pathway_index = index,
-        min_path_size = 1, verbose = FALSE
+        universe = list(genes = rownames(f$expression)), pathwayIndex = index,
+        minPathSize = 1, verbose = FALSE
     ))
     expect_identical(
         S4Vectors::metadata(target)$pathway_mapping$coverage$measured_members,

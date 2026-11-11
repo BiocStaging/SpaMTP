@@ -5,17 +5,17 @@
 \title{Read a binned spatial metabolomics matrix}
 \usage{
 readSMMatrix(
-  mtx.file,
+  mtxFile,
   assay = "Spatial",
   verbose = TRUE,
-  feature.start.column = 1,
-  mz.prefix = NULL,
-  project.name = "SpaMTP",
+  featureStartColumn = 1,
+  mzPrefix = NULL,
+  projectName = "SpaMTP",
   returnType = "SpatialExperiment"
 )
 }
 \arguments{
-\item{mtx.file}{Character string defining the path of the spatial metabolomic
+\item{mtxFile}{Character string defining the path of the spatial metabolomic
 image matrix .csv file.}
 
 \item{assay}{Label stored in mainExpName(); intensities are in the counts
@@ -24,13 +24,13 @@ assay.}
 \item{verbose}{Boolean indicating whether to show the message. If TRUE, the
 message will be shown; else, it will be suppressed (default = TRUE).}
 
-\item{feature.start.column}{Numeric value defining the start index containing
+\item{featureStartColumn}{Numeric value defining the start index containing
 the x, y, and m/z value columns within the table (default = 1).}
 
-\item{mz.prefix}{Character string matching the prefix string in front of each
+\item{mzPrefix}{Character string matching the prefix string in front of each
 m/z name (default = NULL).}
 
-\item{project.name}{Character string defining the name of the sample to be
+\item{projectName}{Character string defining the name of the sample to be
 assigned as \code{orig.ident} (default = "SpaMTP").}
 
 \item{returnType}{Output container; only \code{"SpatialExperiment"} is supported.}
@@ -73,7 +73,7 @@ utils::write.csv(data.frame(
     x = 1:4, y = c(0, 0, 1, 1),
     mz100 = c(1, 3, 2, 4), mz200 = c(4, 2, 3, 1)
 ), file, row.names = FALSE)
-spe <- readSMMatrix(file, mz.prefix = "mz", verbose = FALSE)
+spe <- readSMMatrix(file, mzPrefix = "mz", verbose = FALSE)
 SpatialExperiment::spatialCoords(spe)
 unlink(file)
 }

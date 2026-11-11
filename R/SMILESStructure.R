@@ -635,13 +635,13 @@
             hydrogen_count == 0
     )
 
-    acidic_hetero_sites <- function(element, centre, minimum_double_o) {
+    acidic_hetero_sites <- function(element, centre, minimumDoubleO) {
         centres <- atom_ids[atoms$element == centre]
         sum(vapply(centres, function(i) {
             n <- heavy_neighbours[[i]]
             double_o <- sum(atoms$element[n$atom] == "O" & n$order >= 1.9)
             single_o <- n$atom[atoms$element[n$atom] == "O" & n$order < 1.5]
-            if (double_o < minimum_double_o) {
+            if (double_o < minimumDoubleO) {
                 return(0L)
             }
             sum(hydrogen_count[single_o] > 0)
@@ -879,7 +879,7 @@ deconvolveSMILES <- function(
 #' Add SMILES-derived structural features to a metabolite database
 #'
 #' @param db A metabolite data frame.
-#' @param smiles_column Column containing SMILES. When `NULL`, SpaMTP detects
+#' @param smilesColumn Column containing SMILES. When `NULL`, SpaMTP detects
 #'   `iso_smiles`, `canonical_smiles`, or `smiles`.
 #' @param backend Parser backend passed to [deconvolveSMILES()].
 #' @param overwrite Replace existing feature values. By default only absent or
@@ -894,7 +894,7 @@ deconvolveSMILES <- function(
 #' annotated[, c("smiles", "alcohol_hydroxyl_sites", "carboxyl_sites")]
 #' @export
 annotateSMILESStructure <- function(
-    db, smiles_column = NULL,
+    db, smilesColumn = NULL,
     backend = c("auto", "native"),
     overwrite = FALSE, strict = FALSE,
     BPPARAM = BiocParallel::SerialParam()
@@ -911,15 +911,15 @@ annotateSMILESStructure <- function(
         rep(NA_character_, nrow(db))
     }
     backend <- match.arg(backend)
-    if (is.null(smiles_column)) {
+    if (is.null(smilesColumn)) {
         choices <- c("iso_smiles", "canonical_smiles", "smiles", "SMILES")
         detected <- choices[choices %in% names(db)]
-        smiles_column <- if (length(detected)) detected[[1]] else NULL
+        smilesColumn <- if (length(detected)) detected[[1]] else NULL
     }
-    if (is.null(smiles_column) || !smiles_column %in% names(db)) {
+    if (is.null(smilesColumn) || !smilesColumn %in% names(db)) {
         stop("No SMILES column was found in db.")
     }
-    features <- deconvolveSMILES(db[[smiles_column]],
+    features <- deconvolveSMILES(db[[smilesColumn]],
         backend = backend,
         strict = strict, BPPARAM = BPPARAM
     )
@@ -933,7 +933,7 @@ annotateSMILESStructure <- function(
             db[[column]][missing] <- features[[column]][missing]
         }
     }
-    db$structure_smiles <- as.character(db[[smiles_column]])
+    db$structure_smiles <- as.character(db[[smilesColumn]])
     db$proton_bound_source <- ifelse(
         existing_bound & (is.na(existing_bound_source) |
             existing_bound_source != "SMILES-inferred"),

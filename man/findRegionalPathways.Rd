@@ -5,34 +5,34 @@
 \title{Regional Pathway Enrichment}
 \usage{
 findRegionalPathways(
-  SpaMTP,
+  object,
   ident,
-  DE.list = NULL,
-  analyte_types = c("genes", "metabolites"),
-  SM_assay = "main",
-  ST_assay = "transcriptome",
+  deList = NULL,
+  analyteTypes = c("genes", "metabolites"),
+  smAssay = "main",
+  stAssay = "transcriptome",
   smAssayName = "counts",
   stAssayName = "counts",
-  min_path_size = 5,
-  max_path_size = 500,
-  pval_cutoff_mets = 0.05,
-  pval_cutoff_genes = 0.05,
-  annotation_score_threshold = 0.05,
-  annotation_source = c("current", "auto", "legacy"),
+  minPathSize = 5,
+  maxPathSize = 500,
+  pvalCutoffMets = 0.05,
+  pvalCutoffGenes = 0.05,
+  annotationScoreThreshold = 0.05,
+  annotationSource = c("current", "auto", "legacy"),
   verbose = TRUE,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  gene_mapping = c("auto", "hgnc", "ramp"),
-  gene_reference = NULL,
-  gene_index = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  geneMapping = c("auto", "hgnc", "ramp"),
+  geneReference = NULL,
+  geneIndex = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
-  pathway_index = NULL,
+  pathwayIndex = NULL,
   ranks = NULL,
-  rank_scale = c("rms", "none"),
+  rankScale = c("rms", "none"),
   nPermSimple = 1000,
   regions = NULL,
   seed = 1234,
@@ -40,53 +40,53 @@ findRegionalPathways(
 )
 }
 \arguments{
-\item{SpaMTP}{A Bioconductor experiment contains spatial
+\item{object}{A Bioconductor experiment contains spatial
 metabolomics(SM)/transcriptomics(ST) data or both, if contains SM data, it
 should be annotated via SpaMTP::annotateSM function.}
 
 \item{ident}{A character scalar specifying the region column in cell
 metadata.}
 
-\item{DE.list}{A list consisting of differential expression data.frames for
+\item{deList}{A list consisting of differential expression data.frames for
 each input modality. Within each data.frame column names MUST include
 'cluster', 'gene', ('avg_log2FC' or 'logFC') and ('p_val_adj' or 'FDR').}
 
-\item{analyte_types}{Vector of character strings defining which analyte types
+\item{analyteTypes}{Vector of character strings defining which analyte types
 to use. Options can be c("genes"), c("metabolites") or both (default =
 c("genes", "metabolites")).}
 
-\item{SM_assay}{Primary MSI experiment name (default = "main").}
+\item{smAssay}{Primary MSI experiment name (default = "main").}
 
-\item{ST_assay}{Paired transcriptome altExp name (default = "transcriptome").}
+\item{stAssay}{Paired transcriptome altExp name (default = "transcriptome").}
 
 \item{smAssayName}{Expression assay name within the metabolomics experiment
-selected by \code{SM_assay} (default = \code{"counts"}).
+selected by \code{smAssay} (default = \code{"counts"}).
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{stAssayName}{Expression assay name within the transcriptomics
 experiment
-selected by \code{ST_assay} (default = \code{"counts"}).
+selected by \code{stAssay} (default = \code{"counts"}).
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{min_path_size}{The min number of metabolites in a specific pathway
+\item{minPathSize}{The min number of metabolites in a specific pathway
 (default = 5).}
 
-\item{max_path_size}{The max number of metabolites in a specific pathway
+\item{maxPathSize}{The max number of metabolites in a specific pathway
 (default = 500).}
 
-\item{pval_cutoff_mets}{Adjusted p-value cutoff used when constructing
+\item{pvalCutoffMets}{Adjusted p-value cutoff used when constructing
 metabolite ranks. Set to \code{1} to include annotated metabolites regardless
 of DE significance (default = 0.05).}
 
-\item{pval_cutoff_genes}{A numerical value defining the adjusted p value
+\item{pvalCutoffGenes}{A numerical value defining the adjusted p value
 cutoff for significant differentially expressed genes. If \code{NULL} cutoff =
 \code{0.05} (default = 0.05).}
 
-\item{annotation_score_threshold}{Minimum indexed annotation score used for
+\item{annotationScoreThreshold}{Minimum indexed annotation score used for
 pathway mapping. It can be changed without re-running \code{annotateSM()} when
-the object was annotated with \code{min_score = 0} (default = 0.05).}
+the object was annotated with \code{minScore = 0} (default = 0.05).}
 
-\item{annotation_source}{Metabolite annotation provenance. The default,
+\item{annotationSource}{Metabolite annotation provenance. The default,
 \code{"current"}, requires scored RaMP IDs from the indexed annotation
 pipeline. \code{"auto"} permits a warned fallback to a legacy stored \code{db_3},
 while \code{"legacy"} explicitly requests that compatibility path.}
@@ -97,38 +97,38 @@ FALSE these messages will be suppressed (default = TRUE).}
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for pathway lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for pathway lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
-\item{gene_mapping}{\code{"auto"} uses HGNC identity harmonization for official
+\item{geneMapping}{\code{"auto"} uses HGNC identity harmonization for official
 SpaMTPdb resources and for custom bundles with \code{gene_reference} or
-\code{gene_index}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
+\code{geneIndex}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
 RaMP-only mapping for historical reproduction or a curated non-human
 database. Custom bundles without a reference use RaMP-only mapping in auto
 mode and never trigger a reference download.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_index}{Optional index built from the same source table by
+\item{geneIndex}{Optional index built from the same source table by
 \code{\link[=buildGeneMappingIndex]{buildGeneMappingIndex()}}. Multiple RaMP records of a resolved HGNC gene
 have their pathway memberships united and count once. Conflicting RaMP
 records and ambiguous symbols are excluded and recorded in the audit.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
@@ -139,7 +139,7 @@ unfiltered ranks or a \code{\link[=findAllDEMs]{findAllDEMs()}} result (converte
 \code{\link[=markerRanks]{markerRanks()}}). Metabolite rows must be explicit RaMP compound IDs. Map
 expression with createPathwayAssay before calculating identity-level effects.}
 
-\item{rank_scale}{RMS-scale each modality's rank vector before concatenating,
+\item{rankScale}{RMS-scale each modality's rank vector before concatenating,
 or none. Pathways can still be dominated by the more densely measured
 modality.}
 
@@ -184,7 +184,7 @@ ranks <- matrix(c(3, 2, 1, -1, -2, -3, 0.5, -0.5),
 )
 enrichment <- findRegionalPathways(spe,
     ident = "region", ranks = list(genes = ranks),
-    pathway_index = index, min_path_size = 2, max_path_size = 6, verbose = FALSE
+    pathwayIndex = index, minPathSize = 2, maxPathSize = 6, verbose = FALSE
 )
 enrichment[, c("pathwayName", "NES", "padj")]
 }

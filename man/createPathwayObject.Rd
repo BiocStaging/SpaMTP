@@ -9,21 +9,21 @@ createPathwayObject(
   assay = NULL,
   assayName = "logcounts",
   outputExperiment = "pathway",
-  remove.nans = TRUE,
+  removeNans = TRUE,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  gene_mapping = c("auto", "hgnc", "ramp"),
-  gene_reference = NULL,
-  gene_index = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  geneMapping = c("auto", "hgnc", "ramp"),
+  geneReference = NULL,
+  geneIndex = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
-  pathway_index = NULL,
-  duplicate_genes = c("error", "mean", "sum"),
-  min_path_size = 1,
-  max_path_size = Inf
+  pathwayIndex = NULL,
+  duplicateGenes = c("error", "mean", "sum"),
+  minPathSize = 1,
+  maxPathSize = Inf
 )
 }
 \arguments{
@@ -41,55 +41,55 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 \code{"pathway"}).
 Scores are stored in that experiment's \code{pathwayScores} expression assay.}
 
-\item{remove.nans}{Remove pathways without matched analytes (default TRUE).}
+\item{removeNans}{Remove pathways without matched analytes (default TRUE).}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for pathway lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for pathway lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
-\item{gene_mapping}{\code{"auto"} uses HGNC identity harmonization for official
+\item{geneMapping}{\code{"auto"} uses HGNC identity harmonization for official
 SpaMTPdb resources and for custom bundles with \code{gene_reference} or
-\code{gene_index}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
+\code{geneIndex}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
 RaMP-only mapping for historical reproduction or a curated non-human
 database. Custom bundles without a reference use RaMP-only mapping in auto
 mode and never trigger a reference download.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_index}{Optional index built from the same source table by
+\item{geneIndex}{Optional index built from the same source table by
 \code{\link[=buildGeneMappingIndex]{buildGeneMappingIndex()}}. Multiple RaMP records of a resolved HGNC gene
 have their pathway memberships united and count once. Conflicting RaMP
 records and ambiguous symbols are excluded and recorded in the audit.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
-\item{duplicate_genes}{How to aggregate expression rows of one gene.
+\item{duplicateGenes}{How to aggregate expression rows of one gene.
 The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}
 
-\item{min_path_size}{Minimum measured unique members to score (default 1).}
+\item{minPathSize}{Minimum measured unique members to score (default 1).}
 
-\item{max_path_size}{Maximum measured unique members to score (default Inf).}
+\item{maxPathSize}{Maximum measured unique members to score (default Inf).}
 }
 \value{
 The input with pathwayScores in a new alternative experiment.
@@ -118,6 +118,6 @@ Scores summarize observed expression; they are not pathway activity tests.
 data(spamtp_example)
 spe <- spamtp_example$experiment
 index <- buildPathwayIndex(spamtp_example$database)
-spe <- createPathwayObject(spe, assay = "transcriptome", pathway_index = index)
+spe <- createPathwayObject(spe, assay = "transcriptome", pathwayIndex = index)
 SummarizedExperiment::assay(SingleCellExperiment::altExp(spe, "pathway"), "pathwayScores")[, 1:4]
 }

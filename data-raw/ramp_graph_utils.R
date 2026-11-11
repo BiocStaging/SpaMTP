@@ -14,22 +14,22 @@
   }
 }
 
-.rgu_load_object <- function(path, object_name) {
+.rgu_load_object <- function(path, objectName) {
   environment <- new.env(parent = emptyenv())
   loaded <- load(path, envir = environment)
-  if (!object_name %in% loaded) {
-    stop(path, " does not contain object '", object_name, "'.")
+  if (!objectName %in% loaded) {
+    stop(path, " does not contain object '", objectName, "'.")
   }
-  environment[[object_name]]
+  environment[[objectName]]
 }
 
-.rgu_save_object <- function(value, object_name, path) {
+.rgu_save_object <- function(value, objectName, path) {
   environment <- new.env(parent = emptyenv())
-  environment[[object_name]] <- value
-  temporary <- tempfile(pattern = paste0(object_name, "_"), tmpdir = dirname(path))
+  environment[[objectName]] <- value
+  temporary <- tempfile(pattern = paste0(objectName, "_"), tmpdir = dirname(path))
   on.exit(unlink(temporary), add = TRUE)
   save(
-    list = object_name, envir = environment, file = temporary,
+    list = objectName, envir = environment, file = temporary,
     compress = "xz", version = 3
   )
   if (!file.copy(temporary, path, overwrite = TRUE)) {
@@ -65,16 +65,16 @@
   )
 }
 
-.rgu_build_id_migration <- function(graph_ids, analyte, previous_source,
-                                    current_source,
-                                    manual_overrides = .rgu_default_overrides()) {
+.rgu_build_id_migration <- function(graphIds, analyte, previousSource,
+                                    currentSource,
+                                    manualOverrides = .rgu_default_overrides()) {
   .rgu_assert_columns(analyte, "rampId", "analyte")
   required <- c("sourceId", "rampId", "geneOrCompound", "commonName")
-  .rgu_assert_columns(previous_source, required, "previous source_df")
-  .rgu_assert_columns(current_source, required, "current source_df")
+  .rgu_assert_columns(previousSource, required, "previous source_df")
+  .rgu_assert_columns(currentSource, required, "current source_df")
 
   current_ids <- unique(as.character(analyte$rampId))
-  stale_ids <- setdiff(graph_ids, current_ids)
+  stale_ids <- setdiff(graphIds, current_ids)
   if (!length(stale_ids)) {
     return(data.frame(
       old_id = character(), new_id = character(), shared_ids = integer(),
@@ -83,13 +83,13 @@
     ))
   }
 
-  old <- previous_source[
-    previous_source$rampId %in% stale_ids &
-      !is.na(previous_source$sourceId) & nzchar(previous_source$sourceId),
+  old <- previousSource[
+    previousSource$rampId %in% stale_ids &
+      !is.na(previousSource$sourceId) & nzchar(previousSource$sourceId),
     c("rampId", "sourceId"), drop = FALSE
   ]
-  current <- current_source[
-    !is.na(current_source$sourceId) & nzchar(current_source$sourceId),
+  current <- currentSource[
+    !is.na(currentSource$sourceId) & nzchar(currentSource$sourceId),
     c("rampId", "sourceId"), drop = FALSE
   ]
   old$source_key <- tolower(trimws(as.character(old$sourceId)))
@@ -126,9 +126,9 @@
   migration$evidence <- paste0(migration$shared_ids, " shared source ID(s)")
 
   missing <- setdiff(stale_ids, migration$old_id)
-  override <- manual_overrides[
-    manual_overrides$old_id %in% missing &
-      manual_overrides$new_id %in% current_ids,
+  override <- manualOverrides[
+    manualOverrides$old_id %in% missing &
+      manualOverrides$new_id %in% current_ids,
     , drop = FALSE
   ]
   if (nrow(override)) {
@@ -157,36 +157,36 @@
   migration
 }
 
-.rgu_update_edge <- function(edge, target_map) {
+.rgu_update_edge <- function(edge, targetMap) {
   if (!is.data.frame(edge) || !nrow(edge)) return(edge)
   .rgu_assert_columns(edge, c("src", "dest"), "graph edge table")
-  mapped_ids <- names(target_map)
+  mapped_ids <- names(targetMap)
   if (!any(edge$src %in% mapped_ids) && !any(edge$dest %in% mapped_ids)) {
     return(edge)
   }
   original_names <- names(edge)
   edge$src <- as.character(edge$src)
   edge$dest <- as.character(edge$dest)
-  split_ids <- names(target_map)[lengths(target_map) > 1L]
+  split_ids <- names(targetMap)[lengths(targetMap) > 1L]
   expanded_row <- edge$src %in% split_ids | edge$dest %in% split_ids
 
   simple <- edge[!expanded_row, , drop = FALSE]
   if (nrow(simple)) {
-    src_index <- match(simple$src, names(target_map))
-    dest_index <- match(simple$dest, names(target_map))
+    src_index <- match(simple$src, names(targetMap))
+    dest_index <- match(simple$dest, names(targetMap))
     replace_src <- !is.na(src_index)
     replace_dest <- !is.na(dest_index)
     simple$src[replace_src] <- vapply(
-      target_map[src_index[replace_src]], `[[`, character(1), 1L
+      targetMap[src_index[replace_src]], `[[`, character(1), 1L
     )
     simple$dest[replace_dest] <- vapply(
-      target_map[dest_index[replace_dest]], `[[`, character(1), 1L
+      targetMap[dest_index[replace_dest]], `[[`, character(1), 1L
     )
   }
 
   expanded <- lapply(which(expanded_row), function(index) {
-    source <- target_map[[edge$src[[index]]]]
-    destination <- target_map[[edge$dest[[index]]]]
+    source <- targetMap[[edge$src[[index]]]]
+    destination <- targetMap[[edge$dest[[index]]]]
     if (is.null(source)) source <- edge$src[[index]]
     if (is.null(destination)) destination <- edge$dest[[index]]
     combinations <- expand.grid(
@@ -220,28 +220,28 @@
   })
 }
 
-.rgu_name_audit <- function(graph_ids, source_df, chem_props) {
-  source_names <- unique(as.character(source_df$rampId[
-    !is.na(source_df$commonName) & nzchar(trimws(source_df$commonName))
+.rgu_name_audit <- function(graphIds, sourceDf, chemProps) {
+  source_names <- unique(as.character(sourceDf$rampId[
+    !is.na(sourceDf$commonName) & nzchar(trimws(sourceDf$commonName))
   ]))
-  chemical_names <- unique(as.character(chem_props$ramp_id[
-    !is.na(chem_props$common_name) & nzchar(trimws(chem_props$common_name))
+  chemical_names <- unique(as.character(chemProps$ramp_id[
+    !is.na(chemProps$common_name) & nzchar(trimws(chemProps$common_name))
   ]))
-  source_identifiers <- unique(as.character(source_df$rampId[
-    !is.na(source_df$sourceId) & nzchar(trimws(source_df$sourceId))
+  source_identifiers <- unique(as.character(sourceDf$rampId[
+    !is.na(sourceDf$sourceId) & nzchar(trimws(sourceDf$sourceId))
   ]))
   data.frame(
-    graph_id = graph_ids,
-    current_name_available = graph_ids %in%
+    graph_id = graphIds,
+    current_name_available = graphIds %in%
       union(source_identifiers, union(source_names, chemical_names)),
     stringsAsFactors = FALSE
   )
 }
 
-.rgu_migrate_graph_data <- function(data_dir, previous_source_df,
+.rgu_migrate_graph_data <- function(dataDir, previousSourceDf,
                                     write = FALSE,
-                                    manual_overrides = .rgu_default_overrides()) {
-  graph_paths <- file.path(data_dir, paste0(.rgu_graph_objects, ".rda"))
+                                    manualOverrides = .rgu_default_overrides()) {
+  graph_paths <- file.path(dataDir, paste0(.rgu_graph_objects, ".rda"))
   if (any(!file.exists(graph_paths))) {
     stop("Missing graph data object(s): ",
          paste(basename(graph_paths[!file.exists(graph_paths)]), collapse = ", "))
@@ -249,13 +249,13 @@
   graphs <- stats::setNames(lapply(seq_along(graph_paths), function(index) {
     .rgu_load_object(graph_paths[[index]], .rgu_graph_objects[[index]])
   }), .rgu_graph_objects)
-  analyte <- .rgu_load_object(file.path(data_dir, "analyte.rda"), "analyte")
-  source_df <- .rgu_load_object(file.path(data_dir, "source_df.rda"), "source_df")
-  chem_props <- .rgu_load_object(file.path(data_dir, "chem_props.rda"), "chem_props")
+  analyte <- .rgu_load_object(file.path(dataDir, "analyte.rda"), "analyte")
+  source_df <- .rgu_load_object(file.path(dataDir, "source_df.rda"), "source_df")
+  chem_props <- .rgu_load_object(file.path(dataDir, "chem_props.rda"), "chem_props")
 
   ids_before <- .rgu_graph_ids(graphs)
   migration <- .rgu_build_id_migration(
-    ids_before, analyte, previous_source_df, source_df, manual_overrides
+    ids_before, analyte, previousSourceDf, source_df, manualOverrides
   )
   updated <- .rgu_update_graphs(graphs, migration)
   ids_after <- .rgu_graph_ids(updated)
@@ -301,7 +301,7 @@
     for (object_name in .rgu_graph_objects) {
       .rgu_save_object(
         updated[[object_name]], object_name,
-        file.path(data_dir, paste0(object_name, ".rda"))
+        file.path(dataDir, paste0(object_name, ".rda"))
       )
     }
   }

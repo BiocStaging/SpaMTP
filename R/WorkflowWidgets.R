@@ -1,4 +1,4 @@
-.wf_native_widgets <- function(result, directory, max_points) {
+.wf_native_widgets <- function(result, directory, maxPoints) {
     html <- list(associations = character(), pathways = character())
     status <- .workflowRecords(c("function_name", "context", "status", "detail"))
     record <- status$add
@@ -28,7 +28,7 @@
                 columns <- columns[unique(as.integer(round(seq(
                     1,
                     length(columns),
-                    length.out = min(length(columns), max_points)
+                    length.out = min(length(columns), maxPoints)
                 ))))]
                 object <- result$object[, columns]
                 widget <- plot3DFeature(object,
@@ -38,8 +38,8 @@
                         c(best$modality1, best$modality2),
                         c(best$feature1, best$feature2)
                     ),
-                    between.layer.height = diff(range(SpatialExperiment::spatialCoords(object)[, "x"])) * .15,
-                    sampleId = sample, size = 2, plot.width = 1100, plot.height = 600
+                    betweenLayerHeight = diff(range(SpatialExperiment::spatialCoords(object)[, "x"])) * .15,
+                    sampleId = sample, size = 2, plotWidth = 1100, plotHeight = 600
                 )
                 count <- count + 1L
                 path <- file.path(
@@ -97,13 +97,13 @@
         path <- tryCatch(
             pathwayNetworkPlots(result$object,
                 ident = result$region_analysis$field,
-                regpathway = p$regional, DE.list = stats::setNames(list(p$identity_markers$DEMs), type),
-                path = folder, SM_assay = p$identity_assay, ST_assay = p$identity_assay,
-                smAssayName = "workflow", stAssayName = "workflow", analyte_types = type,
-                pathway_index = result$resources[[name]]$pathway_index,
+                regpathway = p$regional, deList = stats::setNames(list(p$identity_markers$DEMs), type),
+                path = folder, smAssay = p$identity_assay, stAssay = p$identity_assay,
+                smAssayName = "workflow", stAssayName = "workflow", analyteTypes = type,
+                pathwayIndex = result$resources[[name]]$pathway_index,
                 organism = result$settings$modalities[[name]]$species %||% "custom",
                 database = result$resources[[name]]$pathway_database,
-                top_n_pathways = 3, max_spatial_points = max_points, verbose = FALSE
+                topNPathways = 3, maxSpatialPoints = maxPoints, verbose = FALSE
             ),
             error = function(e) {
                 if (grepl(

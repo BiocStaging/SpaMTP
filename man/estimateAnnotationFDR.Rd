@@ -6,11 +6,11 @@
 \title{Assess annotation matches with mass-shift decoys}
 \usage{
 estimateAnnotationFDR(
-  observed_mz,
+  observedMz,
   index,
   ppm = 5,
-  ms1_spectrum = NULL,
-  shifts_da = NULL,
+  ms1Spectrum = NULL,
+  shiftsDa = NULL,
   cutoffs = seq(0, 1, by = 0.01),
   ...
 )
@@ -18,17 +18,17 @@ estimateAnnotationFDR(
 \method{print}{spamtp_annotation_fdr}(x, ...)
 }
 \arguments{
-\item{observed_mz}{Numeric vector of observed m/z values (one per peak).}
+\item{observedMz}{Numeric vector of observed m/z values (one per peak).}
 
 \item{index}{A \code{spamtp_mz_index} from \code{\link[=buildMZAnnotationIndex]{buildMZAnnotationIndex()}}.}
 
 \item{ppm}{Mass tolerance in parts per million.}
 
-\item{ms1_spectrum}{Optional data frame with \code{mz} and \code{intensity} columns,
+\item{ms1Spectrum}{Optional data frame with \code{mz} and \code{intensity} columns,
 or a numeric m/z vector assigned unit intensities, used as isotope and
 adduct-family context. It is shifted with the peaks.}
 
-\item{shifts_da}{Decoy shifts in Da. Each must exceed twice the tolerance
+\item{shiftsDa}{Decoy shifts in Da. Each must exceed twice the tolerance
 at the largest observed m/z. By default, -8, -5, 5 and 8 times that
 tolerance half-width (\code{ppm} at the largest m/z). For \code{ppm = 0}, supply
 nonzero shifts explicitly; no default width can be inferred.}

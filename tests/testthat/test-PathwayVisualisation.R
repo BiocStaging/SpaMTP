@@ -5,9 +5,9 @@ test_that("visualisePathways returns an informative plot for an empty min_n resu
     )
 
     plot <- visualisePathways(
-        SpaMTP = NULL,
-        pathway_df = pathway_df,
-        min_n = 3,
+        object = NULL,
+        pathwayDf = pathway_df,
+        minN = 3,
         verbose = FALSE
     )
 
@@ -26,10 +26,10 @@ test_that("visualisePathways returns an informative plot after p-value filtering
     )
 
     plot <- visualisePathways(
-        SpaMTP = NULL,
-        pathway_df = pathway_df,
-        min_n = 3,
-        p_val_threshold = 0.1,
+        object = NULL,
+        pathwayDf = pathway_df,
+        minN = 3,
+        pValThreshold = 0.1,
         verbose = FALSE
     )
 

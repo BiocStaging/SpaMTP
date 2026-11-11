@@ -4,10 +4,10 @@
 \alias{metaspaceToFeatureMatrix}
 \title{Convert METASPACE Images to Feature Matrix}
 \usage{
-metaspaceToFeatureMatrix(metaspace_data, transform = FALSE, verbose = TRUE)
+metaspaceToFeatureMatrix(metaspaceData, transform = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{metaspace_data}{A list object returned by \code{getMetaspace}.}
+\item{metaspaceData}{A list object returned by \code{getMetaspace}.}
 
 \item{transform}{Logical. If TRUE, transposes each image matrix before
 flattening (e.g., to align coordinate systems) (default = FALSE).}

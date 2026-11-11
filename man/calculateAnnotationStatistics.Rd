@@ -6,36 +6,36 @@
 \usage{
 calculateAnnotationStatistics(
   data,
-  mz.assay = "main",
-  pathway.assay = "pathway",
+  mzAssay = "main",
+  pathwayAssay = "pathway",
   mzAssayName = "counts",
   pathwayAssayName = "counts",
-  return.top = TRUE,
-  corr_threshold = 0,
-  corr_weight = 1,
-  n_weight = 1,
+  returnTop = TRUE,
+  corrThreshold = 0,
+  corrWeight = 1,
+  nWeight = 1,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  pathway.scores = FALSE,
-  pathway_index = NULL,
-  gene_mapping = c("auto", "hgnc", "ramp"),
-  gene_reference = NULL,
-  gene_index = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  pathwayScores = FALSE,
+  pathwayIndex = NULL,
+  geneMapping = c("auto", "hgnc", "ramp"),
+  geneReference = NULL,
+  geneIndex = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
-  duplicate_genes = c("error", "mean", "sum")
+  duplicateGenes = c("error", "mean", "sum")
 )
 }
 \arguments{
 \item{data}{A SingleCellExperiment or SpatialExperiment with paired altExp.}
 
-\item{mz.assay}{Primary experiment ("main") or alternative MSI experiment.}
+\item{mzAssay}{Primary experiment ("main") or alternative MSI experiment.}
 
-\item{pathway.assay}{Alternative experiment of RaMP analytes, or pathway
-scores when pathway.scores=TRUE.}
+\item{pathwayAssay}{Alternative experiment of RaMP analytes, or pathway
+scores when pathwayScores=TRUE.}
 
 \item{mzAssayName}{Expression assay in the MSI experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
@@ -43,65 +43,65 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 \item{pathwayAssayName}{Input expression assay in pathway.assay.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{return.top}{Return one best evaluable candidate per feature; FALSE
+\item{returnTop}{Return one best evaluable candidate per feature; FALSE
 returns a named list of all candidate tables. Features without a score
 remain as NA rows in top results and NULL entries when no table is possible.}
 
-\item{corr_threshold}{Minimum signed pathway correlation.}
+\item{corrThreshold}{Minimum signed pathway correlation.}
 
-\item{corr_weight, n_weight}{Non-negative weights, not both zero.}
+\item{corrWeight, nWeight}{Non-negative weights, not both zero.}
 
 \item{database}{Optional named list from loadSpaMTPDatabase.}
 
-\item{database_version, database_source, database_local_dir}{Database
+\item{databaseVersion, databaseSource, databaseLocalDir}{Database
 selection;
 see loadSpaMTPDatabase.}
 
-\item{pathway.scores}{Whether pathway.assay already contains pathway scores.}
+\item{pathwayScores}{Whether pathway.assay already contains pathway scores.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
-\item{gene_mapping}{\code{"auto"} uses HGNC identity harmonization for official
+\item{geneMapping}{\code{"auto"} uses HGNC identity harmonization for official
 SpaMTPdb resources and for custom bundles with \code{gene_reference} or
-\code{gene_index}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
+\code{geneIndex}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
 RaMP-only mapping for historical reproduction or a curated non-human
 database. Custom bundles without a reference use RaMP-only mapping in auto
 mode and never trigger a reference download.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_index}{Optional index built from the same source table by
+\item{geneIndex}{Optional index built from the same source table by
 \code{\link[=buildGeneMappingIndex]{buildGeneMappingIndex()}}. Multiple RaMP records of a resolved HGNC gene
 have their pathway memberships united and count once. Conflicting RaMP
 records and ambiguous symbols are excluded and recorded in the audit.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{duplicate_genes}{How to aggregate expression rows of one gene.
+\item{duplicateGenes}{How to aggregate expression rows of one gene.
 The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}
 }
 \value{
 A data.frame preserving feature order and rowData, with ranked
-annotation columns; or a named list when return.top=FALSE.
+annotation columns; or a named list when returnTop=FALSE.
 }
 \description{
 When pathway.assay contains RaMP analytes rather than pathway scores,
 createPathwayObject is reused to calculate scores in a temporary altExp.
-Set pathway.scores=TRUE to use an existing pathway-level assay directly.
+Set pathwayScores=TRUE to use an existing pathway-level assay directly.
 Input containers are never modified.
 }
 \details{
@@ -114,10 +114,10 @@ p-values or biological-replicate inference.
 data(spamtp_example)
 spe <- spamtp_example$experiment
 index <- buildPathwayIndex(spamtp_example$database)
-spe <- createPathwayObject(spe, assay = "transcriptome", pathway_index = index)
+spe <- createPathwayObject(spe, assay = "transcriptome", pathwayIndex = index)
 result <- calculateAnnotationStatistics(spe,
     pathwayAssayName = "pathwayScores",
-    pathway.scores = TRUE, pathway_index = index, database = spamtp_example$database
+    pathwayScores = TRUE, pathwayIndex = index, database = spamtp_example$database
 )
 head(result)
 }

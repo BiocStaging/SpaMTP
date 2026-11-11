@@ -121,14 +121,14 @@
 #' transformation = NULL, an interactive preview allows translation, rotation,
 #' scaling and reflection. Coordinates are always stored in their full spatial
 #' units; an imgData scaleFactor affects only display of the reference image.
-#' @param sm.data,st.data Source and reference SpatialExperiment objects, each
+#' @param smData,stData Source and reference SpatialExperiment objects, each
 #'   containing one tissue sample.
 #' @param transformation A 3 by 3 homogeneous matrix mapping source coordinates
 #'   to reference coordinates, or NULL for interactive alignment.
-#' @param image.slice Optional reference image ID in imgData(st.data).
-#' @param msi.pixel.multiplier Explicit initial scaling of source coordinates.
+#' @param imageSlice Optional reference image ID in imgData(st.data).
+#' @param msiPixelMultiplier Explicit initial scaling of source coordinates.
 #'   Defaults to one. Applied before transformation, including GUI transforms.
-#' @param shiny.host,shiny.port Host and optional port for the interactive app.
+#' @param shinyHost,shinyPort Host and optional port for the interactive app.
 #' @param verbose Show alignment messages.
 #' @return The source SpatialExperiment with updated spatialCoords and
 #'   alignment provenance recorded by applySpatialAlignment.
@@ -141,22 +141,22 @@
 #' aligned <- alignSpatialOmics(spe, spe, transformation = transform)
 #' checkAlignment(aligned, spe)
 alignSpatialOmics <- function(
-    sm.data, st.data, transformation = NULL, image.slice = NULL,
-    msi.pixel.multiplier = 1, shiny.host = "127.0.0.1", shiny.port = NULL,
+    smData, stData, transformation = NULL, imageSlice = NULL,
+    msiPixelMultiplier = 1, shinyHost = "127.0.0.1", shinyPort = NULL,
     verbose = FALSE
 ) {
-    sm.data <- .nativeSpatialObject(sm.data)
-    st.data <- .nativeSpatialObject(st.data)
-    .singleAlignmentSample(sm.data)
-    .singleAlignmentSample(st.data)
-    if (length(msi.pixel.multiplier) != 1L || !is.finite(msi.pixel.multiplier) ||
-        msi.pixel.multiplier <= 0) {
-        stop("msi.pixel.multiplier must be one positive number.", call. = FALSE)
+    smData <- .nativeSpatialObject(smData)
+    stData <- .nativeSpatialObject(stData)
+    .singleAlignmentSample(smData)
+    .singleAlignmentSample(stData)
+    if (length(msiPixelMultiplier) != 1L || !is.finite(msiPixelMultiplier) ||
+        msiPixelMultiplier <= 0) {
+        stop("msiPixelMultiplier must be one positive number.", call. = FALSE)
     }
     if (is.null(transformation)) {
         transformation <- shiny::runApp(
-            .alignmentApp(sm.data, st.data, image.slice, msi.pixel.multiplier),
-            host = shiny.host, port = shiny.port
+            .alignmentApp(smData, stData, imageSlice, msiPixelMultiplier),
+            host = shinyHost, port = shinyPort
         )
         if (is.null(transformation)) stop("Alignment cancelled.", call. = FALSE)
     } else {
@@ -168,23 +168,23 @@ alignSpatialOmics <- function(
             )
         }
         transformation <- transformation %*% diag(c(
-            msi.pixel.multiplier,
-            msi.pixel.multiplier, 1
+            msiPixelMultiplier,
+            msiPixelMultiplier, 1
         ))
     }
-    applySpatialAlignment(sm.data,
-        ST.data = st.data,
+    applySpatialAlignment(smData,
+        stData = stData,
         alignment = list(transformation = list(matrix = transformation)),
         verbose = verbose
     )
 }
 
 #' Inspect the alignment of two spatial experiments
-#' @param SM.data,ST.data SpatialExperiment objects in the same coordinate
+#' @param smData,stData SpatialExperiment objects in the same coordinate
 #'   units.
 #' @param names Two labels for the source and target measurements.
 #' @param cols Two point colours.
-#' @param image.slice Optional image ID in ST.data. With multiple samples,
+#' @param imageSlice Optional image ID in ST.data. With multiple samples,
 #'   subset to one sample before drawing an image overlay.
 #' @param size Point size.
 #' @return A ggplot; multiple samples are shown in separate panels.
@@ -194,11 +194,11 @@ alignSpatialOmics <- function(
 #' spe <- spamtp_example$experiment
 #' checkAlignment(spe, spe, names = c("source", "reference"))
 checkAlignment <- function(
-    SM.data, ST.data, names = c("SM", "ST"), cols = NULL,
-    image.slice = NULL, size = 0.5
+    smData, stData, names = c("SM", "ST"), cols = NULL,
+    imageSlice = NULL, size = 0.5
 ) {
-    source <- .nativeCoordinates(SM.data)
-    target <- .nativeCoordinates(ST.data)
+    source <- .nativeCoordinates(smData)
+    target <- .nativeCoordinates(stData)
     if (length(names) != 2L || (!is.null(cols) && length(cols) != 2L)) {
         stop("Provide two dataset labels and two colours.", call. = FALSE)
     }
@@ -209,23 +209,23 @@ checkAlignment <- function(
         frame,
         ggplot2::aes(x = .data$x, y = .data$y, colour = .data$dataset)
     )
-    if (!is.null(image.slice)) {
-        .singleAlignmentSample(SM.data)
-        sampleId <- .singleAlignmentSample(ST.data)
-        plot <- plot + .imageLayer(.nativeImage(ST.data, image.slice, sampleId))
+    if (!is.null(imageSlice)) {
+        .singleAlignmentSample(smData)
+        sampleId <- .singleAlignmentSample(stData)
+        plot <- plot + .imageLayer(.nativeImage(stData, imageSlice, sampleId))
     }
     plot <- plot + ggplot2::geom_point(size = size) +
         ggplot2::scale_colour_manual(values = cols %||% c("#F8766D", "#00BFC4")) +
         ggplot2::scale_y_reverse() + ggplot2::coord_fixed() + ggplot2::theme_void()
-    if (is.null(image.slice) && length(unique(frame$sample_id)) > 1L) {
+    if (is.null(imageSlice) && length(unique(frame$sample_id)) > 1L) {
         plot <- plot + ggplot2::facet_wrap(~sample_id)
     }
     plot
 }
 
 #' Attach and optionally align an optical image to MSI
-#' @param image_path Local image path.
-#' @param SpaMTP A SpatialExperiment.
+#' @param imagePath Local image path.
+#' @param object A SpatialExperiment.
 #' @param imageId Identifier for the attached image.
 #' @param sampleId Sample identifier; required for multi-sample objects.
 #' @param scaleFactor Image pixels per spatial coordinate unit.
@@ -245,14 +245,14 @@ checkAlignment <- function(
 #' SpatialExperiment::imgData(spe)
 #' unlink(image_file)
 addSMImage <- function(
-    image_path, SpaMTP, imageId = "optical", sampleId = NULL,
+    imagePath, object, imageId = "optical", sampleId = NULL,
     scaleFactor = 1, transformation = NULL,
     interactive = TRUE, ...
 ) {
-    object <- .nativeSpatialObject(SpaMTP)
+    object <- .nativeSpatialObject(object)
     sampleId <- sampleId %||% .singleAlignmentSample(object)
     reference <- addSpatialImage(object,
-        imageSource = image_path,
+        imageSource = imagePath,
         sampleId = sampleId, imageId = imageId, scaleFactor = scaleFactor
     )
     if (interactive && is.null(transformation)) {

@@ -33,7 +33,7 @@ subsetMZFeatures <- function(data, features, assay = "main") {
 #' Filters the annotation list to only include the first n number of annotations
 #' per m/z
 #'
-#' @param annotation_column Vector from the `rowData()` column containing m/z
+#' @param annotationColumn Vector from the `rowData()` column containing m/z
 #'   annotations.
 #' @param n Numeric value defining the number of annotations to keep (default =
 #'   3).
@@ -41,8 +41,8 @@ subsetMZFeatures <- function(data, features, assay = "main") {
 #' @return Vector containing the first n number of annotations
 #'
 #' @noRd
-labels_to_show <- function(annotation_column, n = 3) {
-    new_column <- vapply(strsplit(annotation_column, "; "), function(x) {
+labels_to_show <- function(annotationColumn, n = 3) {
+    new_column <- vapply(strsplit(annotationColumn, "; "), function(x) {
         # Filter out NA values and select the first three entries
         non_na_values <- x[!is.na(x)]
         paste(utils::head(non_na_values, n), collapse = "; ")
@@ -66,7 +66,7 @@ labels_to_show <- function(annotation_column, n = 3) {
 #'   from SpaMTPdb and may be staged locally for offline use.
 #' @param assay Primary or alternative experiment containing the m/z counts
 #'   being annotated. Defaults to `"main"`.
-#' @param raw.mz.column Character string naming the feature-metadata column
+#' @param rawMzColumn Character string naming the feature-metadata column
 #'   containing raw m/z values without the `mz-` prefix. This is created by
 #'   `cardinalToSpatialExperiment()` (default = "raw_mz"). If omitted, mass
 #'   metadata or numeric feature names are used as a fallback. An explicitly
@@ -74,7 +74,7 @@ labels_to_show <- function(annotation_column, n = 3) {
 #' @param ppm Mass tolerance in ppm (default 5). Set to zero
 #'   for exact numerical matches.
 #' @param adducts Optional adduct names/notations; see `adductRules()`. If
-#'   `NULL`, use the complete rule space selected from `maldi_matrix`, or all
+#'   `NULL`, use the complete rule space selected from `maldiMatrix`, or all
 #'   validated general rules for the selected polarity when no matrix is given.
 #' @param polarity Character string defining the ion mode. When `NULL`, use the
 #'   MALDI matrix profile default, a supplied index's mode, or positive mode
@@ -82,27 +82,27 @@ labels_to_show <- function(annotation_column, n = 3) {
 #' @param filepath Optional output filename prefix, including its directory.
 #'   For example, `file.path("results", "sample")` writes
 #'   `results/sample_annotated_mz_peaks.csv`. NULL disables export.
-#' @param return.only.annotated Boolean value indicating if the annotated
+#' @param returnOnlyAnnotated Boolean value indicating if the annotated
 #'   Bioconductor experiment should only include m/z values that were
 #'   successfully annotated (default = TRUE).
-#' @param save.intermediate Boolean indicating whether to store the scored
+#' @param saveIntermediate Boolean indicating whether to store the scored
 #'   annotation result and its pipeline/RaMP provenance in
 #'   `S4Vectors::metadata(data)$mz_annotation`. A compatibility copy
 #'   is retained under the `db_3` key (default = TRUE).
-#' @param min_score Minimum annotation score retained in the stored candidate
+#' @param minScore Minimum annotation score retained in the stored candidate
 #'   table. The default `0` keeps all ppm-valid candidates so downstream
 #'   pathway functions can apply a user-defined threshold without re-running
 #'   annotation.
 #' @param verbose Boolean indicating whether to show the message. If TRUE the
 #'   message will be show, else the message will be suppressed (default = TRUE).
-#' @param maldi_matrix Optional MALDI matrix or derivatization reagent name.
+#' @param maldiMatrix Optional MALDI matrix or derivatization reagent name.
 #'   When supplied, SpaMTP selects validated matrix-specific rules
 #'   automatically. `adducts` is optional and only restricts that automatic
 #'   search space when explicitly supplied.
-#' @param database_version SpaMTPdb/RaMP version used when `db = NULL`.
-#' @param database_source Database source used when `db = NULL`; see
+#' @param databaseVersion SpaMTPdb/RaMP version used when `db = NULL`.
+#' @param databaseSource Database source used when `db = NULL`; see
 #'   [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #' @param ... Additional indexed annotation/scoring arguments passed to
 #'   `annotateTable()`, such as `index`, `rules`, `ms1_spectrum`,
 #'   `infer_structure`, `structure_backend`, `BPPARAM`, or
@@ -120,27 +120,27 @@ labels_to_show <- function(annotation_column, n = 3) {
 #' spe <- spamtp_example$experiment
 #' index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
 #' annotated <- annotateSM(spe,
-#'     index = index, raw.mz.column = "mz", ppm = 5,
-#'     return.only.annotated = FALSE, verbose = FALSE
+#'     index = index, rawMzColumn = "mz", ppm = 5,
+#'     returnOnlyAnnotated = FALSE, verbose = FALSE
 #' )
 #' head(annotationCandidates(annotated))
 annotateSM <- function(
     data,
     db = NULL,
     assay = "main",
-    raw.mz.column = "raw_mz",
+    rawMzColumn = "raw_mz",
     ppm = 5,
     adducts = NULL,
     polarity = NULL,
     filepath = NULL,
-    return.only.annotated = TRUE,
-    save.intermediate = TRUE,
-    min_score = 0,
+    returnOnlyAnnotated = TRUE,
+    saveIntermediate = TRUE,
+    minScore = 0,
     verbose = TRUE,
-    maldi_matrix = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL,
+    maldiMatrix = NULL,
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL,
     ...
 ) {
     experiment <- .experimentForAssay(data, assay)
@@ -156,10 +156,10 @@ annotateSM <- function(
         inherits(supplied_index, "spamtp_mz_index")) {
         supplied_index$polarity
     } else {
-        .resolve_maldi_polarity(polarity, maldi_matrix)
+        .resolve_maldi_polarity(polarity, maldiMatrix)
     }
-    resolved_matrix <- if (!is.null(maldi_matrix)) {
-        .normalise_maldi_matrix(maldi_matrix)
+    resolved_matrix <- if (!is.null(maldiMatrix)) {
+        .normalise_maldi_matrix(maldiMatrix)
     } else if (inherits(supplied_index, "spamtp_mz_index")) {
         supplied_index$maldi_matrix
     } else {
@@ -169,12 +169,12 @@ annotateSM <- function(
     if (default_ramp) {
         db <- .spamtp_db_resource(
             "chem_props",
-            version = database_version,
-            source = match.arg(database_source),
-            local_dir = database_local_dir
+            version = databaseVersion,
+            source = match.arg(databaseSource),
+            localDir = databaseLocalDir
         )
         verbose_message(
-            message_text = paste0(
+            messageText = paste0(
                 "Using ",
                 .spamtp_db_label(db),
                 " for annotation ... "
@@ -185,16 +185,16 @@ annotateSM <- function(
 
     ## Extract m/z values from assay feature metadata.
     featureMetadata <- .featureMetadata(data, assay)
-    preserve_ids <- save.intermediate ||
+    preserve_ids <- saveIntermediate ||
         ".spamtp_feature_id" %in% names(featureMetadata)
     featureMetadata$.spamtp_feature_id <- .annotationFeatureIds(
         featureMetadata,
         initialize = TRUE
     )
-    mzValues <- featureMetadata[[raw.mz.column]]
+    mzValues <- featureMetadata[[rawMzColumn]]
     if (is.null(mzValues)) {
-        if (!missing(raw.mz.column)) {
-            stop("Feature metadata column '", raw.mz.column, "' is absent from assay '", assay, "'.",
+        if (!missing(rawMzColumn)) {
+            stop("Feature metadata column '", rawMzColumn, "' is absent from assay '", assay, "'.",
                 call. = FALSE)
         }
         mzValues <- .massValues(featureMetadata, rownames(experiment))
@@ -209,21 +209,21 @@ annotateSM <- function(
     mz_df <- data.frame(row_id = seq_along(mzValues), mz = mzValues)
 
     db_3 <- annotateTable(
-        mz_df = mz_df,
+        mzDf = mz_df,
         db = db,
         ppm = ppm,
         adducts = adducts,
         polarity = polarity,
         verbose = verbose,
-        min_score = min_score,
-        maldi_matrix = maldi_matrix,
+        minScore = minScore,
+        maldiMatrix = maldiMatrix,
         ...
     )
     # Keep identity separate from the display name, which users may rename.
     db_3$feature <- rownames(experiment)[db_3$ID]
     db_3$feature_id <- featureMetadata$.spamtp_feature_id[db_3$ID]
 
-    if (save.intermediate) {
+    if (saveIntermediate) {
         alternatives <- if (inherits(data, "SingleCellExperiment")) SingleCellExperiment::altExpNames(data) else character()
         stores <- .storedData(data, "modality_annotations") %||% list()
         previous <- .storedData(data, "mz_annotation")
@@ -237,16 +237,16 @@ annotateSM <- function(
             db_3,
             metadata = list(
                 assay = assay,
-                raw_mz_column = raw.mz.column,
+                raw_mz_column = rawMzColumn,
                 polarity = polarity,
                 maldi_matrix = resolved_matrix,
                 ppm = ppm,
-                min_score = min_score,
+                min_score = minScore,
                 ramp_version = .annotation_ramp_version(supplied_index %||% db),
                 adducts = if (is.null(adducts)) {
                     if (inherits(supplied_index, "spamtp_mz_index")) {
                         "complete pre-built index rule space"
-                    } else if (is.null(maldi_matrix)) {
+                    } else if (is.null(maldiMatrix)) {
                         "all validated general rules"
                     } else {
                         "automatically selected from MALDI matrix profile"
@@ -281,7 +281,7 @@ annotateSM <- function(
     }
 
     verbose_message(
-        message_text = "Adding annotations to rowData .... ",
+        messageText = "Adding annotations to rowData .... ",
         verbose = verbose
     )
 
@@ -310,7 +310,7 @@ annotateSM <- function(
     }
     if (!preserve_ids) featureMetadata$.spamtp_feature_id <- NULL
     data <- .setFeatureMetadata(data, featureMetadata, assay)
-    if (isTRUE(return.only.annotated)) {
+    if (isTRUE(returnOnlyAnnotated)) {
         data <- subsetMZFeatures(
             data,
             rownames(experiment)[!is.na(matched)],
@@ -324,94 +324,94 @@ annotateSM <- function(
 
 #' @noRd
 annotateTable <- function(
-    mz_df, db = NULL, ppm = 5, adducts = NULL,
+    mzDf, db = NULL, ppm = 5, adducts = NULL,
     polarity = NULL,
     verbose = TRUE, index = NULL, rules = NULL,
-    ms1_spectrum = NULL, check_formula_mass = TRUE,
-    check_isotopes = TRUE,
-    check_adduct_network = TRUE, min_score = 0,
-    maldi_matrix = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL,
-    infer_structure = c("auto", "never", "always"),
-    structure_backend = c("auto", "native"),
+    ms1Spectrum = NULL, checkFormulaMass = TRUE,
+    checkIsotopes = TRUE,
+    checkAdductNetwork = TRUE, minScore = 0,
+    maldiMatrix = NULL,
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL,
+    inferStructure = c("auto", "never", "always"),
+    structureBackend = c("auto", "native"),
     BPPARAM = BiocParallel::SerialParam(),
-    min_structure_score = 0.05
+    minStructureScore = 0.05
 ) {
-    if (!is.data.frame(mz_df) || !all(c("row_id", "mz") %in% names(mz_df))) {
-        stop("mz_df must be a data.frame containing row_id and mz columns.")
+    if (!is.data.frame(mzDf) || !all(c("row_id", "mz") %in% names(mzDf))) {
+        stop("mzDf must be a data.frame containing row_id and mz columns.")
     }
-    mz_df$mz <- suppressWarnings(as.numeric(mz_df$mz))
-    if (anyNA(mz_df$row_id) || anyDuplicated(mz_df$row_id)) {
-        stop("mz_df$row_id must contain unique, non-missing feature identifiers.", call. = FALSE)
+    mzDf$mz <- suppressWarnings(as.numeric(mzDf$mz))
+    if (anyNA(mzDf$row_id) || anyDuplicated(mzDf$row_id)) {
+        stop("mzDf$row_id must contain unique, non-missing feature identifiers.", call. = FALSE)
     }
-    if (any(!is.finite(mz_df$mz) | mz_df$mz <= 0)) {
-        stop("mz_df$mz must contain positive finite values.")
+    if (any(!is.finite(mzDf$mz) | mzDf$mz <= 0)) {
+        stop("mzDf$mz must contain positive finite values.")
     }
     polarity <- if (is.null(polarity) && inherits(index, "spamtp_mz_index")) {
         index$polarity
     } else {
-        .resolve_maldi_polarity(polarity, maldi_matrix)
+        .resolve_maldi_polarity(polarity, maldiMatrix)
     }
 
     if (is.null(index)) {
         if (is.null(db)) {
             db <- .spamtp_db_resource(
                 "chem_props",
-                version = database_version,
-                source = match.arg(database_source),
-                local_dir = database_local_dir
+                version = databaseVersion,
+                source = match.arg(databaseSource),
+                localDir = databaseLocalDir
             )
         }
         verbose_message(
-            message_text = "Building sorted adduct candidate index ... ",
+            messageText = "Building sorted adduct candidate index ... ",
             verbose = verbose
         )
         index <- buildMZAnnotationIndex(
             db = db, polarity = polarity, adducts = adducts, rules = rules,
-            maldi_matrix = maldi_matrix, infer_structure = infer_structure,
-            structure_backend = structure_backend,
+            maldiMatrix = maldiMatrix, inferStructure = inferStructure,
+            structureBackend = structureBackend,
             BPPARAM = BPPARAM,
-            min_structure_score = min_structure_score
+            minStructureScore = minStructureScore
         )
     } else if (!inherits(index, "spamtp_mz_index")) {
         stop("index must be created by buildMZAnnotationIndex().")
     } else if (!identical(index$polarity, polarity)) {
         stop("The supplied index polarity does not match polarity.")
-    } else if (!is.null(maldi_matrix) &&
-        !identical(index$maldi_matrix, .normalise_maldi_matrix(maldi_matrix))) {
+    } else if (!is.null(maldiMatrix) &&
+        !identical(index$maldi_matrix, .normalise_maldi_matrix(maldiMatrix))) {
         stop("The supplied index MALDI matrix profile does not match maldi_matrix.")
     } else {
         index <- .reuse_mz_index(index, adducts, db, rules,
-            infer_structure = if (!missing(infer_structure)) match.arg(infer_structure),
-            structure_backend = if (!missing(structure_backend)) match.arg(structure_backend),
-            min_structure_score = if (!missing(min_structure_score)) min_structure_score,
-            supplied_BPPARAM = !missing(BPPARAM))
+            inferStructure = if (!missing(inferStructure)) match.arg(inferStructure),
+            structureBackend = if (!missing(structureBackend)) match.arg(structureBackend),
+            minStructureScore = if (!missing(minStructureScore)) minStructureScore,
+            suppliedBpparam = !missing(BPPARAM))
     }
 
     verbose_message(
-        message_text = paste0(
+        messageText = paste0(
             "Searching candidate index at ",
             ppm,
             " ppm ... "
         ),
         verbose = verbose
     )
-    candidates <- if (!nrow(mz_df)) .empty_annotation_result() else queryMZAnnotationIndex(
-        observed_mz = unique(mz_df$mz),
+    candidates <- if (!nrow(mzDf)) .empty_annotation_result() else queryMZAnnotationIndex(
+        observedMz = unique(mzDf$mz),
         index = index,
         ppm = ppm,
-        ms1_spectrum = ms1_spectrum,
-        check_formula_mass = check_formula_mass,
-        check_isotopes = check_isotopes,
-        check_adduct_network = check_adduct_network,
-        min_score = min_score
+        ms1Spectrum = ms1Spectrum,
+        checkFormulaMass = checkFormulaMass,
+        checkIsotopes = checkIsotopes,
+        checkAdductNetwork = checkAdductNetwork,
+        minScore = minScore
     )
 
     empty_result <- function() {
         data.frame(
-            ID = mz_df$row_id[0], Match = logical(), observed_mz = numeric(),
+            ID = mzDf$row_id[0], Match = logical(), observed_mz = numeric(),
             Reference_mz = numeric(), Error = numeric(), Adduct = character(),
             Formula = character(), FormulaStatus = character(),
             Exactmass = numeric(), Isomers = character(),
@@ -438,7 +438,7 @@ annotateTable <- function(
         return(empty_result())
     }
 
-    row_map <- data.frame(ID = mz_df$row_id, observed_mz = mz_df$mz)
+    row_map <- data.frame(ID = mzDf$row_id, observed_mz = mzDf$mz)
     candidates$.candidate_order <- seq_len(nrow(candidates))
     matched <- merge(
         row_map, candidates,
@@ -588,14 +588,14 @@ getRefinedAnnotations <- function(obj, assay = "main", n = 1) {
 #' Adds in backslashes required to take into account special using grepl such as
 #' brackets and +
 #'
-#' @param input_string Character string requiring additional backslashes
+#' @param inputString Character string requiring additional backslashes
 #'
 #' @return Character string containing double backslashes around special
 #'   features
 #' @noRd
-add_backslashes_to_specialfeatures <- function(input_string) {
+add_backslashes_to_specialfeatures <- function(inputString) {
     special <- c("\\", ".", "^", "$", "|", "(", ")", "[", "]", "{", "}", "*", "+", "?")
-    vapply(as.character(input_string), function(value) {
+    vapply(as.character(inputString), function(value) {
         if (is.na(value)) return(NA_character_)
         chars <- strsplit(value, "", fixed = TRUE)[[1]]
         chars[chars %in% special] <- paste0("\\", chars[chars %in% special])
@@ -614,9 +614,9 @@ add_backslashes_to_specialfeatures <- function(input_string) {
 #'   Punctuation is matched as text, not as a regular expression.
 #' @param assay Primary or alternative experiment containing the annotated
 #'   m/z metadata. Defaults to `"main"`.
-#' @param search.exact Boolean value defining if to only return m/z values which
+#' @param searchExact Boolean value defining if to only return m/z values which
 #'   contain the exact match to the metabolite search term (default = FALSE).
-#' @param column.name Character string defining the feature-metadata column
+#' @param columnName Character string defining the feature-metadata column
 #'   where annotations are stored (default = "all_IsomerNames").
 #'
 #' @return A Data.Frame containing the peak metadata corresponding to the
@@ -626,13 +626,13 @@ add_backslashes_to_specialfeatures <- function(input_string) {
 #' @examples
 #' data(spamtp_example)
 #' spe <- spamtp_example$experiment
-#' searchAnnotations(spe, "Glucose", search.exact = TRUE)
+#' searchAnnotations(spe, "Glucose", searchExact = TRUE)
 searchAnnotations <- function(
     data,
     metabolite,
     assay = "main",
-    search.exact = FALSE,
-    column.name = "all_IsomerNames"
+    searchExact = FALSE,
+    columnName = "all_IsomerNames"
 ) {
     if (!is.character(metabolite) || length(metabolite) != 1L ||
         is.na(metabolite) || !nzchar(metabolite)) {
@@ -644,20 +644,20 @@ searchAnnotations <- function(
         feature_metadata$mz_names <- rownames(feature_metadata)
     }
 
-    if (!column.name %in% names(feature_metadata)) {
+    if (!columnName %in% names(feature_metadata)) {
         compatible_columns <- c(
             "all_IsomerNames", "all_Isomers", "IsomerNames", "annotation"
         )
         available <- compatible_columns[compatible_columns %in% names(feature_metadata)]
-        if (identical(column.name, "all_IsomerNames") && length(available)) {
-            column.name <- available[[1]]
+        if (identical(columnName, "all_IsomerNames") && length(available)) {
+            columnName <- available[[1]]
         } else {
             # Current serialized/mapped objects can retain the versioned annotation
             # store even when an older feature-label column was not propagated.
             annotation_object <- .pathwayAnnotationObject(data, assay)
             annotations <- tryCatch(
                 .get_mz_annotations(annotation_object,
-                    annotation_source = "current"
+                    annotationSource = "current"
                 ),
                 error = function(e) NULL
             )
@@ -683,23 +683,23 @@ searchAnnotations <- function(
                     by = "mz_names"
                 )
                 rownames(feature_metadata) <- feature_metadata$mz_names
-                column.name <- ".annotation_search"
+                columnName <- ".annotation_search"
             } else {
                 stop(
-                    "Annotation column '", column.name, "' is not present in assay '",
+                    "Annotation column '", columnName, "' is not present in assay '",
                     assay, "', and no current mz_annotation labels are available."
                 )
             }
         }
     }
 
-    annotation_values <- as.character(feature_metadata[[column.name]])
+    annotation_values <- as.character(feature_metadata[[columnName]])
     indexs <- which(!is.na(annotation_values) &
         grepl(search_term, tolower(annotation_values), fixed = TRUE))
 
-    if (search.exact) {
-        exact <- vapply(annotation_values[indexs], function(annotation_list) {
-            split_list <- trimws(unlist(strsplit(annotation_list, ";")))
+    if (searchExact) {
+        exact <- vapply(annotation_values[indexs], function(annotationList) {
+            split_list <- trimws(unlist(strsplit(annotationList, ";")))
             tolower(metabolite) %in% tolower(split_list)
         }, logical(1))
         indexs <- indexs[exact]
@@ -737,7 +737,7 @@ findDuplicateAnnotations <- function(data, assay = "main") {
 #'   for.
 #' @param assay Primary or alternative experiment containing the annotated
 #'   m/z metadata. Defaults to `"main"`.
-#' @param metadata.column Character string corresponding to the assay feature
+#' @param metadataColumn Character string corresponding to the assay feature
 #'   metadata column to extract (default = "all_IsomerNames").
 #' @param separate Boolean indicating whether to separate the metadata string
 #'   and return a vector. Note, if `TRUE` the metadata column should contain
@@ -752,27 +752,27 @@ findDuplicateAnnotations <- function(data, assay = "main") {
 #' spe <- spamtp_example$experiment
 #' getMZMetadata(spe, mz = "ion1")
 #  ##### Example for getting metabolite annotation for a m/z value
-#' # getMZMetadata(SpaMTP, mz = "mz-100", metadata.column = "all_IsomerNames")
+#' # getMZMetadata(SpaMTP, mz = "mz-100", metadataColumn = "all_IsomerNames")
 #'
 #' ##### Example for getting metabolite annotation IDs for a m/z value
-#' # getMZMetadata(SpaMTP, mz = "mz-100", metadata.column = "all_Isomers")
+#' # getMZMetadata(SpaMTP, mz = "mz-100", metadataColumn = "all_Isomers")
 getMZMetadata <- function(
     obj,
     mz,
     assay = "main",
-    metadata.column = "all_IsomerNames",
+    metadataColumn = "all_IsomerNames",
     separate = TRUE
 ) {
     df <- .featureMetadata(obj, assay)
     if (length(mz) != 1L || is.na(mz)) stop("Supply one feature name in mz.", call. = FALSE)
-    if (!metadata.column %in% names(df)) {
-        stop("Unknown feature metadata column: '", metadata.column, "'.", call. = FALSE)
+    if (!metadataColumn %in% names(df)) {
+        stop("Unknown feature metadata column: '", metadataColumn, "'.", call. = FALSE)
     }
     ids <- rownames(df)
     position <- match(as.character(mz), ids)
     if (is.na(position) && "mz_names" %in% names(df)) position <- match(mz, df$mz_names)
     if (is.na(position)) stop("Unknown m/z feature: '", mz, "'.", call. = FALSE)
-    mz_row <- df[[metadata.column]][position]
+    mz_row <- df[[metadataColumn]][position]
     if (separate) {
         return(trimws(strsplit(as.character(mz_row), split = ";", fixed = TRUE)[[1]]))
     } else {
@@ -804,7 +804,7 @@ check_and_truncate_adduct_vector <- function(adduct, db, verbose = TRUE) {
     missing_elements <- adduct[!element_exists]
     if (length(missing_elements) > 0) {
         for (missing_element in missing_elements) {
-            verbose_message(message_text = paste0(
+            verbose_message(messageText = paste0(
                 "Adduct ",
                 missing_element,
                 " is not in the DB, it has been removed from the search."
@@ -923,14 +923,14 @@ db_adduct_filter <- function(db, adduct, polarity = "neg", verbose = TRUE) {
 #' Checks if a formula contains only the allowed elements
 #'
 #' @param formula Character string defining t
-#' @param allowed_elements Vector of character strings defining allowed elements
+#' @param allowedElements Vector of character strings defining allowed elements
 #'
 #' @noRd
-is_formula_valid <- function(formula, allowed_elements) {
+is_formula_valid <- function(formula, allowedElements) {
     elements <-
         stringr::str_extract_all(formula, "[A-Z][a-z]*")[[1]] # defines an element as a Uppercase immediately followed by none or more lowercase letters.
 
-    all(elements %in% allowed_elements) # Then checks if they are in the vector of allowed elements.
+    all(elements %in% allowedElements) # Then checks if they are in the vector of allowed elements.
 }
 
 
@@ -967,7 +967,7 @@ formula_filter <- function(df, elements = NULL) {
             .data$formula,
             is_formula_valid,
             logical(1),
-            allowed_elements = allowed_elements
+            allowedElements = allowed_elements
         ))
 
     return(filtered_df)
@@ -975,9 +975,9 @@ formula_filter <- function(df, elements = NULL) {
 
 
 #' @noRd
-calculate_bounds <- function(input_df) {
-    lower_bound <- min(input_df$mz, na.rm = TRUE)
-    upper_bound <- max(input_df$mz, na.rm = TRUE)
+calculate_bounds <- function(inputDf) {
+    lower_bound <- min(inputDf$mz, na.rm = TRUE)
+    upper_bound <- max(inputDf$mz, na.rm = TRUE)
 
     bounds <-
         list(lower_bound = lower_bound, upper_bound = upper_bound)
@@ -987,9 +987,9 @@ calculate_bounds <- function(input_df) {
 
 
 #' @noRd
-ppm_error <- function(observed_mz, reference_mz, ppm) {
+ppm_error <- function(observedMz, referenceMz, ppm) {
     abs_diff_ppm <-
-        abs(observed_mz - reference_mz) / abs(reference_mz) * 1e6
+        abs(observedMz - referenceMz) / abs(referenceMz) * 1e6
     if (abs_diff_ppm <= ppm) {
         return(abs_diff_ppm)
     } else {
@@ -999,9 +999,9 @@ ppm_error <- function(observed_mz, reference_mz, ppm) {
 
 
 #' @noRd
-ppm_range_match <- function(observed_mz, reference_mz, ppm) {
+ppm_range_match <- function(observedMz, referenceMz, ppm) {
     abs_diff_ppm <-
-        abs(observed_mz - reference_mz) / abs(reference_mz) * 1e6
+        abs(observedMz - referenceMz) / abs(referenceMz) * 1e6
     abs_diff_ppm <= ppm
 }
 
@@ -1016,7 +1016,7 @@ ppm_range_match <- function(observed_mz, reference_mz, ppm) {
 #' annotation. Features at unequal distances retain the nearest-mass rule.
 #' Existing labels are preserved by default, including on unmatched features.
 #' Custom labels are display metadata: they do not add scored candidates or
-#' change pathway evidence. Use a separate `annotation.column` to keep manual
+#' change pathway evidence. Use a separate `annotationColumn` to keep manual
 #' labels apart from the candidate summaries produced by `annotateSM()`.
 #'
 #' @param data Bioconductor experiment containing m/z intensity values.
@@ -1025,14 +1025,14 @@ ppm_range_match <- function(observed_mz, reference_mz, ppm) {
 #'   the relative m/z mass respectively.
 #' @param assay Primary or alternative experiment whose `rowData()` receives
 #'   the annotations (default = "main").
-#' @param return.only.annotated Boolean defining whether to return a
+#' @param returnOnlyAnnotated Boolean defining whether to return a
 #'   Bioconductor experiment containing only successfully annotated m/z values
 #'   (default = FALSE).
-#' @param mass.threshold Numeric value defining the acceptable threshold
+#' @param massThreshold Numeric value defining the acceptable threshold
 #'   (plus-minus) between the custom annotations and the actual m/z values
 #'   contained within the SpaMTP object, in Da (default = 0.05). The boundary
 #'   is inclusive; zero keeps exact matches and NULL disables the distance limit.
-#' @param annotation.column Name of the `rowData()` column receiving annotations
+#' @param annotationColumn Name of the `rowData()` column receiving annotations
 #'   (default = "all_IsomerNames").
 #' @param append Append distinct labels and metadata values on matched features
 #'   (default TRUE). FALSE replaces values only on matched features.
@@ -1053,9 +1053,9 @@ addCustomMZAnnotations <- function(
     data,
     annotations,
     assay = "main",
-    return.only.annotated = FALSE,
-    mass.threshold = 0.05,
-    annotation.column = "all_IsomerNames",
+    returnOnlyAnnotated = FALSE,
+    massThreshold = 0.05,
+    annotationColumn = "all_IsomerNames",
     append = TRUE
 ) {
     experiment <- .experimentForAssay(data, assay)
@@ -1066,21 +1066,21 @@ addCustomMZAnnotations <- function(
             call. = FALSE
         )
     }
-    if (!is.null(mass.threshold) && (!is.numeric(mass.threshold) || length(mass.threshold) != 1L ||
-        !is.finite(mass.threshold) || mass.threshold < 0)) {
+    if (!is.null(massThreshold) && (!is.numeric(massThreshold) || length(massThreshold) != 1L ||
+        !is.finite(massThreshold) || massThreshold < 0)) {
         stop(
-            "mass.threshold must be NULL or a finite non-negative number.",
+            "massThreshold must be NULL or a finite non-negative number.",
             call. = FALSE
         )
     }
     if (!is.logical(append) || length(append) != 1L || is.na(append)) {
         stop("append must be TRUE or FALSE.", call. = FALSE)
     }
-    if (length(annotation.column) != 1L || is.na(annotation.column) ||
-        !nzchar(annotation.column) || annotation.column %in%
+    if (length(annotationColumn) != 1L || is.na(annotationColumn) ||
+        !nzchar(annotationColumn) || annotationColumn %in%
         c("mz", "raw_mz", "mz_names", ".spamtp_feature_id")) {
         stop(
-            "annotation.column must not replace the feature mass or identifier.",
+            "annotationColumn must not replace the feature mass or identifier.",
             call. = FALSE
         )
     }
@@ -1091,14 +1091,14 @@ addCustomMZAnnotations <- function(
         .annotationFeatureIds(featureData)
     }
     masses <- .massValues(featureData, rownames(experiment))
-    matches <- .match_custom_masses(annotations$mass, masses, mass.threshold)
+    matches <- .match_custom_masses(annotations$mass, masses, massThreshold)
     annotations <- annotations[matches$reference_row, , drop = FALSE]
     matched <- matches$feature_row
     annotations$true_mzs <- masses[matched]
     annotations$mass_diff_da <- matches$mass_diff_da
     annotations$ppm_diff <- matches$ppm_diff
-    annotations[[annotation.column]] <- as.character(annotations$annotation)
-    if (annotation.column != "annotation") annotations$annotation <- NULL
+    annotations[[annotationColumn]] <- as.character(annotations$annotation)
+    if (annotationColumn != "annotation") annotations$annotation <- NULL
     groups <- split(seq_len(nrow(matches)), matched)
     featureData$mz_names <- rownames(experiment)
     protected <- c("mz", "raw_mz", "mz_names", ".spamtp_feature_id")
@@ -1120,7 +1120,7 @@ addCustomMZAnnotations <- function(
         featureData[[column]] <- values
     }
     data <- .setFeatureMetadata(data, featureData, assay)
-    if (isTRUE(return.only.annotated)) {
+    if (isTRUE(returnOnlyAnnotated)) {
         selected <- sort(unique(matched))
         data <- subsetMZFeatures(data, rownames(experiment)[selected], assay)
     }
@@ -1164,32 +1164,32 @@ addCustomMZAnnotations <- function(
 #'
 #' @param obj Bioconductor experiment containing m/z intensity values for
 #'   annotation. Data should be generated with a FMP10 matrix.
-#' @param only.fmp.adduct Boolean indicating if only metabolites with FMP10+
+#' @param onlyFmpAdduct Boolean indicating if only metabolites with FMP10+
 #'   adducts (`+FMP10`, +`2FMP10`, etc.) should be assigned to m/z values
 #'   (default = FALSE).
-#' @param add.custom.annotation data.frame containing addition FMP10 metabolite
+#' @param addCustomAnnotation data.frame containing addition FMP10 metabolite
 #'   annotations that are not in the current FMP10 database. Note: this
 #'   data.frame must contain these column c("mass", "annotation", "Adduct",
 #'   "Formula", "Isomers", "Isomers_IDs"). If set to NULL, only reference FMP10
 #'   database will be used (default = NULL).
 #' @param assay Primary or alternative experiment whose `rowData()` receives
 #'   the annotations (default = "main").
-#' @param return.only.annotated Boolean defining whether to return a
+#' @param returnOnlyAnnotated Boolean defining whether to return a
 #'   Bioconductor experiment containing only successfully annotated m/z values
 #'   (default = FALSE).
-#' @param mass.threshold Numeric value defining the acceptable threshold
+#' @param massThreshold Numeric value defining the acceptable threshold
 #'   (plus-minus) between the custom annotations and the actual m/z values
 #'   contained within the SpaMTP object, in Da (default = 0.05). The boundary
 #'   is inclusive; zero keeps exact matches and NULL disables the distance limit.
 #'   Choose this tolerance for the calibrated instrument accuracy; 0.05 Da
 #'   can be permissive for high-resolution data. `all_Errors` is reported in ppm.
-#' @param annotation.column Name of the `rowData()` column receiving annotations
+#' @param annotationColumn Name of the `rowData()` column receiving annotations
 #'   (default = "all_IsomerNames").
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
-#' @param database_version SpaMTPdb/RaMP version used for annotation lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseVersion SpaMTPdb/RaMP version used for annotation lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #'
 #' @return Bioconductor experiment containing the relative metabolite
 #'   annotations stored in the feature metadata dataframe.
@@ -1209,38 +1209,38 @@ addCustomMZAnnotations <- function(
 #' )
 #' SummarizedExperiment::rowData(annotated)["ion7", ]
 addFMP10Annotations <- function(
-    obj, only.fmp.adduct = FALSE,
-    add.custom.annotation = NULL,
+    obj, onlyFmpAdduct = FALSE,
+    addCustomAnnotation = NULL,
     assay = "main",
-    return.only.annotated = FALSE,
-    mass.threshold = 0.05,
-    annotation.column = "all_IsomerNames",
+    returnOnlyAnnotated = FALSE,
+    massThreshold = 0.05,
+    annotationColumn = "all_IsomerNames",
     database = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL
 ) {
     database_resources <- .spamtp_db_bundle(
         c("filtered_fmp10", "chem_props"),
         database = database,
-        version = database_version,
-        source = match.arg(database_source),
-        local_dir = database_local_dir
+        version = databaseVersion,
+        source = match.arg(databaseSource),
+        localDir = databaseLocalDir
     )
     filtered_fmp10 <- database_resources$filtered_fmp10
     chem_props <- database_resources$chem_props
 
-    if (!is.null(mass.threshold) &&
-        (!is.numeric(mass.threshold) || length(mass.threshold) != 1L ||
-            !is.finite(mass.threshold) || mass.threshold < 0)) {
-        stop("mass.threshold must be NULL or one non-negative finite number.")
+    if (!is.null(massThreshold) &&
+        (!is.numeric(massThreshold) || length(massThreshold) != 1L ||
+            !is.finite(massThreshold) || massThreshold < 0)) {
+        stop("massThreshold must be NULL or one non-negative finite number.")
     }
 
-    if (only.fmp.adduct) {
+    if (onlyFmpAdduct) {
         filtered_fmp10 <- filtered_fmp10[grepl(x = filtered_fmp10$Adduct, pattern = "FMP10"), ]
     }
 
-    if (!is.null(add.custom.annotation)) {
+    if (!is.null(addCustomAnnotation)) {
         required_columns <- c(
             "mass",
             "annotation",
@@ -1250,12 +1250,12 @@ addFMP10Annotations <- function(
             "Isomers_IDs"
         )
 
-        if (all(required_columns %in% colnames(add.custom.annotation))) {
-            add.custom.annotation$IsomerNames <- add.custom.annotation$annotation
-            add.custom.annotation <- add.custom.annotation[c(required_columns, "IsomerNames")]
-            filtered_fmp10 <- dplyr::bind_rows(filtered_fmp10, add.custom.annotation)
+        if (all(required_columns %in% colnames(addCustomAnnotation))) {
+            addCustomAnnotation$IsomerNames <- addCustomAnnotation$annotation
+            addCustomAnnotation <- addCustomAnnotation[c(required_columns, "IsomerNames")]
+            filtered_fmp10 <- dplyr::bind_rows(filtered_fmp10, addCustomAnnotation)
         } else {
-            stop("data.frame provided in `add.custom.annotation` does not contain the correct column names. Column names must be: c('mass', 'annotation', 'Adduct', 'Formula', 'Isomers', 'Isomers_IDs')")
+            stop("data.frame provided in `addCustomAnnotation` does not contain the correct column names. Column names must be: c('mass', 'annotation', 'Adduct', 'Formula', 'Isomers', 'Isomers_IDs')")
         }
     }
 
@@ -1265,17 +1265,17 @@ addFMP10Annotations <- function(
         featureMetadata,
         initialize = TRUE
     )
-    if (!is.character(annotation.column) || length(annotation.column) != 1L ||
-        is.na(annotation.column) || !nzchar(annotation.column) ||
-        annotation.column %in% c("mz", "raw_mz", "mz_names", ".spamtp_feature_id")) {
-        stop("annotation.column must not replace the feature mass or identifier.", call. = FALSE)
+    if (!is.character(annotationColumn) || length(annotationColumn) != 1L ||
+        is.na(annotationColumn) || !nzchar(annotationColumn) ||
+        annotationColumn %in% c("mz", "raw_mz", "mz_names", ".spamtp_feature_id")) {
+        stop("annotationColumn must not replace the feature mass or identifier.", call. = FALSE)
     }
     if (!is.numeric(filtered_fmp10$mass) ||
         any(!is.finite(filtered_fmp10$mass) | filtered_fmp10$mass <= 0)) {
         stop("FMP10 reference masses must be positive finite numbers.", call. = FALSE)
     }
     masses <- .massValues(featureMetadata, rownames(featureMetadata))
-    matches <- .match_custom_masses(filtered_fmp10$mass, masses, mass.threshold)
+    matches <- .match_custom_masses(filtered_fmp10$mass, masses, massThreshold)
     db_3 <- filtered_fmp10[matches$reference_row, , drop = FALSE]
     db_3$feature <- rownames(featureMetadata)[matches$feature_row]
     db_3$feature_id <- featureMetadata$.spamtp_feature_id[matches$feature_row]
@@ -1302,15 +1302,15 @@ addFMP10Annotations <- function(
     obj <- .setStoredData(obj, "db_3", db_3)
     current_annotations <- .fmp10_current_annotations(
         db_3,
-        mass_threshold = mass.threshold,
-        chemical_properties = chem_props
+        massThreshold = massThreshold,
+        chemicalProperties = chem_props
     )
     obj <- .setStoredData(obj, "mz_annotation", .annotation_store(
         current_annotations,
         metadata = list(
             engine = "curated-fmp10-v2",
             assay = assay,
-            mass_tolerance_da = mass.threshold,
+            mass_tolerance_da = massThreshold,
             ramp_version = .annotation_ramp_version(chem_props),
             database = paste0(
                 "curated FMP10 panel mapped to ", .spamtp_db_label(chem_props)
@@ -1350,10 +1350,10 @@ addFMP10Annotations <- function(
         featureMetadata[[column]] <- value
     }
 
-    featureMetadata[[annotation.column]] <- featureMetadata$all_IsomerNames
+    featureMetadata[[annotationColumn]] <- featureMetadata$all_IsomerNames
     featureMetadata$mz_names <- rownames(featureMetadata)
     obj <- .setFeatureMetadata(obj, featureMetadata, assay)
-    if (isTRUE(return.only.annotated)) {
+    if (isTRUE(returnOnlyAnnotated)) {
         obj <- subsetMZFeatures(obj, rownames(featureMetadata)[!is.na(matched)], assay)
     }
     return(obj)
@@ -1361,34 +1361,34 @@ addFMP10Annotations <- function(
 
 
 .fmp10_current_annotations <- function(
-    db_3, mass_threshold,
-    chemical_properties
+    db3, massThreshold,
+    chemicalProperties
 ) {
     required <- c(
         "mass", "observed_mz", "Adduct", "Formula", "Isomers",
         "Isomers_IDs", "IsomerNames"
     )
-    missing <- setdiff(required, names(db_3))
+    missing <- setdiff(required, names(db3))
     if (length(missing)) {
         stop(
             "FMP10 annotation result is missing required column(s): ",
             paste(missing, collapse = ", ")
         )
     }
-    if (!all(c("ramp_id", "chem_source_id") %in% names(chemical_properties))) {
-        stop("chemical_properties must contain ramp_id and chem_source_id columns.")
+    if (!all(c("ramp_id", "chem_source_id") %in% names(chemicalProperties))) {
+        stop("chemicalProperties must contain ramp_id and chem_source_id columns.")
     }
 
     result <- tidyr::separate_rows(
-        as.data.frame(db_3, stringsAsFactors = FALSE),
+        as.data.frame(db3, stringsAsFactors = FALSE),
         "Isomers_IDs",
         sep = "\\s*;\\s*"
     )
     result$.source_key <- toupper(trimws(as.character(result$Isomers_IDs)))
 
     source_map <- unique(data.frame(
-        .source_key = toupper(trimws(as.character(chemical_properties$chem_source_id))),
-        ramp_id = toupper(trimws(as.character(chemical_properties$ramp_id))),
+        .source_key = toupper(trimws(as.character(chemicalProperties$chem_source_id))),
+        ramp_id = toupper(trimws(as.character(chemicalProperties$ramp_id))),
         stringsAsFactors = FALSE
     ))
     source_map <- source_map[
@@ -1407,10 +1407,10 @@ addFMP10Annotations <- function(
     result$Reference_mz <- suppressWarnings(as.numeric(result$mass))
     absolute_error <- abs(result$observed_mz - result$Reference_mz)
     result$Error <- absolute_error / result$Reference_mz * 1e6
-    if (is.null(mass_threshold) || mass_threshold == 0) {
+    if (is.null(massThreshold) || massThreshold == 0) {
         result$MassScore <- rep(1, nrow(result))
     } else {
-        result$MassScore <- exp(-0.5 * (absolute_error / (mass_threshold / 3))^2)
+        result$MassScore <- exp(-0.5 * (absolute_error / (massThreshold / 3))^2)
     }
     result$ChemicalScore <- rep(1, nrow(result))
     result$IsotopeScore <- rep(NA_real_, nrow(result))
@@ -1456,18 +1456,18 @@ addFMP10Annotations <- function(
 #' @param ppm Mass tolerance in ppm (default 5). Set to zero
 #'   for exact numerical matches.
 #' @param adducts Optional adduct names/notations; see `adductRules()`. If
-#'   `NULL`, use the complete rule space selected from `maldi_matrix`, or all
+#'   `NULL`, use the complete rule space selected from `maldiMatrix`, or all
 #'   validated general rules for the selected polarity when no matrix is given.
 #' @param polarity Character string defining the ion mode. When `NULL`, infer
 #'   it from a supplied index or MALDI matrix profile, otherwise use positive.
 #' @param verbose Boolean indicating whether to show the message. If TRUE the
 #'   message will be show, else the message will be suppressed (default = TRUE).
-#' @param maldi_matrix Optional MALDI matrix/reagent profile used for automatic
+#' @param maldiMatrix Optional MALDI matrix/reagent profile used for automatic
 #'   rule selection. The `adducts` argument remains an optional restriction.
-#' @param database_version SpaMTPdb/RaMP version used when `db = NULL`.
-#' @param database_source Database source used when `db = NULL`; see
+#' @param databaseVersion SpaMTPdb/RaMP version used when `db = NULL`.
+#' @param databaseSource Database source used when `db = NULL`; see
 #'   [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #' @param ... Additional indexed annotation/scoring arguments passed to
 #'   `annotateTable()`, such as `index`, `rules`, or `ms1_spectrum`.
 #'
@@ -1484,10 +1484,10 @@ addFMP10Annotations <- function(
 annotateBigData <- function(
     mzs, db = NULL, ppm = 5, adducts = NULL,
     polarity = NULL,
-    verbose = TRUE, maldi_matrix = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL, ...
+    verbose = TRUE, maldiMatrix = NULL,
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL, ...
 ) {
     mz_df <- data.frame(mz = unique(mzs))
     mz_df$row_id <- seq_along(mz_df[["mz"]])
@@ -1497,9 +1497,9 @@ annotateBigData <- function(
         mz_df,
         db = db, ppm = ppm, adducts = adducts,
         polarity = polarity, verbose = verbose,
-        maldi_matrix = maldi_matrix, database_version = database_version,
-        database_source = match.arg(database_source),
-        database_local_dir = database_local_dir, ...
+        maldiMatrix = maldiMatrix, databaseVersion = databaseVersion,
+        databaseSource = match.arg(databaseSource),
+        databaseLocalDir = databaseLocalDir, ...
     )
 
     result_df <- annotations %>%

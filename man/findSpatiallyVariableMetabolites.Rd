@@ -9,7 +9,7 @@ findSpatiallyVariableMetabolites(
   assay = "main",
   assayName = "counts",
   nfeatures = 2000,
-  max_spots = 5000,
+  maxSpots = 5000,
   seed = 1,
   verbose = TRUE,
   sampleId = NULL
@@ -25,7 +25,7 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{nfeatures}{Maximum variable features selected.}
 
-\item{max_spots}{Maximum pixels for the dense distance matrix; NULL uses all.}
+\item{maxSpots}{Maximum pixels for the dense distance matrix; NULL uses all.}
 
 \item{seed}{Random seed for sampling; caller RNG state is restored.}
 

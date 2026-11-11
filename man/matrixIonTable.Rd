@@ -5,18 +5,18 @@
 \title{Ions formed by the MALDI matrix itself}
 \usage{
 matrixIonTable(
-  maldi_matrix = "dhb",
+  maldiMatrix = "dhb",
   polarity = c("positive", "negative"),
-  max_molecules = 3L
+  maxMolecules = 3L
 )
 }
 \arguments{
-\item{maldi_matrix}{One of \code{"dhb"}, \code{"chca"}, \code{"9aa"}, \code{"dan"} or
+\item{maldiMatrix}{One of \code{"dhb"}, \code{"chca"}, \code{"9aa"}, \code{"dan"} or
 \code{"norharmane"} (case-insensitive aliases accepted).}
 
 \item{polarity}{\code{"positive"} or \code{"negative"}.}
 
-\item{max_molecules}{Largest cluster size.}
+\item{maxMolecules}{Largest cluster size.}
 }
 \value{
 A data frame with the ion label, cluster size, water losses and m/z.

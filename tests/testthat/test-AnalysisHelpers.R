@@ -7,14 +7,14 @@ annotatedFixture <- function() {
         mol_formula = c("C5H8O5", "C5H8O5", "C6H12O6"),
         monoisotop_mass = c(148.037173366, 148.037173366, 180.063388104)
     )
-    index <- buildMZAnnotationIndex(chemical, adducts = "M+H", infer_structure = "never")
+    index <- buildMZAnnotationIndex(chemical, adducts = "M+H", inferStructure = "never")
     object <- nativeFixture()
     SummarizedExperiment::rowData(object)$mz <- c(
         MetaboCoreUtils::mass2mz(c(148.037173366, 180.063388104), "[M+H]+")[, 1], 600
     )
     annotateSM(object,
-        index = index, ppm = 5, min_score = 0,
-        return.only.annotated = FALSE, save.intermediate = TRUE, verbose = FALSE
+        index = index, ppm = 5, minScore = 0,
+        returnOnlyAnnotated = FALSE, saveIntermediate = TRUE, verbose = FALSE
     )
 }
 
@@ -110,9 +110,9 @@ duplicateMassFixture <- function() {
             common_name = "compoundA", chem_data_source = "hmdb",
             mol_formula = "C5H8O5", monoisotop_mass = 148.037173366
         ),
-        raw.mz.column = "mz", adducts = "M+H", ppm = 5,
-        min_score = 0, return.only.annotated = FALSE, verbose = FALSE,
-        infer_structure = "never"
+        rawMzColumn = "mz", adducts = "M+H", ppm = 5,
+        minScore = 0, returnOnlyAnnotated = FALSE, verbose = FALSE,
+        inferStructure = "never"
     )
     object
 }
@@ -145,7 +145,7 @@ test_that("annotation identity survives renaming and custom annotation", {
         .spamtp_feature_id = "must not overwrite the key"
     )
     object <- addCustomMZAnnotations(object, custom,
-        annotation.column = "custom_name"
+        annotationColumn = "custom_name"
     )
     expect_identical(
         SummarizedExperiment::rowData(object)$.spamtp_feature_id, keys
@@ -157,7 +157,7 @@ test_that("annotation identity survives renaming and custom annotation", {
         original$observed_mz[original$feature == "b"]
     )
     expect_error(addCustomMZAnnotations(object, custom,
-        annotation.column = ".spamtp_feature_id"
+        annotationColumn = ".spamtp_feature_id"
     ), "must not replace")
 })
 
@@ -247,8 +247,8 @@ test_that("candidate helpers cannot borrow an alternative experiment's store", {
         mol_formula = "C5H8O5", monoisotop_mass = 148.037173366
     )
     result <- annotateSM(object, assay = "transcriptome", db = db,
-        adducts = "M+H", min_score = 0, return.only.annotated = FALSE,
-        infer_structure = "never", verbose = FALSE
+        adducts = "M+H", minScore = 0, returnOnlyAnnotated = FALSE,
+        inferStructure = "never", verbose = FALSE
     )
     expect_identical(annotationCandidates(result), expected)
     expect_identical(summarizeAnnotationScores(result, 0)$matched_features, 2L)
@@ -260,8 +260,8 @@ test_that("candidate helpers cannot borrow an alternative experiment's store", {
     SummarizedExperiment::rowData(alternative)$mz <- c(149.04445, 200)
     SingleCellExperiment::altExp(object, "transcriptome") <- alternative
     result <- annotateSM(object, assay = "transcriptome", db = db,
-        adducts = "M+H", return.only.annotated = FALSE,
-        infer_structure = "never", verbose = FALSE
+        adducts = "M+H", returnOnlyAnnotated = FALSE,
+        inferStructure = "never", verbose = FALSE
     )
     expect_error(annotationCandidates(result), "No current indexed")
 })
@@ -281,8 +281,8 @@ test_that("custom labels cannot recreate missing keys against an old store", {
         ramp_id = "RAMP_C_OTHER", chem_source_id = "hmdb:OTHER",
         common_name = "other", chem_data_source = "hmdb",
         mol_formula = "C5H8O5", monoisotop_mass = 148.037173366
-    ), adducts = "M+H", save.intermediate = FALSE,
-    return.only.annotated = FALSE, infer_structure = "never", verbose = FALSE)
+    ), adducts = "M+H", saveIntermediate = FALSE,
+    returnOnlyAnnotated = FALSE, inferStructure = "never", verbose = FALSE)
     expect_null(SummarizedExperiment::rowData(result)$.spamtp_feature_id)
     expect_error(annotationCandidates(result), "keys must be present and unique")
 })

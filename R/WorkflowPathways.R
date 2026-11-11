@@ -40,15 +40,15 @@
             assay <- paste0("workflow_ids_", name)
             spec <- result$settings$modalities[[name]]
             result$object <- createPathwayAssay(result$object,
-                analyte_type = "genes",
+                analyteType = "genes",
                 assay = result$settings$assay_names[[name]], assayName = "workflow", outputExperiment = assay,
-                pathway_index = index, organism = spec$species, duplicate_genes = cfg$duplicate_genes %||% "error", verbose = FALSE
+                pathwayIndex = index, organism = spec$species, duplicateGenes = cfg$duplicate_genes %||% "error", verbose = FALSE
             )
             result$analysis[[name]]$pathways$identity_assay <- assay
         }
         markers <- findAllDEMs(result$object,
             ident = field, assay = assay, assayName = "workflow",
-            method = "markers", min_region_size = result$region_analysis$min_region_size, spatial_blocks = 0
+            method = "markers", minRegionSize = result$region_analysis$min_region_size, spatialBlocks = 0
         )
         if (!identical(markers$status, "completed")) next
         tab <- markers$DEMs
@@ -61,7 +61,7 @@
         r <- stats::setNames(list(mat), type)
         enrichment <- findRegionalPathways(result$object,
             ident = field, ranks = r,
-            pathway_index = index, min_path_size = cfg$min_size %||% 5, max_path_size = cfg$max_size %||% 500,
+            pathwayIndex = index, minPathSize = cfg$min_size %||% 5, maxPathSize = cfg$max_size %||% 500,
             verbose = FALSE
         )
         result$analysis[[name]]$pathways$regional <- enrichment
@@ -70,7 +70,7 @@
         if (isTRUE(cfg$geseca) && any(result$analysis[[name]]$pathways$coverage$eligible)) {
             E <- .assayData(result$object, assay, "workflow")
             result$analysis[[name]]$pathways$geseca <- runRAMPGeseca(E,
-                pathway_index = index,
+                pathwayIndex = index,
                 organism = result$settings$modalities[[name]]$species %||% "custom",
                 minSize = cfg$min_size %||% 5, maxSize = cfg$max_size %||% 500,
                 nPermSimple = 1000, eps = 1e-10)
@@ -87,7 +87,7 @@
         cfg <- result$settings$modalities[[names(ranking)[1]]]$pathways
         result$joint_pathways <- findRegionalPathways(result$object,
             ident = field, ranks = r,
-            pathway_index = indices[[1]], min_path_size = cfg$min_size %||% 5, max_path_size = cfg$max_size %||% 500,
+            pathwayIndex = indices[[1]], minPathSize = cfg$min_size %||% 5, maxPathSize = cfg$max_size %||% 500,
             verbose = FALSE
         )
     }

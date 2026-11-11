@@ -5,10 +5,10 @@
 \title{Load METASPACE Data as a SpatialExperiment}
 \usage{
 loadMetaspace(
-  dataset_id,
+  datasetId,
   fdr = 0.1,
   database = c("HMDB", "v4"),
-  api_key = NULL,
+  apiKey = NULL,
   relative = FALSE,
   transform = FALSE,
   verbose = TRUE,
@@ -17,14 +17,14 @@ loadMetaspace(
 )
 }
 \arguments{
-\item{dataset_id}{Character string of the METASPACE dataset ID.}
+\item{datasetId}{Character string of the METASPACE dataset ID.}
 
 \item{fdr}{Numeric, the FDR level threshold (default = 0.1).}
 
 \item{database}{Character vector, specifying the database name and version
 (default = c("HMDB", "v4")).}
 
-\item{api_key}{Optional character string, your METASPACE API key (default =
+\item{apiKey}{Optional character string, your METASPACE API key (default =
 NULL).}
 
 \item{relative}{Logical, if TRUE, normalizes pixel intensities (0-1 range)

@@ -9,23 +9,23 @@ plotPathwaysSpatially(
   object,
   images = NULL,
   title = NULL,
-  image.alpha = 1,
+  imageAlpha = 1,
   assay = "main",
   assayName = "logcounts",
   colors = c("darkblue", "lightgrey", "darkred"),
   guide = "colourbar",
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  pathway_index = NULL,
-  gene_mapping = c("auto", "hgnc", "ramp"),
-  gene_reference = NULL,
-  gene_index = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  pathwayIndex = NULL,
+  geneMapping = c("auto", "hgnc", "ramp"),
+  geneReference = NULL,
+  geneIndex = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
-  duplicate_genes = c("error", "mean", "sum"),
+  duplicateGenes = c("error", "mean", "sum"),
   combine = FALSE,
   combineColumns = 2L,
   ...
@@ -41,7 +41,7 @@ database pathway names.}
 
 \item{title}{Optional plot title.}
 
-\item{image.alpha}{Image opacity.}
+\item{imageAlpha}{Image opacity.}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
@@ -55,43 +55,43 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{database}{Optional named list of database tables.}
 
-\item{database_version}{Database version.}
+\item{databaseVersion}{Database version.}
 
-\item{database_source}{Database source, auto or spamtpdb.}
+\item{databaseSource}{Database source, auto or spamtpdb.}
 
-\item{database_local_dir}{Optional local database directory.}
+\item{databaseLocalDir}{Optional local database directory.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
-\item{gene_mapping}{\code{"auto"} uses HGNC identity harmonization for official
+\item{geneMapping}{\code{"auto"} uses HGNC identity harmonization for official
 SpaMTPdb resources and for custom bundles with \code{gene_reference} or
-\code{gene_index}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
+\code{geneIndex}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
 RaMP-only mapping for historical reproduction or a curated non-human
 database. Custom bundles without a reference use RaMP-only mapping in auto
 mode and never trigger a reference download.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_index}{Optional index built from the same source table by
+\item{geneIndex}{Optional index built from the same source table by
 \code{\link[=buildGeneMappingIndex]{buildGeneMappingIndex()}}. Multiple RaMP records of a resolved HGNC gene
 have their pathway memberships united and count once. Conflicting RaMP
 records and ambiguous symbols are excluded and recorded in the audit.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{duplicate_genes}{How to aggregate expression rows of one gene.
+\item{duplicateGenes}{How to aggregate expression rows of one gene.
 The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}
@@ -118,6 +118,6 @@ spe <- spamtp_example$experiment
 index <- buildPathwayIndex(spamtp_example$database)
 plotPathwaysSpatially(c("P1", "P2"), spe,
     assay = "transcriptome",
-    pathway_index = index, combine = TRUE
+    pathwayIndex = index, combine = TRUE
 )
 }

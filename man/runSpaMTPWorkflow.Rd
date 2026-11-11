@@ -7,19 +7,19 @@
 runSpaMTPWorkflow(
   input,
   modalities,
-  output_dir = NULL,
+  outputDir = NULL,
   reference = NULL,
   alignment = list(),
   mapping = list(),
   group = NULL,
   replicate = NULL,
   contrasts = list(),
-  observation_unit = "spatial observation",
-  coordinate_units = NULL,
+  observationUnit = "spatial observation",
+  coordinateUnits = NULL,
   npcs = 15,
-  max_features = 2000,
+  maxFeatures = 2000,
   clusters = NULL,
-  association_features = 20,
+  associationFeatures = 20,
   seed = 1,
   title = "SpaMTP multi-omics report",
   regions = group,
@@ -35,7 +35,7 @@ specification, or a named list of independent inputs of these forms.}
 optional normalization, scale_factor, min_detected, species, annotation,
 and pathways. Paired input names are main followed by selected altExp names.}
 
-\item{output_dir}{Optional new directory for report, tables and result RDS.}
+\item{outputDir}{Optional new directory for report, tables and result RDS.}
 
 \item{reference}{Name of the reference modality for independent inputs.}
 
@@ -55,18 +55,18 @@ colour.}
 \item{contrasts}{Named list of numerator, denominator and paired settings.
 Tests require at least three independent biological replicates per group.}
 
-\item{observation_unit}{Description of what a column represents.}
+\item{observationUnit}{Description of what a column represents.}
 
-\item{coordinate_units}{Description of reference coordinate units; required
+\item{coordinateUnits}{Description of reference coordinate units; required
 when independent inputs are mapped.}
 
-\item{npcs, max_features}{Maximum PCs and variable features per modality.}
+\item{npcs, maxFeatures}{Maximum PCs and variable features per modality.}
 
 \item{clusters}{Optional explicit k for exploratory k-means in joint space,
 or in PCA space when exactly one modality is selected.
 NULL does not choose a biological partition automatically.}
 
-\item{association_features}{Maximum regional-marker/variable-feature anchors
+\item{associationFeatures}{Maximum regional-marker/variable-feature anchors
 for each modality pair. Targets are the other modality's PCA-selected
 features. Raw and covariate-residual correlations have no pixel P values.}
 
@@ -118,7 +118,7 @@ fit <- runSpaMTPWorkflow(spe,
         main = list(type = "metabolomics", layer = "logcounts"),
         transcriptome = list(type = "transcriptomics", layer = "logcounts")
     ),
-    npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+    npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 )
 fit$stages

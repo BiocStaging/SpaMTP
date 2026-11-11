@@ -34,7 +34,7 @@ test_that("region order and association anchors do not depend on collation", {
     x <- regionWorkflowFixture()
     x$anatomy <- rep(c("cc", "CP", "ACB", "OT"), 4)
     r <- withr::with_collate("C", runSpaMTPWorkflow(x, regionWorkflowSpecs(),
-        group = "condition", regions = "anatomy", npcs = 2, association_features = 2,
+        group = "condition", regions = "anatomy", npcs = 2, associationFeatures = 2,
         native = list(moran = FALSE, graph_pca = FALSE)
     ))
     for (n in names(r$analysis)) {
@@ -97,7 +97,7 @@ test_that("native spatial results use recorded within-sample inputs and public f
             expect_equal(nrow(a$moran), 4)
             expect_equal(a$moran$family_size, rep(4, 4))
             small <- .wf_modality_spatial(r$object, r$settings$assay_names[[n]], a$features, cols)
-            expected <- findSpatiallyVariableMetabolites(small, assayName = "workflow", max_spots = NULL, nfeatures = 4, verbose = FALSE)
+            expected <- findSpatiallyVariableMetabolites(small, assayName = "workflow", maxSpots = NULL, nfeatures = 4, verbose = FALSE)
             expect_equal(a$moran$I, SummarizedExperiment::rowData(expected)$MoransI_observed)
             expect_equal(a$moran$FDR, SummarizedExperiment::rowData(expected)$MoransI_p.adjust)
             expect_identical(rownames(a$graph_pca$scores), a$pixels)
@@ -141,7 +141,7 @@ test_that("region extensions preserve replicate contrasts and are independent of
     )
     r$package_version <- "earlier_analysis_version"
     new <- analyzeSpaMTPRegions(r,
-        regions = "anatomy", min_region_size = 2,
+        regions = "anatomy", minRegionSize = 2,
         native = list(moran = FALSE, graph_pca = FALSE)
     )
     expect_identical(new$analysis, r$analysis)

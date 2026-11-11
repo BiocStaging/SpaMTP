@@ -85,8 +85,8 @@ database <- loadSpaMTPDatabase(
     version = "3.0.7"
 )
 reference <- spaMTPdbGeneReference(version = "2026.7.7")
-index <- buildGeneMappingIndex(database$source_df, gene_reference = reference)
-pathway_index <- buildPathwayIndex(database, gene_index = index)
+index <- buildGeneMappingIndex(database$source_df, geneReference = reference)
+pathway_index <- buildPathwayIndex(database, geneIndex = index)
 mapping <- mapGeneIdentifiers(
     c("gene_symbol:AATK", "entrez:9625", "gene_symbol:BANK1"),
     index = index
@@ -179,14 +179,14 @@ under the receiver operating characteristic curve (AUC) for the archived
 `Oligo` group. `LogNormalize` divides each location by its total measured RNA
 count, multiplies by 10,000 and applies the base-2 transform `log2(1 + x)`.
 `mean_auc` ranks each gene's separation of this group from the remaining groups.
-The measured RNA panel supplies the background; `min_path_size = 5` requires
+The measured RNA panel supplies the background; `minPathSize = 5` requires
 five mapped members.
 
 ```{r enrichment}
 spe <- normalizeSMData(spe, "LogNormalize", assay = "SPT", verbose = FALSE)
 markers <- findAllDEMs(spe,
     ident = "cout_labels", assay = "SPT",
-    assayName = "logcounts", method = "markers", spatial_blocks = 0,
+    assayName = "logcounts", method = "markers", spatialBlocks = 0,
     verbose = FALSE
 )
 foreground_group <- "Oligo"
@@ -198,10 +198,10 @@ foreground <- foreground[order(
 genes_of_interest <- head(foreground$gene, 20)
 head(foreground[, c("gene", "logFC", "mean_auc")])
 result <- fishersPathwayAnalysis(
-    Analyte = list(genes = genes_of_interest),
+    analytes = list(genes = genes_of_interest),
     universe = list(genes = rownames(rna)),
-    pathway_index = pathway_index,
-    min_path_size = 5, pval_cutoff = NULL
+    pathwayIndex = pathway_index,
+    minPathSize = 5, pvalCutoff = NULL
 )
 head(result[, c(
     "pathway_name", "analytes_in_pathways", "total_in_pathways",
@@ -223,20 +223,20 @@ stores mapped foreground size (K) in `foreground_analytes_number` and mapped
 background size (U) in `background_analytes_number`.
 
 The universe is fixed before size filtering. Benjamini-Hochberg (BH) correction includes eligible
-zero-overlap pathways; `pval_cutoff` filters afterward. Unresolved identifiers
+zero-overlap pathways; `pvalCutoff` filters afterward. Unresolved identifiers
 are reported and excluded, so U counts resolved identities in the panel.
 
 ## Custom and species-specific references
 
 Official resources harmonize human genes automatically. Custom bundles can
-supply `gene_reference` or an explicit index; without a reference, they retain
-RaMP-only mapping without downloading one. `gene_mapping = "ramp"` supports
+supply `geneReference` or an explicit index; without a reference, they retain
+RaMP-only mapping without downloading one. `geneMapping = "ramp"` supports
 historical or curated species-specific mapping. Orthology conversion requires
 a separate step.
 Identity reconciliation can change saved mappings and P values without
 changing Fisher's calculation.
 
-Share `pathway_index` between `findRegionalPathways()` and `pathwayNetworkPlots()`
+Share `pathwayIndex` between `findRegionalPathways()` and `pathwayNetworkPlots()`
 to preserve identity and provenance.
 
 # One membership index for enrichment, expression and plots
@@ -266,7 +266,7 @@ We now reuse the 339-gene panel at the same 240 paired locations to map pathway
 scores back to the tissue. The [joint analysis below](#joint-ms-and-rna-pathways)
 then adds the measured MSI features at these locations.
 
-`pathway_index` is shared across aggregation, scoring and plotting. `pathways`
+`pathwayIndex` is shared across aggregation, scoring and plotting. `pathways`
 stores scores; `coverage` records measured and excluded members. The two
 prespecified Reactome pathways, **Neuronal System** and **Axon guidance**,
 connect the targeted brain panel to neural function. Their exact RaMP IDs are
@@ -280,13 +280,13 @@ variation within its pathway.
 
 ```{r human-pathway-closure, fig.width=9, fig.height=4.6, out.width="860px", fig.cap="Prespecified Reactome Neuronal System and Axon guidance pathway scores at the same 240 aligned glioma locations. Scores use log-normalized RNA and retain the archived coordinates. A shared z-score colour scale (-3 to 3) shows relative spatial variation within each pathway; the titles identify the selected pathways."}
 spe <- createPathwayAssay(spe,
-    analyte_type = "genes", assay = "SPT",
+    analyteType = "genes", assay = "SPT",
     assayName = "logcounts", outputExperiment = "gene_ids",
-    pathway_index = pathway_index, verbose = FALSE
+    pathwayIndex = pathway_index, verbose = FALSE
 )
 spe <- createPathwayObject(spe,
     assay = "gene_ids", outputExperiment = "gene_pathways",
-    pathway_index = pathway_index, min_path_size = 5, max_path_size = 500
+    pathwayIndex = pathway_index, minPathSize = 5, maxPathSize = 500
 )
 pathways <- altExp(spe, "gene_pathways")
 coverage <- pathwayMapping(pathways)$coverage
@@ -299,7 +299,7 @@ selected <- coverage$pathwayRampId[coverage$eligible &
     coverage$type == "reactome"]
 pathway_maps <- plotPathwaysSpatially(selected, spe,
     assay = "SPT",
-    assayName = "logcounts", pathway_index = pathway_index, combine = TRUE
+    assayName = "logcounts", pathwayIndex = pathway_index, combine = TRUE
 )
 attr(pathway_maps, "pathway_coverage")[, c("pathwayName", "measured_size", "used_size")]
 pathway_maps
@@ -310,7 +310,7 @@ pathway_maps
 Derived assays preserve the selected layer name, and original measurements
 remain unchanged. Identical duplicate rows are removed; different rows mapping
 to one gene require an explicit aggregation choice. Choose
-`duplicate_genes = "mean"` for log-expression or `"sum"` when additive
+`duplicateGenes = "mean"` for log-expression or `"sum"` when additive
 measurements are appropriate for the analysis.
 Use exact `pathwayRampId` values when display names are ambiguous.
 
@@ -328,7 +328,7 @@ features. We annotate the positive-mode MSI using CHCA and three prespecified
 singly charged adducts: proton, sodium and potassium addition. Positive polarity
 is recorded in the [original processing script](https://github.com/GenomicsMachineLearning/SpaMTP/blob/main/inst/Publication_Files/FigS6_script.Rmd).
 The 5 ppm window and score floor of 0.05 define an exploratory candidate set.
-`metabolite_ambiguity = "exclude"` removes features with competing RaMP compound
+`metaboliteAmbiguity = "exclude"` removes features with competing RaMP compound
 identities. Each retained putative assignment has one RaMP compound identity
 under the selected adduct set and score threshold.
 
@@ -343,21 +343,21 @@ is unavailable; `annotationCandidates(spe)$FormulaStatus` records their status.
 ```{r human-joint-identities}
 positive_adducts <- c("M+H", "M+Na", "M+K")
 chem_index <- buildMZAnnotationIndex(database$chem_props,
-    polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts
+    polarity = "positive", maldiMatrix = "CHCA", adducts = positive_adducts
 )
 spe <- annotateSM(spe,
     index = chem_index,
-    assay = "main", raw.mz.column = "mz", ppm = 5,
-    polarity = "positive", maldi_matrix = "CHCA", adducts = positive_adducts,
-    min_score = 0, return.only.annotated = FALSE,
-    save.intermediate = TRUE, verbose = FALSE
+    assay = "main", rawMzColumn = "mz", ppm = 5,
+    polarity = "positive", maldiMatrix = "CHCA", adducts = positive_adducts,
+    minScore = 0, returnOnlyAnnotated = FALSE,
+    saveIntermediate = TRUE, verbose = FALSE
 )
 spe <- normalizeSMData(spe, "LogNormalize", assay = "main", verbose = FALSE)
 spe <- createPathwayAssay(spe,
-    analyte_type = "metabolites",
+    analyteType = "metabolites",
     assay = "main", assayName = "logcounts", outputExperiment = "compound_ids",
-    annotation_score_threshold = 0.05, metabolite_ambiguity = "exclude",
-    database = database, pathway_index = pathway_index, verbose = FALSE
+    annotationScoreThreshold = 0.05, metaboliteAmbiguity = "exclude",
+    database = database, pathwayIndex = pathway_index, verbose = FALSE
 )
 compounds <- altExp(spe, "compound_ids")
 compound_audit <- pathwayMapping(compounds)
@@ -402,19 +402,19 @@ measured members from both modalities after testing.
 ```{r human-joint-pathways}
 gene_markers <- findAllDEMs(spe,
     ident = "cout_labels", assay = "gene_ids",
-    assayName = "logcounts", method = "markers", spatial_blocks = 0,
+    assayName = "logcounts", method = "markers", spatialBlocks = 0,
     verbose = FALSE
 )
 compound_markers <- findAllDEMs(spe,
     ident = "cout_labels", assay = "compound_ids",
-    assayName = "logcounts", method = "markers", spatial_blocks = 0,
+    assayName = "logcounts", method = "markers", spatialBlocks = 0,
     verbose = FALSE
 )
 joint <- findRegionalPathways(spe,
     ident = "cout_labels",
     ranks = list(genes = gene_markers, metabolites = compound_markers),
-    regions = foreground_group, pathway_index = pathway_index,
-    rank_scale = "rms", min_path_size = 5, max_path_size = 500, verbose = FALSE
+    regions = foreground_group, pathwayIndex = pathway_index,
+    rankScale = "rms", minPathSize = 5, maxPathSize = 500, verbose = FALSE
 )
 both <- joint[joint$measured_genes > 0 & joint$measured_metabolites > 0, ]
 both <- both[order(both$padj, -abs(both$NES), both$pathwayRampId), ]
@@ -449,14 +449,14 @@ leaves the BH adjustment across the full tested family unchanged.
 ```{r human-regional-pathway-plot, fig.width=8.5, fig.height=7, out.width="860px", fig.cap="Joint RNA/MSI pathways for Oligo. Colour shows NES, point area shows tested members, and a dark outline marks BH-adjusted P <= 0.05."}
 both_reactome <- subset(both, type == "reactome")
 plotRegionalPathways(both_reactome,
-    num_display = 8, database = database)
+    numDisplay = 8, database = database)
 ```
 
 ## Explore a joint pathway network {#pathway-network}
 
 We display **Transport of small molecules** (Reactome `R-HSA-382551`),
 selected for its measured coverage in both modalities.
-The network reuses the `Oligo` ranking and `pathway_index` above to place
+The network reuses the `Oligo` ranking and `pathwayIndex` above to place
 measured gene and compound effects on archived interactions.
 
 ```{r human-network}
@@ -470,14 +470,14 @@ database$ramp_reactome <- loadSpaMTPDatabase("ramp_reactome",
 )$ramp_reactome
 network_file <- pathwayNetworkPlots(spe,
     ident = "cout_labels", regpathway = network_rows,
-    DE.list = list(genes = gene_markers$DEMs,
+    deList = list(genes = gene_markers$DEMs,
         metabolites = compound_markers$DEMs),
-    selected_pathways = "R-HSA-382551",
-    ST_assay = "gene_ids", stAssayName = "logcounts",
-    SM_assay = "compound_ids", smAssayName = "logcounts",
-    database = database, pathway_index = pathway_index,
-    metabolite_detection = "annotated",
-    max_nodes = 80, label_mode = "detected", layout_mode = "force",
+    selectedPathways = "R-HSA-382551",
+    stAssay = "gene_ids", stAssayName = "logcounts",
+    smAssay = "compound_ids", smAssayName = "logcounts",
+    database = database, pathwayIndex = pathway_index,
+    metaboliteDetection = "annotated",
+    maxNodes = 80, labelMode = "detected", layoutMode = "force",
     path = tempdir(), verbose = FALSE
 )
 attr(network_file, "network_summary")
@@ -486,7 +486,7 @@ attr(network_file, "network_summary")
 The pathway contains `r network_rows$measured_genes` measured genes and
 `r network_rows$measured_metabolites` putative compounds. Reference neighbours
 and equivalent gene nodes make viewer counts differ from these identities.
-`max_nodes` prioritizes leading-edge members and annotated compounds;
+`maxNodes` prioritizes leading-edge members and annotated compounds;
 other measured genes can be pruned.
 
 `embedPathwayNetwork()` displays the viewer below. **Download network HTML**
@@ -541,7 +541,7 @@ more. Pathways require 5–100 measured genes.
 ```{r human-pathway-coregulation}
 gene_expression <- assay(altExp(spe, "gene_ids"), "logcounts")
 coregulation <- with_seed(1234, runRAMPGeseca(gene_expression,
-    pathway_index = pathway_index, minSize = 5, maxSize = 100,
+    pathwayIndex = pathway_index, minSize = 5, maxSize = 100,
     center = TRUE, scale = FALSE, eps = 0))
 coregulation <- as.data.frame(coregulation)
 coregulation$pathwayName <- database$pathway$pathwayName[

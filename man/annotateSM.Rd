@@ -8,19 +8,19 @@ annotateSM(
   data,
   db = NULL,
   assay = "main",
-  raw.mz.column = "raw_mz",
+  rawMzColumn = "raw_mz",
   ppm = 5,
   adducts = NULL,
   polarity = NULL,
   filepath = NULL,
-  return.only.annotated = TRUE,
-  save.intermediate = TRUE,
-  min_score = 0,
+  returnOnlyAnnotated = TRUE,
+  saveIntermediate = TRUE,
+  minScore = 0,
   verbose = TRUE,
-  maldi_matrix = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
+  maldiMatrix = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
   ...
 )
 }
@@ -35,7 +35,7 @@ from SpaMTPdb and may be staged locally for offline use.}
 \item{assay}{Primary or alternative experiment containing the m/z counts
 being annotated. Defaults to \code{"main"}.}
 
-\item{raw.mz.column}{Character string naming the feature-metadata column
+\item{rawMzColumn}{Character string naming the feature-metadata column
 containing raw m/z values without the \verb{mz-} prefix. This is created by
 \code{cardinalToSpatialExperiment()} (default = "raw_mz"). If omitted, mass
 metadata or numeric feature names are used as a fallback. An explicitly
@@ -45,7 +45,7 @@ named column must exist. Feature rownames must be unique and non-empty.}
 for exact numerical matches.}
 
 \item{adducts}{Optional adduct names/notations; see \code{adductRules()}. If
-\code{NULL}, use the complete rule space selected from \code{maldi_matrix}, or all
+\code{NULL}, use the complete rule space selected from \code{maldiMatrix}, or all
 validated general rules for the selected polarity when no matrix is given.}
 
 \item{polarity}{Character string defining the ion mode. When \code{NULL}, use the
@@ -56,16 +56,16 @@ when neither is available.}
 For example, \code{file.path("results", "sample")} writes
 \code{results/sample_annotated_mz_peaks.csv}. NULL disables export.}
 
-\item{return.only.annotated}{Boolean value indicating if the annotated
+\item{returnOnlyAnnotated}{Boolean value indicating if the annotated
 Bioconductor experiment should only include m/z values that were
 successfully annotated (default = TRUE).}
 
-\item{save.intermediate}{Boolean indicating whether to store the scored
+\item{saveIntermediate}{Boolean indicating whether to store the scored
 annotation result and its pipeline/RaMP provenance in
 \code{S4Vectors::metadata(data)$mz_annotation}. A compatibility copy
 is retained under the \code{db_3} key (default = TRUE).}
 
-\item{min_score}{Minimum annotation score retained in the stored candidate
+\item{minScore}{Minimum annotation score retained in the stored candidate
 table. The default \code{0} keeps all ppm-valid candidates so downstream
 pathway functions can apply a user-defined threshold without re-running
 annotation.}
@@ -73,17 +73,17 @@ annotation.}
 \item{verbose}{Boolean indicating whether to show the message. If TRUE the
 message will be show, else the message will be suppressed (default = TRUE).}
 
-\item{maldi_matrix}{Optional MALDI matrix or derivatization reagent name.
+\item{maldiMatrix}{Optional MALDI matrix or derivatization reagent name.
 When supplied, SpaMTP selects validated matrix-specific rules
 automatically. \code{adducts} is optional and only restricts that automatic
 search space when explicitly supplied.}
 
-\item{database_version}{SpaMTPdb/RaMP version used when \code{db = NULL}.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used when \code{db = NULL}.}
 
-\item{database_source}{Database source used when \code{db = NULL}; see
+\item{databaseSource}{Database source used when \code{db = NULL}; see
 \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
 \item{...}{Additional indexed annotation/scoring arguments passed to
 \code{annotateTable()}, such as \code{index}, \code{rules}, \code{ms1_spectrum},
@@ -109,8 +109,8 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
 annotated <- annotateSM(spe,
-    index = index, raw.mz.column = "mz", ppm = 5,
-    return.only.annotated = FALSE, verbose = FALSE
+    index = index, rawMzColumn = "mz", ppm = 5,
+    returnOnlyAnnotated = FALSE, verbose = FALSE
 )
 head(annotationCandidates(annotated))
 }

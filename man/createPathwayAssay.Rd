@@ -5,35 +5,35 @@
 \title{Create a RaMP identity alternative experiment}
 \usage{
 createPathwayAssay(
-  SpaMTP,
-  analyte_type = "metabolites",
+  object,
+  analyteType = "metabolites",
   assay = "main",
   assayName = "counts",
   outputExperiment = "pathway",
-  annotation_score_threshold = 0.05,
-  annotation_source = c("current", "auto", "legacy"),
+  annotationScoreThreshold = 0.05,
+  annotationSource = c("current", "auto", "legacy"),
   verbose = TRUE,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  gene_mapping = c("auto", "hgnc", "ramp"),
-  gene_reference = NULL,
-  gene_index = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  geneMapping = c("auto", "hgnc", "ramp"),
+  geneReference = NULL,
+  geneIndex = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
-  pathway_index = NULL,
-  duplicate_genes = c("error", "mean", "sum"),
-  id_column = NULL,
-  metabolite_ambiguity = c("expand", "exclude")
+  pathwayIndex = NULL,
+  duplicateGenes = c("error", "mean", "sum"),
+  idColumn = NULL,
+  metaboliteAmbiguity = c("expand", "exclude")
 )
 }
 \arguments{
-\item{SpaMTP}{A SingleCellExperiment, including SpatialExperiment, containing
+\item{object}{A SingleCellExperiment, including SpatialExperiment, containing
 metabolomic or transcriptomic expression.}
 
-\item{analyte_type}{Character string specifying the type of analytes to
+\item{analyteType}{Character string specifying the type of analytes to
 process.Must be either "genes" or "metabolites" (default = "metabolites").}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
@@ -46,10 +46,10 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 \item{outputExperiment}{Name for the identity-level \code{altExp()} (default =
 \code{"pathway"}); this is not an expression assay name.}
 
-\item{annotation_score_threshold}{Minimum indexed annotation score used to
+\item{annotationScoreThreshold}{Minimum indexed annotation score used to
 map m/z features to RaMP compounds (default = 0.05).}
 
-\item{annotation_source}{Metabolite annotation provenance. \code{"current"}
+\item{annotationSource}{Metabolite annotation provenance. \code{"current"}
 requires the indexed, scored RaMP output; \code{"auto"} and \code{"legacy"} enable
 compatibility with older serialized SpaMTP objects.}
 
@@ -59,51 +59,51 @@ messages during execution. (default = TRUE).}
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for pathway lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for pathway lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
-\item{gene_mapping}{\code{"auto"} uses HGNC identity harmonization for official
+\item{geneMapping}{\code{"auto"} uses HGNC identity harmonization for official
 SpaMTPdb resources and for custom bundles with \code{gene_reference} or
-\code{gene_index}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
+\code{geneIndex}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
 RaMP-only mapping for historical reproduction or a curated non-human
 database. Custom bundles without a reference use RaMP-only mapping in auto
 mode and never trigger a reference download.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_index}{Optional index built from the same source table by
+\item{geneIndex}{Optional index built from the same source table by
 \code{\link[=buildGeneMappingIndex]{buildGeneMappingIndex()}}. Multiple RaMP records of a resolved HGNC gene
 have their pathway memberships united and count once. Conflicting RaMP
 records and ambiguous symbols are excluded and recorded in the audit.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other
 organisms.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
-\item{duplicate_genes}{How to aggregate expression rows of one gene.
+\item{duplicateGenes}{How to aggregate expression rows of one gene.
 The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}
 
-\item{id_column}{Gene identifier column in the selected \code{rowData()}.
+\item{idColumn}{Gene identifier column in the selected \code{rowData()}.
 \code{NULL} uses its row names.}
 
-\item{metabolite_ambiguity}{Expand a mass feature into candidate compounds
+\item{metaboliteAmbiguity}{Expand a mass feature into candidate compounds
 (historical behavior), or exclude features mapping to more than one compound.
 The workflow explicitly defaults to exclude. Candidate pairs, excluded
 features and exact aggregation weights are retained in metadata.}
@@ -134,8 +134,8 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 index <- buildPathwayIndex(spamtp_example$database)
 mapped <- createPathwayAssay(spe,
-    analyte_type = "genes", assay = "transcriptome",
-    outputExperiment = "gene_ids", pathway_index = index, verbose = FALSE
+    analyteType = "genes", assay = "transcriptome",
+    outputExperiment = "gene_ids", pathwayIndex = index, verbose = FALSE
 )
 rownames(SingleCellExperiment::altExp(mapped, "gene_ids"))
 

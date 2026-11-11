@@ -11,9 +11,9 @@
     )
 }
 
-.dehydration_test_mz <- function(neutral_mass, losses) {
+.dehydration_test_mz <- function(neutralMass, losses) {
     adducts <- c("[M+H]+", "[M+H-H2O]+", "[M+H-H4O2]+")[losses + 1]
-    as.numeric(MetaboCoreUtils::mass2mz(neutral_mass, adducts))
+    as.numeric(MetaboCoreUtils::mass2mz(neutralMass, adducts))
 }
 
 test_that("water-loss rules preserve charge and use neutral water masses", {
@@ -71,7 +71,7 @@ test_that("oxygen presence alone does not admit water-loss candidates", {
         index <- buildMZAnnotationIndex(
             target[i, , drop = FALSE],
             polarity = "positive",
-            adducts = c("M+H-H2O", "M+H-2H2O"), min_structure_score = 0
+            adducts = c("M+H-H2O", "M+H-2H2O"), minStructureScore = 0
         )
         observed <- .dehydration_test_mz(target$exactmass[[i]], 1:2)
         observed <- observed[observed > 0]
@@ -90,7 +90,7 @@ test_that("unknown or invalid structures cannot bypass water-loss eligibility", 
     index <- buildMZAnnotationIndex(
         target,
         adducts = c("M+H", "M+H-H2O", "M+H-2H2O"),
-        collapse_isomers = FALSE, min_structure_score = 0
+        collapseIsomers = FALSE, minStructureScore = 0
     )
     result <- queryMZAnnotationIndex(
         .dehydration_test_mz(target$exactmass[[1]], 0:2), index,
@@ -103,7 +103,7 @@ test_that("unknown or invalid structures cannot bypass water-loss eligibility", 
     no_smiles <- buildMZAnnotationIndex(
         target,
         adducts = c("M+H-H2O", "M+H-2H2O"),
-        collapse_isomers = FALSE, min_structure_score = 0
+        collapseIsomers = FALSE, minStructureScore = 0
     )
     expect_equal(nrow(queryMZAnnotationIndex(
         .dehydration_test_mz(target$exactmass[[1]], 1:2), no_smiles,
@@ -189,8 +189,8 @@ test_that("annotation wrappers preserve gated water-loss candidates", {
     )
     annotated <- annotateSM(
         experiment,
-        index = index, raw.mz.column = "mz", ppm = 1e-6,
-        return.only.annotated = FALSE, verbose = FALSE
+        index = index, rawMzColumn = "mz", ppm = 1e-6,
+        returnOnlyAnnotated = FALSE, verbose = FALSE
     )
     expect_identical(SummarizedExperiment::assay(annotated, "counts"), counts)
     candidates <- S4Vectors::metadata(annotated)$mz_annotation$results
@@ -210,18 +210,18 @@ test_that("malformed custom water-loss rules fail before candidate search", {
     for (loss in c(-1, 1.5, 3, NA_real_)) {
         bad_count <- rule
         bad_count$water_loss <- loss
-        expect_error(buildMZAnnotationIndex(target, rules = bad_count), "water_loss")
+        expect_error(buildMZAnnotationIndex(target, rules = bad_count), "waterLoss")
     }
     bad_name <- rule
     bad_name$water_loss <- 0L
     expect_error(
         buildMZAnnotationIndex(target, rules = bad_name),
-        "[Ww]ater.loss|water_loss"
+        "[Ww]ater.loss|waterLoss"
     )
     bad_name$name <- "[M+H-2H2O]+"
     expect_error(
         buildMZAnnotationIndex(target, rules = bad_name),
-        "[Ww]ater.loss|water_loss"
+        "[Ww]ater.loss|waterLoss"
     )
 
     old_schema <- rule
@@ -262,7 +262,7 @@ test_that("legacy structural tables parse only mass-matched water-loss candidate
     index <- buildMZAnnotationIndex(
         legacy,
         adducts = c("M+H", "M+H-H2O", "M+H-2H2O"),
-        collapse_isomers = FALSE
+        collapseIsomers = FALSE
     )
     expect_length(parsed_smiles, 0)
     result <- queryMZAnnotationIndex(
@@ -290,7 +290,7 @@ test_that("legacy isomer collapsing preserves distinct water-loss eligibility", 
     legacy$max_water_losses <- NULL
     index <- buildMZAnnotationIndex(
         legacy,
-        adducts = "M+H-2H2O", collapse_isomers = TRUE
+        adducts = "M+H-2H2O", collapseIsomers = TRUE
     )
     result <- queryMZAnnotationIndex(
         .dehydration_test_mz(target$exactmass[[1]], 2), index,
@@ -304,17 +304,17 @@ test_that("infer_structure never uses only existing water-loss eligibility", {
     precomputed <- annotateSMILESStructure(target)
     local_mocked_bindings(
         .smiles_dehydration_capacity = function(...) {
-            stop("infer_structure = 'never' must not invoke the capacity parser")
+            stop("inferStructure = 'never' must not invoke the capacity parser")
         },
         .package = "SpaMTP"
     )
     unknown <- buildMZAnnotationIndex(
         target,
-        adducts = "M+H-2H2O", infer_structure = "never"
+        adducts = "M+H-2H2O", inferStructure = "never"
     )
     known <- buildMZAnnotationIndex(
         precomputed,
-        adducts = "M+H-2H2O", infer_structure = "never"
+        adducts = "M+H-2H2O", inferStructure = "never"
     )
     observed <- .dehydration_test_mz(target$exactmass, 2)
     expect_equal(nrow(queryMZAnnotationIndex(observed, unknown, ppm = 1e-6)), 0)
@@ -329,13 +329,13 @@ test_that("lazy structure resolution preserves complete scoring and score cutoff
     precomputed <- annotateSMILESStructure(target)
     complete <- buildMZAnnotationIndex(
         precomputed,
-        adducts = "M+H-2H2O", min_structure_score = 0.5
+        adducts = "M+H-2H2O", minStructureScore = 0.5
     )
     withr::local_options(SpaMTP.max_runtime_smiles = 0L)
     expect_warning(
         lazy <- buildMZAnnotationIndex(
             target,
-            adducts = "M+H-2H2O", min_structure_score = 0.5
+            adducts = "M+H-2H2O", minStructureScore = 0.5
         ),
         "Skipping runtime SMILES decomposition"
     )
@@ -378,7 +378,7 @@ test_that("ordinary adducts retain duplicate records when collapsing is disabled
     target <- rbind(target, target)
     index <- buildMZAnnotationIndex(
         target,
-        adducts = c("M+H", "M+H-2H2O"), collapse_isomers = FALSE
+        adducts = c("M+H", "M+H-2H2O"), collapseIsomers = FALSE
     )
     result <- queryMZAnnotationIndex(
         .dehydration_test_mz(target$exactmass[[1]], 0), index,

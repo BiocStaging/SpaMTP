@@ -188,7 +188,7 @@
     )
 }
 
-.wf_native_plots <- function(result, max_points) {
+.wf_native_plots <- function(result, maxPoints) {
     plots <- list()
     metadata <- as.data.frame(SummarizedExperiment::colData(result$object))
     region <- result$region_analysis$field
@@ -199,7 +199,7 @@
         features <- head(result$analysis[[name]]$pca$features, 3)
         if (!length(features)) next
         if (spatial) {
-            ids <- .wf_preview_indices(metadata, region, max_points)
+            ids <- .wf_preview_indices(metadata, region, maxPoints)
             small <- .wf_modality_spatial(result$object, assay, features, ids)
             panels <- plotSpatialFeature(small,
                 features = features, assayName = "workflow",
@@ -223,8 +223,8 @@
             if (length(groups) >= 2 && length(ids) >= 4) {
                 small <- result$object[, ids, drop = FALSE]
                 plots[[paste0("native_violin_", name)]] <- mzViolinPlot(small,
-                    group.by = region,
-                    mzs = features, assay = assay, assayName = "workflow", show.points = FALSE
+                    groupBy = region,
+                    mzs = features, assay = assay, assayName = "workflow", showPoints = FALSE
                 ) +
                     ggplot2::labs(
                         title = paste(name, "regional feature distributions"),

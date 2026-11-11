@@ -6,27 +6,27 @@
 \usage{
 addFMP10Annotations(
   obj,
-  only.fmp.adduct = FALSE,
-  add.custom.annotation = NULL,
+  onlyFmpAdduct = FALSE,
+  addCustomAnnotation = NULL,
   assay = "main",
-  return.only.annotated = FALSE,
-  mass.threshold = 0.05,
-  annotation.column = "all_IsomerNames",
+  returnOnlyAnnotated = FALSE,
+  massThreshold = 0.05,
+  annotationColumn = "all_IsomerNames",
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL
 )
 }
 \arguments{
 \item{obj}{Bioconductor experiment containing m/z intensity values for
 annotation. Data should be generated with a FMP10 matrix.}
 
-\item{only.fmp.adduct}{Boolean indicating if only metabolites with FMP10+
+\item{onlyFmpAdduct}{Boolean indicating if only metabolites with FMP10+
 adducts (\code{+FMP10}, +\verb{2FMP10}, etc.) should be assigned to m/z values
 (default = FALSE).}
 
-\item{add.custom.annotation}{data.frame containing addition FMP10 metabolite
+\item{addCustomAnnotation}{data.frame containing addition FMP10 metabolite
 annotations that are not in the current FMP10 database. Note: this
 data.frame must contain these column c("mass", "annotation", "Adduct",
 "Formula", "Isomers", "Isomers_IDs"). If set to NULL, only reference FMP10
@@ -35,28 +35,28 @@ database will be used (default = NULL).}
 \item{assay}{Primary or alternative experiment whose \code{rowData()} receives
 the annotations (default = "main").}
 
-\item{return.only.annotated}{Boolean defining whether to return a
+\item{returnOnlyAnnotated}{Boolean defining whether to return a
 Bioconductor experiment containing only successfully annotated m/z values
 (default = FALSE).}
 
-\item{mass.threshold}{Numeric value defining the acceptable threshold
+\item{massThreshold}{Numeric value defining the acceptable threshold
 (plus-minus) between the custom annotations and the actual m/z values
 contained within the SpaMTP object, in Da (default = 0.05). The boundary
 is inclusive; zero keeps exact matches and NULL disables the distance limit.
 Choose this tolerance for the calibrated instrument accuracy; 0.05 Da
 can be permissive for high-resolution data. \code{all_Errors} is reported in ppm.}
 
-\item{annotation.column}{Name of the \code{rowData()} column receiving annotations
+\item{annotationColumn}{Name of the \code{rowData()} column receiving annotations
 (default = "all_IsomerNames").}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for annotation lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for annotation lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 }
 \value{
 Bioconductor experiment containing the relative metabolite

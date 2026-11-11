@@ -19,16 +19,16 @@
     x
 }
 
-.gene_source_fingerprint <- function(source_df) {
-    if (!is.data.frame(source_df) || !all(c("rampId", "sourceId") %in% names(source_df))) {
-        stop("source_df must contain rampId and sourceId.", call. = FALSE)
+.gene_source_fingerprint <- function(sourceDf) {
+    if (!is.data.frame(sourceDf) || !all(c("rampId", "sourceId") %in% names(sourceDf))) {
+        stop("sourceDf must contain rampId and sourceId.", call. = FALSE)
     }
-    keep <- !is.na(source_df$rampId) & grepl("^RAMP_G_", source_df$rampId)
+    keep <- !is.na(sourceDf$rampId) & grepl("^RAMP_G_", sourceDf$rampId)
     source <- data.frame(
-        rampId = as.character(source_df$rampId[keep]),
-        key = .gene_key(source_df$sourceId[keep]),
-        commonName = if ("commonName" %in% names(source_df)) {
-            tolower(trimws(as.character(source_df$commonName[keep])))
+        rampId = as.character(sourceDf$rampId[keep]),
+        key = .gene_key(sourceDf$sourceId[keep]),
+        commonName = if ("commonName" %in% names(sourceDf)) {
+            tolower(trimws(as.character(sourceDf$commonName[keep])))
         } else {
             rep(NA_character_, sum(keep))
         }
@@ -60,21 +60,21 @@
     invisible(TRUE)
 }
 
-.gene_check_source_index <- function(source_df, index) {
+.gene_check_source_index <- function(sourceDf, index) {
     .gene_validate_index(index)
-    actual <- unique(as.character(source_df$rampId[
-        !is.na(source_df$rampId) & grepl("^RAMP_G_", source_df$rampId)
+    actual <- unique(as.character(sourceDf$rampId[
+        !is.na(sourceDf$rampId) & grepl("^RAMP_G_", sourceDf$rampId)
     ]))
     unchanged <- identical(
-        rlang::hash(source_df),
+        rlang::hash(sourceDf),
         index$provenance$raw_source_fingerprint
     )
     if (!setequal(actual, index$nodes$rampId) ||
         (!unchanged && !identical(
-            .gene_source_fingerprint(source_df),
+            .gene_source_fingerprint(sourceDf),
             index$provenance$source_fingerprint
         ))) {
-        stop("gene_index does not match the RaMP source table identity fingerprint. ",
+        stop("geneIndex does not match the RaMP source table identity fingerprint. ",
             "Rebuild it with buildGeneMappingIndex() using this source table.",
             call. = FALSE
         )
@@ -86,7 +86,7 @@
     required <- c("hgnc_id", "symbol")
     if (!is.data.frame(reference) || !all(required %in% names(reference))) {
         stop(
-            "gene_reference must be an HGNC data frame with hgnc_id and symbol.",
+            "geneReference must be an HGNC data frame with hgnc_id and symbol.",
             call. = FALSE
         )
     }
@@ -99,7 +99,7 @@
         any(!grepl("^HGNC:[0-9]+$", reference$hgnc_id)) || anyNA(reference$symbol) ||
         any(!nzchar(trimws(reference$symbol))) || anyDuplicated(tolower(reference$symbol))) {
         stop(
-            "gene_reference must contain unique approved HGNC IDs and symbols.",
+            "geneReference must contain unique approved HGNC IDs and symbols.",
             call. = FALSE
         )
     }
@@ -151,14 +151,14 @@
 #' does not invalidate it. Rebuild saved indices from older schema versions
 #' with this function before using them in a new workflow.
 #'
-#' @param source_df RaMP identifier table from SpaMTPdb, with `sourceId`,
+#' @param sourceDf RaMP identifier table from SpaMTPdb, with `sourceId`,
 #'   `rampId` and optionally `commonName`.
-#' @param gene_reference HGNC reference data frame. `NULL` retrieves the pinned
+#' @param geneReference HGNC reference data frame. `NULL` retrieves the pinned
 #'   reference through [SpaMTPdb::spaMTPdbGeneReference()]. Custom references
 #'   require unique `hgnc_id` and `symbol`; optional fields are `status`,
 #' `entrez_id`, `ensembl_gene_id`, `uniprot_ids`, `prev_symbol`, `alias_symbol`.
-#' @param gene_reference_version Version in SpaMTPdb's separate HGNC registry.
-#' @param gene_reference_local_dir Local HGNC resource directory.
+#' @param geneReferenceVersion Version in SpaMTPdb's separate HGNC registry.
+#' @param geneReferenceLocalDir Local HGNC resource directory.
 #' @param organism Must be `"Homo sapiens"`; this index is not a mouse-to-human
 #'   orthology map. Use a separately curated species-specific database for other
 #'   organisms.
@@ -173,9 +173,9 @@
 #' index <- buildGeneMappingIndex(db$source_df, spamtp_example$gene_reference)
 #' mapGeneIdentifiers(c("GENE1", "OLD1", "entrez:102"), index = index)
 buildGeneMappingIndex <- function(
-    source_df, gene_reference = NULL,
-    gene_reference_version = "latest",
-    gene_reference_local_dir = NULL,
+    sourceDf, geneReference = NULL,
+    geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL,
     organism = "Homo sapiens", offline = FALSE
 ) {
     if (!identical(organism, "Homo sapiens")) {
@@ -183,23 +183,23 @@ buildGeneMappingIndex <- function(
             call. = FALSE
         )
     }
-    if (!is.data.frame(source_df) || !all(c("rampId", "sourceId") %in% names(source_df))) {
-        stop("source_df must contain rampId and sourceId.", call. = FALSE)
+    if (!is.data.frame(sourceDf) || !all(c("rampId", "sourceId") %in% names(sourceDf))) {
+        stop("sourceDf must contain rampId and sourceId.", call. = FALSE)
     }
-    if (is.null(gene_reference)) {
-        gene_reference <- SpaMTPdb::spaMTPdbGeneReference(
-            version = gene_reference_version, local_dir = gene_reference_local_dir, offline = offline
+    if (is.null(geneReference)) {
+        geneReference <- SpaMTPdb::spaMTPdbGeneReference(
+            version = geneReferenceVersion, local_dir = geneReferenceLocalDir, offline = offline
         )
     }
-    reference_provenance <- attr(gene_reference, "spamtp_gene_reference")
+    reference_provenance <- attr(geneReference, "spamtp_gene_reference")
     if (!is.null(reference_provenance$organism) &&
         !identical(reference_provenance$organism, organism)) {
         stop("Gene reference organism does not match organism.", call. = FALSE)
     }
-    prepared <- .gene_reference_lookup(gene_reference)
+    prepared <- .gene_reference_lookup(geneReference)
     reference <- prepared$reference
     lookup <- prepared$lookup
-    source <- as.data.frame(source_df)
+    source <- as.data.frame(sourceDf)
     source <- source[!is.na(source$rampId) & grepl("^RAMP_G_", source$rampId), , drop = FALSE]
     identifiers <- unique(data.frame(
         rampId = as.character(source$rampId),
@@ -262,9 +262,9 @@ buildGeneMappingIndex <- function(
             conflict_gene_ids = conflict_gene_ids,
             provenance = list(
                 organism = organism, schema_version = 2L,
-                source_fingerprint = .gene_source_fingerprint(source_df),
-                raw_source_fingerprint = rlang::hash(source_df),
-                source = attr(source_df, "spamtp_database"),
+                source_fingerprint = .gene_source_fingerprint(sourceDf),
+                raw_source_fingerprint = rlang::hash(sourceDf),
+                source = attr(sourceDf, "spamtp_database"),
                 reference = reference_provenance,
                 custom_reference = is.null(reference_provenance)
             )
@@ -414,8 +414,8 @@ buildGeneMappingIndex <- function(
 #'   `database` is also supplied, its source-table fingerprint must match.
 #' @param ambiguous Exclude ambiguous mappings with audit status, or error.
 #' @param verbose Warn about unresolved input rows.
-#' @param database_version RaMP version, independent of the HGNC version.
-#' @param database_local_dir Local staged RaMP directory.
+#' @param databaseVersion RaMP version, independent of the HGNC version.
+#' @param databaseLocalDir Local staged RaMP directory.
 #' @inheritParams buildGeneMappingIndex
 #' @return One row per input with `gene_id` (HGNC), approved `symbol`,
 #'   `canonical_ramp_id`, all equivalent `ramp_ids` (semicolon separated),
@@ -434,21 +434,21 @@ buildGeneMappingIndex <- function(
 #' mapGeneIdentifiers(c("GENE1", "OLD1", "ENSG0002.1"), index = index)
 mapGeneIdentifiers <- function(
     genes, database = NULL, index = NULL,
-    gene_reference = NULL, gene_reference_version = "latest",
-    gene_reference_local_dir = NULL, organism = "Homo sapiens",
+    geneReference = NULL, geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL, organism = "Homo sapiens",
     ambiguous = c("exclude", "error"), verbose = TRUE,
-    database_version = "latest", database_local_dir = NULL,
+    databaseVersion = "latest", databaseLocalDir = NULL,
     offline = FALSE
 ) {
     if (is.null(index)) {
         source <- .spamtp_db_bundle("source_df",
             database = database,
-            version = database_version, local_dir = database_local_dir,
+            version = databaseVersion, localDir = databaseLocalDir,
             offline = offline
         )$source_df
         index <- buildGeneMappingIndex(
-            source, gene_reference, gene_reference_version,
-            gene_reference_local_dir, organism, offline
+            source, geneReference, geneReferenceVersion,
+            geneReferenceLocalDir, organism, offline
         )
     } else {
         .gene_validate_index(index)
@@ -474,9 +474,9 @@ mapGeneIdentifiers <- function(
 #' @param object A SummarizedExperiment, SingleCellExperiment or
 #'   SpatialExperiment, including native objects provided by SpaMTPData.
 #' @param assay The primary experiment (`"main"`) or transcriptome altExp name.
-#' @param id_column Gene identifier column in the selected `rowData()`.
+#' @param idColumn Gene identifier column in the selected `rowData()`.
 #'   `NULL` uses its row names.
-#' @param id_type Identifier type. `"auto"` accepts the same input formats as
+#' @param idType Identifier type. `"auto"` accepts the same input formats as
 #'   [mapGeneIdentifiers()]. Other values explicitly prefix unqualified IDs.
 #' @param ... Passed to [mapGeneIdentifiers()], including `organism`, `index`,
 #'   `database` and versioned reference settings.
@@ -488,14 +488,14 @@ mapGeneIdentifiers <- function(
 #' spe <- spamtp_example$experiment
 #' spe <- annotateGeneIdentifiers(spe,
 #'     assay = "transcriptome",
-#'     database = spamtp_example$database, gene_reference = spamtp_example$gene_reference
+#'     database = spamtp_example$database, geneReference = spamtp_example$gene_reference
 #' )
 #' head(SummarizedExperiment::rowData(SingleCellExperiment::altExp(spe, "transcriptome")))
 annotateGeneIdentifiers <- function(
-    object, assay = "main", id_column = NULL,
-    id_type = c("auto", "symbol", "entrez", "ensembl", "uniprot", "hgnc"), ...
+    object, assay = "main", idColumn = NULL,
+    idType = c("auto", "symbol", "entrez", "ensembl", "uniprot", "hgnc"), ...
 ) {
-    id_type <- match.arg(id_type)
+    idType <- match.arg(idType)
     args <- list(...)
     .gene_check_experiment_species(
         object,
@@ -504,24 +504,24 @@ annotateGeneIdentifiers <- function(
     )
     experiment <- .experimentForAssay(object, assay)
     metadata <- SummarizedExperiment::rowData(experiment)
-    if (is.null(id_column)) {
+    if (is.null(idColumn)) {
         ids <- rownames(experiment)
         if (is.null(ids)) stop(
             "The selected experiment has no gene row names.",
             call. = FALSE
         )
     } else {
-        if (length(id_column) != 1L || is.na(id_column) || !id_column %in% colnames(metadata)) {
+        if (length(idColumn) != 1L || is.na(idColumn) || !idColumn %in% colnames(metadata)) {
             stop(
-                "id_column must name one column of the selected rowData().",
+                "idColumn must name one column of the selected rowData().",
                 call. = FALSE
             )
         }
-        ids <- as.character(metadata[[id_column]])
+        ids <- as.character(metadata[[idColumn]])
     }
-    if (id_type != "auto") {
+    if (idType != "auto") {
         unqualified <- !is.na(ids) & !grepl(":", ids)
-        ids[unqualified] <- paste0(id_type, ":", ids[unqualified])
+        ids[unqualified] <- paste0(idType, ":", ids[unqualified])
     }
     mapping <- mapGeneIdentifiers(ids, ...)
     columns <- c(
@@ -531,8 +531,8 @@ annotateGeneIdentifiers <- function(
     for (column in names(columns)) metadata[[paste0("spamtp_gene_", columns[[column]])]] <- mapping[[column]]
     SummarizedExperiment::rowData(experiment) <- metadata
     S4Vectors::metadata(experiment)$gene_mapping <- list(
-        provenance = attr(mapping, "gene_mapping"), id_column = id_column,
-        id_type = id_type, inputs = mapping
+        provenance = attr(mapping, "gene_mapping"), id_column = idColumn,
+        id_type = idType, inputs = mapping
     )
     .replaceExperiment(object, experiment, assay)
 }
@@ -556,40 +556,40 @@ annotateGeneIdentifiers <- function(
 }
 
 .gene_pathway_view <- function(
-    resources, database = NULL, gene_mapping = c("auto", "hgnc", "ramp"),
-    gene_reference = NULL, gene_index = NULL,
-    gene_reference_version = "latest", gene_reference_local_dir = NULL,
+    resources, database = NULL, geneMapping = c("auto", "hgnc", "ramp"),
+    geneReference = NULL, geneIndex = NULL,
+    geneReferenceVersion = "latest", geneReferenceLocalDir = NULL,
     organism = "Homo sapiens"
 ) {
-    gene_mapping <- match.arg(gene_mapping)
-    if (is.null(gene_reference) && !is.null(database$gene_reference)) gene_reference <- database$gene_reference
+    geneMapping <- match.arg(geneMapping)
+    if (is.null(geneReference) && !is.null(database$gene_reference)) geneReference <- database$gene_reference
     official <- !is.null(attr(resources$source_df, "spamtp_database")) || is.null(database)
-    enabled <- gene_mapping == "hgnc" || (gene_mapping == "auto" &&
-        (official || !is.null(gene_reference) || !is.null(gene_index)))
+    enabled <- geneMapping == "hgnc" || (geneMapping == "auto" &&
+        (official || !is.null(geneReference) || !is.null(geneIndex)))
     if (!enabled) {
         return(list(resources = resources, index = NULL))
     }
-    if (is.null(gene_index)) {
-        gene_index <- buildGeneMappingIndex(
-            resources$source_df, gene_reference, gene_reference_version, gene_reference_local_dir, organism
+    if (is.null(geneIndex)) {
+        geneIndex <- buildGeneMappingIndex(
+            resources$source_df, geneReference, geneReferenceVersion, geneReferenceLocalDir, organism
         )
     }
-    if (!inherits(gene_index, "spamtp_gene_index") || !identical(gene_index$provenance$organism, organism)) {
+    if (!inherits(geneIndex, "spamtp_gene_index") || !identical(geneIndex$provenance$organism, organism)) {
         stop(
-            "gene_index must be a matching organism index from buildGeneMappingIndex().",
+            "geneIndex must be a matching organism index from buildGeneMappingIndex().",
             call. = FALSE
         )
     }
-    .gene_check_source_index(resources$source_df, gene_index)
+    .gene_check_source_index(resources$source_df, geneIndex)
     canonicalize <- function(table) {
         table <- as.data.frame(table)
-        i <- match(table$rampId, gene_index$nodes$rampId)
+        i <- match(table$rampId, geneIndex$nodes$rampId)
         hit <- !is.na(i)
         table$rampId <- as.character(table$rampId)
-        table$rampId[hit] <- gene_index$nodes$canonical_ramp_id[i[hit]]
+        table$rampId[hit] <- geneIndex$nodes$canonical_ramp_id[i[hit]]
         table <- table[!is.na(table$rampId), , drop = FALSE]
         if ("commonName" %in% names(table)) {
-            label <- gene_index$nodes$symbol[match(table$rampId, gene_index$nodes$rampId)]
+            label <- geneIndex$nodes$symbol[match(table$rampId, geneIndex$nodes$rampId)]
             table$commonName <- as.character(table$commonName)
             table$commonName[!is.na(label)] <- label[!is.na(label)]
         }
@@ -601,10 +601,10 @@ annotateGeneIdentifiers <- function(
     )) {
         resources[[name]] <- canonicalize(resources[[name]])
     }
-    list(resources = resources, index = gene_index)
+    list(resources = resources, index = geneIndex)
 }
 
-.gene_prepare_de <- function(de, index, expand_records = FALSE) {
+.gene_prepare_de <- function(de, index, expandRecords = FALSE) {
     audit <- .map_gene_index(as.character(de$gene), index)
     keep <- audit$status %in% c("mapped", "mapped_ramp_only")
     result <- de[keep, , drop = FALSE]
@@ -630,7 +630,7 @@ annotateGeneIdentifiers <- function(
     first <- !duplicated(key)
     result <- result[first, , drop = FALSE]
     audit_keep <- audit_keep[first, , drop = FALSE]
-    if (expand_records && nrow(result)) {
+    if (expandRecords && nrow(result)) {
         ids <- strsplit(audit_keep$ramp_ids, ";", fixed = TRUE)
         result <- result[rep(seq_len(nrow(result)), lengths(ids)), , drop = FALSE]
         result$rampId <- unlist(ids, use.names = FALSE)

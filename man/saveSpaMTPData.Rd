@@ -11,7 +11,7 @@ saveSpaMTPData(
   assayName = "counts",
   image = NULL,
   annotations = FALSE,
-  generate.h5 = TRUE,
+  generateH5 = TRUE,
   verbose = TRUE
 )
 }
@@ -36,7 +36,7 @@ export.}
 \item{annotations}{Boolean values defining if the Bioconductor experiment
 contains annotations to be saved (default = FALSE).}
 
-\item{generate.h5}{Boolean value indicating whether to generate a
+\item{generateH5}{Boolean value indicating whether to generate a
 filtered_feature_bc_matrix.h5 file. Often used by data loading functions
 (e.g. scanpy.load_visium). If \code{FALSE}, only a filtered_feature_bc_matrix
 folder will be generated (default = TRUE).}
@@ -69,7 +69,7 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 if (requireNamespace("DropletUtils", quietly = TRUE)) {
     folder <- tempfile("export-")
-    saveSpaMTPData(spe, folder, assay = "main", generate.h5 = FALSE, verbose = FALSE)
+    saveSpaMTPData(spe, folder, assay = "main", generateH5 = FALSE, verbose = FALSE)
     list.files(folder)
     unlink(folder, recursive = TRUE)
 }

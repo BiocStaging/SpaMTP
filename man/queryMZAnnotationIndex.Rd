@@ -5,39 +5,39 @@
 \title{Query an indexed metabolite annotation search space}
 \usage{
 queryMZAnnotationIndex(
-  observed_mz,
+  observedMz,
   index,
   ppm = 5,
-  ms1_spectrum = NULL,
-  check_formula_mass = TRUE,
-  check_isotopes = TRUE,
-  check_adduct_network = TRUE,
-  min_score = 0
+  ms1Spectrum = NULL,
+  checkFormulaMass = TRUE,
+  checkIsotopes = TRUE,
+  checkAdductNetwork = TRUE,
+  minScore = 0
 )
 }
 \arguments{
-\item{observed_mz}{Numeric vector of observed m/z values.}
+\item{observedMz}{Numeric vector of observed m/z values.}
 
 \item{index}{A \code{spamtp_mz_index} from \code{\link[=buildMZAnnotationIndex]{buildMZAnnotationIndex()}}.}
 
 \item{ppm}{Mass tolerance in parts per million.}
 
-\item{ms1_spectrum}{Optional contextual spectrum with \code{mz} and \code{intensity}
+\item{ms1Spectrum}{Optional contextual spectrum with \code{mz} and \code{intensity}
 columns. It should represent the same retention-time window or spatial
 pixel/region as the queried peaks.}
 
-\item{check_formula_mass}{Check CHO formula/ion mass consistency. A mismatch
+\item{checkFormulaMass}{Check CHO formula/ion mass consistency. A mismatch
 beyond the query tolerance (at least 5 ppm for rounded reference masses)
 receives a 0.2 chemical score. Negative fractional mass defects alone
 are not penalized.}
 
-\item{check_isotopes}{Score carbon-13 and, when relevant, chlorine/bromine
+\item{checkIsotopes}{Score carbon-13 and, when relevant, chlorine/bromine
 M+2 patterns.}
 
-\item{check_adduct_network}{Downweight complex ions whose base monomer
-family is absent from \code{ms1_spectrum}.}
+\item{checkAdductNetwork}{Downweight complex ions whose base monomer
+family is absent from \code{ms1Spectrum}.}
 
-\item{min_score}{Minimum final score to retain.}
+\item{minScore}{Minimum final score to retain.}
 }
 \value{
 A ranked candidate data frame. \code{water_loss} is the required number
@@ -59,7 +59,7 @@ index construction, then ranked using mass error, rule prior, formula/ion mass c
 isotope, and contextual adduct-family evidence. Positive water-loss
 candidates additionally require compatible alcohol OH and neighbouring
 carbon H sites. Older structure tables are checked lazily for mass-matched
-records; \code{infer_structure = "never"} requires precomputed dehydration
+records; \code{inferStructure = "never"} requires precomputed dehydration
 capacity. Isomer identities are resolved separately for these losses.
 }
 \examples{

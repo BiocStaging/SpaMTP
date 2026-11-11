@@ -67,9 +67,9 @@ test_that("regional pathway selection works without a source ID column", {
     pathways <- data.frame(pathwayRampId = c("P1", "P2"), pathwayName = c("one", "two"),
         Cluster_id = "A", NES = c(2, -1), size = 3, padj = .01)
     db <- list(pathway = pathways[, 1:2], analytehaspathway = data.frame(pathwayRampId = c("P1", "P2"), rampId = c("C1", "C2")))
-    plot <- plotRegionalPathways(pathways, selected_pathways = "P1", database = db)
+    plot <- plotRegionalPathways(pathways, selectedPathways = "P1", database = db)
     expect_identical(unique(plot$data$pathwayRampId), "P1")
-    expect_error(plotRegionalPathways(pathways, selected_pathways = "absent", database = db), "No selected pathways")
+    expect_error(plotRegionalPathways(pathways, selectedPathways = "absent", database = db), "No selected pathways")
 })
 
 test_that("pathway thumbnails handle small, constant and irregular panels", {
@@ -96,7 +96,7 @@ test_that("pathway dendrograms cluster shared membership first", {
         distances <<- as.matrix(d)
         stats::hclust(d, ...)
     })
-    expect_s3_class(visualisePathways(object, pathways, assay = "main", min_n = 1,
+    expect_s3_class(visualisePathways(object, pathways, assay = "main", minN = 1,
         database = db, verbose = FALSE), "ggplot")
     expect_equal(unname(distances), matrix(c(0, 0, 1, 0, 0, 1, 1, 1, 0), 3))
 })
@@ -132,9 +132,9 @@ test_that("named differential tables are independent of list ordering", {
     }, .package = "fgsea")
     ordered <- list(genes = genes, metabolites = metabolites)
     for (tables in list(ordered, rev(ordered))) {
-        findRegionalPathways(object, ident = "region", DE.list = tables,
-            database = db, gene_mapping = "ramp", organism = "custom",
-            min_path_size = 1, verbose = FALSE)
+        findRegionalPathways(object, ident = "region", deList = tables,
+            database = db, geneMapping = "ramp", organism = "custom",
+            minPathSize = 1, verbose = FALSE)
     }
     half <- length(seen) / 2
     expect_gt(half, 0)
@@ -147,15 +147,15 @@ test_that("rendered pathway dendrograms retain all branches and align bar labels
     data(spamtp_example)
     result <- fishersPathwayAnalysis(list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
         universe = list(metabolites = paste0("RAMP_C_", 1:3)),
-        database = spamtp_example$database, min_path_size = 1,
-        pathway_all_info = TRUE, verbose = FALSE)
+        database = spamtp_example$database, minPathSize = 1,
+        pathwayAllInfo = TRUE, verbose = FALSE)
     plots <- NULL
     testthat::local_mocked_bindings(plot_grid = function(...) {
         plots <<- list(...)[1:2]
         ggplot2::ggplot()
     }, .package = "cowplot")
     expect_no_warning(visualisePathways(spamtp_example$experiment, result,
-        min_n = 1, p_val_threshold = 1,
+        minN = 1, pValThreshold = 1,
         database = spamtp_example$database, verbose = FALSE))
     tree <- ggplot2::ggplot_build(plots[[2]])
     segments <- tree$data[[1]][, c("x", "xend", "y", "yend")]

@@ -24,7 +24,7 @@ test_that("single-feature markers preserve dimensions with spatial sensitivity",
             before <- object
             fit <- findAllDEMs(object, "region",
                 assay = "main", assayName = "logcounts",
-                method = "markers", spatial_blocks = blocks
+                method = "markers", spatialBlocks = blocks
             )
             E <- as.matrix(SummarizedExperiment::assay(object))
             expected <- matrix(

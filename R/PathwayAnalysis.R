@@ -1,20 +1,20 @@
 #' Fisher Exact Tests for Pathway Enrichment
 #'
-#' @param Analyte Foreground analytes as a named list with elements `genes`,
+#' @param analytes Foreground analytes as a named list with elements `genes`,
 #'   `metabolites` and/or `mzs`. Identifiers are matched case-insensitively to
 #'   source IDs (e.g. `gene_symbol:TP53`, `hmdb:HMDB0000122`), known RaMP IDs,
 #'   then common names for otherwise unmatched queries. Duplicate mappings to
 #'   the same RaMP ID count once. m/z values may be numeric or numeric strings,
 #'   optionally prefixed with `mz-` or `mz_`.
-#' @param max_path_size Maximum pathway size within the analysis universe
+#' @param maxPathSize Maximum pathway size within the analysis universe
 #'   (inclusive; default 500).
-#' @param min_path_size Minimum pathway size within the analysis universe
+#' @param minPathSize Minimum pathway size within the analysis universe
 #'   (inclusive; positive integer, default 5).
 #' @param alternative Fisher test alternative: `"greater"`, `"less"` or
 #'   `"two.sided"`.
-#' @param pathway_all_info Include names, input IDs and m/z adduct information
+#' @param pathwayAllInfo Include names, input IDs and m/z adduct information
 #'   for foreground members of each pathway. Does not change the tests.
-#' @param pval_cutoff Optional BH-adjusted p-value (FDR) cutoff in `[0, 1]`.
+#' @param pvalCutoff Optional BH-adjusted p-value (FDR) cutoff in `[0, 1]`.
 #'   Applied only after correcting over all eligible pathways.
 #' @param verbose Whether to print progress messages. Mapping warnings are
 #'   always emitted, including when `verbose = FALSE`.
@@ -22,11 +22,11 @@
 #'   Identifier analysis requires `source_df`, `analyte`, `analytehaspathway`
 #'   and `pathway`; m/z analysis additionally uses `chem_props` unless `db`
 #'   or `index` is supplied through `...`.
-#' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #' @param universe Optional measured background, in the same named-list format
-#'   as `Analyte`. Supply all analytes eligible for foreground selection, not
+#'   as `analytes`. Supply all analytes eligible for foreground selection, not
 #'   just significant hits. Foreground and universe must specify the same
 #'   biological modalities (genes and/or compounds; `mzs` and `metabolites`
 #'   both denote compounds). All mapped foreground IDs must belong to the
@@ -35,18 +35,18 @@
 #'   When `NULL`, use all pathway-linked IDs of the specified modalities in
 #'   the database, before pathway-size filtering; mapped foreground IDs without
 #'   pathway membership are then excluded with a warning.
-#' @param gene_mapping `"auto"` uses HGNC identity harmonization for official
+#' @param geneMapping `"auto"` uses HGNC identity harmonization for official
 #'   SpaMTPdb resources and for custom bundles with `gene_reference` or
-#'   `gene_index`. `"hgnc"` requires harmonization; `"ramp"` explicitly retains
+#'   `geneIndex`. `"hgnc"` requires harmonization; `"ramp"` explicitly retains
 #'   RaMP-only mapping for historical reproduction or a curated non-human
 #'   database. Custom bundles without a reference use RaMP-only mapping in auto
 #'   mode and never trigger a reference download.
-#' @param gene_index Optional index built from the same source table by
+#' @param geneIndex Optional index built from the same source table by
 #'   [buildGeneMappingIndex()]. Multiple RaMP records of a resolved HGNC gene
 #'   have their pathway memberships united and count once. Conflicting RaMP
 #'   records and ambiguous symbols are excluded and recorded in the audit.
 #' @inheritParams buildGeneMappingIndex
-#' @param pathway_index A reusable index from buildPathwayIndex(). When
+#' @param pathwayIndex A reusable index from buildPathwayIndex(). When
 #'   supplied,
 #'   its gene identities and memberships must match any explicit database or
 #'   gene_index. Fingerprints prevent incompatible reuse.
@@ -78,11 +78,11 @@
 #'   `pathway_id`, `type`, `pathwayCategory`, `p_val`, `fdr`, `ratio`,
 #'   `analytes_in_pathways` (overlap) and `total_in_pathways` (size within the
 #'   universe). Also includes `pathwayRampId`, `foreground_analytes_number`
-#'   and `background_analytes_number`. `pathway_all_info = TRUE` adds member
+#'   and `background_analytes_number`. `pathwayAllInfo = TRUE` adds member
 #'   information. The `enrichment` attribute records mapped foreground and
 #'   universe IDs, unmapped inputs, excluded foreground IDs, universe source,
 #'   alternative, size limits and the number of tests before output filtering.
-#'   Its `gene_mapping` entry contains per-input mapping status, gene groups,
+#'   Its `geneMapping` entry contains per-input mapping status, gene groups,
 #'   excluded conflicting RaMP records and versioned reference provenance.
 #' @export
 #' @examples
@@ -90,38 +90,38 @@
 #' db <- spamtp_example$database
 #' fishersPathwayAnalysis(list(genes = c("GENE1", "GENE2")),
 #'     universe = list(genes = paste0("GENE", 1:8)), database = db,
-#'     min_path_size = 2, verbose = FALSE
+#'     minPathSize = 2, verbose = FALSE
 #' )
 fishersPathwayAnalysis <- function(
-    Analyte,
-    max_path_size = 500,
-    min_path_size = 5,
+    analytes,
+    maxPathSize = 500,
+    minPathSize = 5,
     alternative = "greater",
-    pathway_all_info = FALSE,
-    pval_cutoff = NULL,
+    pathwayAllInfo = FALSE,
+    pvalCutoff = NULL,
     verbose = TRUE,
     database = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL,
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL,
     universe = NULL,
-    gene_mapping = c("auto", "hgnc", "ramp"),
-    gene_reference = NULL,
-    gene_index = NULL,
-    gene_reference_version = "latest",
-    gene_reference_local_dir = NULL,
+    geneMapping = c("auto", "hgnc", "ramp"),
+    geneReference = NULL,
+    geneIndex = NULL,
+    geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL,
     organism = "Homo sapiens",
-    pathway_index = NULL,
+    pathwayIndex = NULL,
     ...
 ) {
-    Analyte <- .fisher_validate_input(Analyte, "Analyte")
+    analytes <- .fisher_validate_input(analytes, "analytes")
     if (!is.null(universe)) {
         universe <- .fisher_validate_input(universe, "universe")
         if (!setequal(
-            .fisher_modalities(Analyte),
+            .fisher_modalities(analytes),
             .fisher_modalities(universe)
         )) {
-            stop("Analyte and universe must specify the same biological modalities (genes and/or compounds).",
+            stop("analytes and universe must specify the same biological modalities (genes and/or compounds).",
                 call. = FALSE
             )
         }
@@ -130,21 +130,21 @@ fishersPathwayAnalysis <- function(
     valid_size <- function(x) {
         is.numeric(x) && length(x) == 1L && is.finite(x) && x >= 1 && x == floor(x)
     }
-    if (!valid_size(min_path_size) || !valid_size(max_path_size) ||
-        min_path_size > max_path_size) {
-        stop("Pathway size limits must be positive finite integers with min_path_size <= max_path_size.",
+    if (!valid_size(minPathSize) || !valid_size(maxPathSize) ||
+        minPathSize > maxPathSize) {
+        stop("Pathway size limits must be positive finite integers with minPathSize <= max_path_size.",
             call. = FALSE
         )
     }
-    if (!is.null(pval_cutoff) && (!is.numeric(pval_cutoff) ||
-        length(pval_cutoff) != 1L || !is.finite(pval_cutoff) ||
-        pval_cutoff < 0 || pval_cutoff > 1)) {
+    if (!is.null(pvalCutoff) && (!is.numeric(pvalCutoff) ||
+        length(pvalCutoff) != 1L || !is.finite(pvalCutoff) ||
+        pvalCutoff < 0 || pvalCutoff > 1)) {
         stop(
-            "pval_cutoff must be NULL or one finite number in [0, 1].",
+            "pvalCutoff must be NULL or one finite number in [0, 1].",
             call. = FALSE
         )
     }
-    for (flag in c("verbose", "pathway_all_info")) {
+    for (flag in c("verbose", "pathwayAllInfo")) {
         value <- get(flag)
         if (!is.logical(value) || length(value) != 1L || is.na(value)) {
             stop(flag, " must be TRUE or FALSE.", call. = FALSE)
@@ -159,14 +159,14 @@ fishersPathwayAnalysis <- function(
         )
     }
     needed <- c("source_df", "analyte", "analytehaspathway", "pathway")
-    if (length(c(Analyte$mzs, universe$mzs)) && is.null(args$db) && is.null(args$index)) {
+    if (length(c(analytes$mzs, universe$mzs)) && is.null(args$db) && is.null(args$index)) {
         needed <- c(needed, "chem_props")
     }
-    database <- .pathway_database(database, pathway_index)
+    database <- .pathway_database(database, pathwayIndex)
     resources <- .spamtp_db_bundle(
         needed,
-        database = database, version = database_version,
-        source = match.arg(database_source), local_dir = database_local_dir
+        database = database, version = databaseVersion,
+        source = match.arg(databaseSource), localDir = databaseLocalDir
     )
     required <- list(
         source_df = c("sourceId", "rampId"), analyte = "rampId",
@@ -184,16 +184,16 @@ fishersPathwayAnalysis <- function(
             )
         }
     }
-    gene_mapping <- match.arg(gene_mapping)
+    geneMapping <- match.arg(geneMapping)
     gene_view <- .pathway_context(
         resources, database,
-        if ("genes" %in% names(Analyte) || !is.null(pathway_index)) gene_mapping else "ramp",
-        gene_reference, gene_index, gene_reference_version, gene_reference_local_dir,
-        organism, pathway_index
+        if ("genes" %in% names(analytes) || !is.null(pathwayIndex)) geneMapping else "ramp",
+        geneReference, geneIndex, geneReferenceVersion, geneReferenceLocalDir,
+        organism, pathwayIndex
     )
     resources <- gene_view$resources
     mapping <- .fisher_map_inputs(
-        Analyte,
+        analytes,
         universe,
         resources,
         args,
@@ -205,7 +205,7 @@ fishersPathwayAnalysis <- function(
     links <- unique(links[, c("rampId", "pathwayRampId"), drop = FALSE])
     pattern <- paste0(
         "^RAMP_(",
-        paste(.fisher_modalities(Analyte), collapse = "|"),
+        paste(.fisher_modalities(analytes), collapse = "|"),
         ")_"
     )
     links <- links[!is.na(links$rampId) & grepl(pattern, links$rampId) &
@@ -230,8 +230,8 @@ fishersPathwayAnalysis <- function(
         foreground_ids <- intersect(foreground_ids, universe_ids)
     }
     coverage <- .pathway_coverage(gene_view$pathway_index, universe_ids,
-        foreground_ids = foreground_ids, types = .fisher_modalities(Analyte),
-        min_size = min_path_size, max_size = max_path_size
+        foregroundIds = foreground_ids, types = .fisher_modalities(analytes),
+        minSize = minPathSize, maxSize = maxPathSize
     )
     sets <- .pathway_sets_from_coverage(coverage)
     M <- lengths(sets)
@@ -280,7 +280,7 @@ fishersPathwayAnalysis <- function(
         result,
         coverage[match(result$pathwayRampId, coverage$pathwayRampId), coverage_fields, drop = FALSE]
     )
-    if (pathway_all_info) {
+    if (pathwayAllInfo) {
         result <- cbind(
             result,
             .fisher_pathway_details(
@@ -290,7 +290,7 @@ fishersPathwayAnalysis <- function(
             )
         )
     }
-    if (!is.null(pval_cutoff)) result <- result[result$fdr <= pval_cutoff, , drop = FALSE]
+    if (!is.null(pvalCutoff)) result <- result[result$fdr <= pvalCutoff, , drop = FALSE]
     result <- result[order(result$p_val, result$pathwayRampId), , drop = FALSE]
     rownames(result) <- NULL
     attr(result, "pathway_coverage") <- coverage
@@ -300,7 +300,7 @@ fishersPathwayAnalysis <- function(
         universe_ids = universe_ids, foreground_ids = foreground_ids,
         unmapped = mapping$unmapped, excluded_foreground_ids = outside,
         n_tested = length(sets), alternative = alternative,
-        min_path_size = min_path_size, max_path_size = max_path_size,
+        min_path_size = minPathSize, max_path_size = maxPathSize,
         gene_mapping = if (is.null(gene_view$index)) {
             list(mode = "ramp")
         } else {
@@ -314,18 +314,18 @@ fishersPathwayAnalysis <- function(
     result
 }
 
-.expand_pathway_annotation_ids <- function(db_3) {
-    if (!"Isomers_IDs" %in% names(db_3)) {
-        stop("The stored legacy db_3 result must contain an Isomers_IDs column.")
+.expand_pathway_annotation_ids <- function(db3) {
+    if (!"Isomers_IDs" %in% names(db3)) {
+        stop("The stored legacy db3 result must contain an Isomers_IDs column.")
     }
-    db_3 <- tidyr::separate_rows(
-        as.data.frame(db_3, stringsAsFactors = FALSE),
+    db3 <- tidyr::separate_rows(
+        as.data.frame(db3, stringsAsFactors = FALSE),
         dplyr::all_of("Isomers_IDs"),
         sep = "\\s*;\\s*"
     )
-    db_3$Isomers_IDs <- trimws(as.character(db_3$Isomers_IDs))
-    db_3[
-        !is.na(db_3$Isomers_IDs) & nzchar(db_3$Isomers_IDs), ,
+    db3$Isomers_IDs <- trimws(as.character(db3$Isomers_IDs))
+    db3[
+        !is.na(db3$Isomers_IDs) & nzchar(db3$Isomers_IDs), ,
         drop = FALSE
     ]
 }
@@ -336,40 +336,40 @@ fishersPathwayAnalysis <- function(
 #' This the function used to compute the gene/metabolites set enrichment for
 #' multi-omics spatial data
 #'
-#' @param SpaMTP A Bioconductor experiment contains spatial
+#' @param object A Bioconductor experiment contains spatial
 #'   metabolomics(SM)/transcriptomics(ST) data or both, if contains SM data, it
 #'   should be annotated via SpaMTP::annotateSM function.
 #' @param ident A character scalar specifying the region column in cell
 #'   metadata.
-#' @param DE.list A list consisting of differential expression data.frames for
+#' @param deList A list consisting of differential expression data.frames for
 #'   each input modality. Within each data.frame column names MUST include
 #'   'cluster', 'gene', ('avg_log2FC' or 'logFC') and ('p_val_adj' or 'FDR').
-#' @param analyte_types Vector of character strings defining which analyte types
+#' @param analyteTypes Vector of character strings defining which analyte types
 #'   to use. Options can be c("genes"), c("metabolites") or both (default =
 #'   c("genes", "metabolites")).
-#' @param SM_assay Primary MSI experiment name (default = "main").
-#' @param ST_assay Paired transcriptome altExp name (default = "transcriptome").
+#' @param smAssay Primary MSI experiment name (default = "main").
+#' @param stAssay Paired transcriptome altExp name (default = "transcriptome").
 #' @param smAssayName Expression assay name within the metabolomics experiment
-#'   selected by `SM_assay` (default = `"counts"`).
+#'   selected by `smAssay` (default = `"counts"`).
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param stAssayName Expression assay name within the transcriptomics
 #'   experiment
-#'   selected by `ST_assay` (default = `"counts"`).
+#'   selected by `stAssay` (default = `"counts"`).
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param min_path_size The min number of metabolites in a specific pathway
+#' @param minPathSize The min number of metabolites in a specific pathway
 #'   (default = 5).
-#' @param max_path_size The max number of metabolites in a specific pathway
+#' @param maxPathSize The max number of metabolites in a specific pathway
 #'   (default = 500).
-#' @param pval_cutoff_mets Adjusted p-value cutoff used when constructing
+#' @param pvalCutoffMets Adjusted p-value cutoff used when constructing
 #'   metabolite ranks. Set to `1` to include annotated metabolites regardless
 #'   of DE significance (default = 0.05).
-#' @param pval_cutoff_genes A numerical value defining the adjusted p value
+#' @param pvalCutoffGenes A numerical value defining the adjusted p value
 #'   cutoff for significant differentially expressed genes. If `NULL` cutoff =
 #'   `0.05` (default = 0.05).
-#' @param annotation_score_threshold Minimum indexed annotation score used for
+#' @param annotationScoreThreshold Minimum indexed annotation score used for
 #'   pathway mapping. It can be changed without re-running `annotateSM()` when
-#'   the object was annotated with `min_score = 0` (default = 0.05).
-#' @param annotation_source Metabolite annotation provenance. The default,
+#'   the object was annotated with `minScore = 0` (default = 0.05).
+#' @param annotationSource Metabolite annotation provenance. The default,
 #'   `"current"`, requires scored RaMP IDs from the indexed annotation
 #'   pipeline. `"auto"` permits a warned fallback to a legacy stored `db_3`,
 #'   while `"legacy"` explicitly requests that compatibility path.
@@ -377,9 +377,9 @@ fishersPathwayAnalysis <- function(
 #'   FALSE these messages will be suppressed (default = TRUE).
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
-#' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #'
 #' @return A data frame of regional pathway enrichment results, not a modified
 #'   experiment. The complete-ranks interface adds the number of measured and
@@ -400,7 +400,7 @@ fishersPathwayAnalysis <- function(
 #' )
 #' enrichment <- findRegionalPathways(spe,
 #'     ident = "region", ranks = list(genes = ranks),
-#'     pathway_index = index, min_path_size = 2, max_path_size = 6, verbose = FALSE
+#'     pathwayIndex = index, minPathSize = 2, maxPathSize = 6, verbose = FALSE
 #' )
 #' enrichment[, c("pathwayName", "NES", "padj")]
 #' @inheritParams fishersPathwayAnalysis
@@ -419,7 +419,7 @@ fishersPathwayAnalysis <- function(
 #'   ranks interface; NULL tests all regions.
 #' @param seed Random seed for fgsea's permutations. It is applied with
 #'   [withr::local_seed()], so the caller's random number stream is unchanged.
-#' @param rank_scale RMS-scale each modality's rank vector before concatenating,
+#' @param rankScale RMS-scale each modality's rank vector before concatenating,
 #' or none. Pathways can still be dominated by the more densely measured
 #'   modality.
 #' @param nPermSimple Preliminary permutations for the ranks interface.
@@ -427,42 +427,42 @@ fishersPathwayAnalysis <- function(
 #'   worker and shows progress only when `verbose = TRUE`. An explicit
 #'   parameter object controls its own workers and progress display.
 findRegionalPathways <- function(
-    SpaMTP,
+    object,
     ident,
-    DE.list = NULL,
-    analyte_types = c("genes", "metabolites"),
-    SM_assay = "main",
-    ST_assay = "transcriptome",
+    deList = NULL,
+    analyteTypes = c("genes", "metabolites"),
+    smAssay = "main",
+    stAssay = "transcriptome",
     smAssayName = "counts",
     stAssayName = "counts",
-    min_path_size = 5,
-    max_path_size = 500,
-    pval_cutoff_mets = 0.05,
-    pval_cutoff_genes = 0.05,
-    annotation_score_threshold = 0.05,
-    annotation_source = c("current", "auto", "legacy"),
+    minPathSize = 5,
+    maxPathSize = 500,
+    pvalCutoffMets = 0.05,
+    pvalCutoffGenes = 0.05,
+    annotationScoreThreshold = 0.05,
+    annotationSource = c("current", "auto", "legacy"),
     verbose = TRUE,
     database = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL,
-    gene_mapping = c("auto", "hgnc", "ramp"),
-    gene_reference = NULL, gene_index = NULL,
-    gene_reference_version = "latest",
-    gene_reference_local_dir = NULL,
-    organism = "Homo sapiens", pathway_index = NULL,
-    ranks = NULL, rank_scale = c("rms", "none"), nPermSimple = 1000,
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL,
+    geneMapping = c("auto", "hgnc", "ramp"),
+    geneReference = NULL, geneIndex = NULL,
+    geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL,
+    organism = "Homo sapiens", pathwayIndex = NULL,
+    ranks = NULL, rankScale = c("rms", "none"), nPermSimple = 1000,
     regions = NULL, seed = 1234,
     BPPARAM = BiocParallel::SerialParam(progressbar = verbose)
 ) {
     withr::local_seed(seed)
     if (!is.null(ranks)) {
-        if (!is.null(DE.list)) stop("Supply ranks or DE.list, not both.", call. = FALSE)
-        if (is.null(pathway_index)) {
-            pathway_index <- buildPathwayIndex(
+        if (!is.null(deList)) stop("Supply ranks or deList, not both.", call. = FALSE)
+        if (is.null(pathwayIndex)) {
+            pathwayIndex <- buildPathwayIndex(
                 database,
-                match.arg(gene_mapping), gene_reference, gene_index, gene_reference_version,
-                gene_reference_local_dir, organism, database_version, match.arg(database_source), database_local_dir
+                match.arg(geneMapping), geneReference, geneIndex, geneReferenceVersion,
+                geneReferenceLocalDir, organism, databaseVersion, match.arg(databaseSource), databaseLocalDir
             )
         }
         ranks <- lapply(
@@ -470,33 +470,33 @@ findRegionalPathways <- function(
             function(r) if (is.list(r) && !is.null(r$DEMs)) markerRanks(r) else r
         )
         return(.regionalPathwaysFromRanks(
-            ranks, pathway_index, min_path_size,
-            max_path_size, match.arg(rank_scale), nPermSimple, regions, BPPARAM
+            ranks, pathwayIndex, minPathSize,
+            maxPathSize, match.arg(rankScale), nPermSimple, regions, BPPARAM
         ))
     }
-    database <- .pathway_database(database, pathway_index)
-    annotation_source <- match.arg(annotation_source)
+    database <- .pathway_database(database, pathwayIndex)
+    annotationSource <- match.arg(annotationSource)
     database_resources <- .spamtp_db_bundle(
         c("chem_props", "source_df", "analytehaspathway", "pathway"),
         database = database,
-        version = database_version,
-        source = match.arg(database_source),
-        local_dir = database_local_dir
+        version = databaseVersion,
+        source = match.arg(databaseSource),
+        localDir = databaseLocalDir
     )
     gene_view <- .pathway_context(
         database_resources, database,
-        if ("genes" %in% analyte_types || !is.null(pathway_index)) gene_mapping else "ramp",
-        gene_reference, gene_index, gene_reference_version, gene_reference_local_dir, organism, pathway_index
+        if ("genes" %in% analyteTypes || !is.null(pathwayIndex)) geneMapping else "ramp",
+        geneReference, geneIndex, geneReferenceVersion, geneReferenceLocalDir, organism, pathwayIndex
     )
     database_resources <- gene_view$resources
-    if (!is.null(gene_view$index)) .gene_check_experiment_species(SpaMTP, ST_assay, organism)
+    if (!is.null(gene_view$index)) .gene_check_experiment_species(object, stAssay, organism)
     chem_props <- database_resources$chem_props
     source_df <- database_resources$source_df
     analytehaspathway <- database_resources$analytehaspathway
     pathway <- database_resources$pathway
 
     ## Checks for ident in SpaMTP Object
-    cellMetadata <- .cellMetadata(SpaMTP)
+    cellMetadata <- .cellMetadata(object)
     if (!(ident %in% colnames(cellMetadata))) {
         stop(
             "Ident: ",
@@ -507,8 +507,8 @@ findRegionalPathways <- function(
     cluster_vector <- as.factor(cellMetadata[[ident]])
     cluster <- levels(cluster_vector)
     # Match each selected assay to the observation labels.
-    if ("genes" %in% analyte_types) {
-        st_obj <- .assayData(SpaMTP, ST_assay, stAssayName)
+    if ("genes" %in% analyteTypes) {
+        st_obj <- .assayData(object, stAssay, stAssayName)
         if (length(cluster_vector) != ncol(st_obj)) {
             stop(
                 "ident must have one label per observation in the gene assay.",
@@ -516,8 +516,8 @@ findRegionalPathways <- function(
             )
         }
     }
-    if ("metabolites" %in% analyte_types) {
-        sm_obj <- .assayData(SpaMTP, SM_assay, smAssayName)
+    if ("metabolites" %in% analyteTypes) {
+        sm_obj <- .assayData(object, smAssay, smAssayName)
         if (length(cluster_vector) != ncol(sm_obj)) {
             stop(
                 "ident must have one label per observation in the metabolite assay.",
@@ -527,21 +527,21 @@ findRegionalPathways <- function(
     }
     annotation_metadata <- NULL
     db_3 <- NULL
-    if ("metabolites" %in% analyte_types) {
+    if ("metabolites" %in% analyteTypes) {
         # (2) Resolve annotations. Scored Ramp_IDs from the indexed pipeline are
         # the primary key; source-ID joins are only available in legacy mode.
         verbose_message(
-            message_text = "Resolving current RaMP metabolite annotations ... ",
+            messageText = "Resolving current RaMP metabolite annotations ... ",
             verbose = verbose
         )
         db_3 <- .resolve_pathway_metabolite_annotations(
-            .pathwayAnnotationObject(SpaMTP, SM_assay),
-            annotation_source = annotation_source,
-            score_threshold = annotation_score_threshold,
-            chemical_properties = chem_props
+            .pathwayAnnotationObject(object, smAssay),
+            annotationSource = annotationSource,
+            scoreThreshold = annotationScoreThreshold,
+            chemicalProperties = chem_props
         )
         annotation_metadata <- attr(db_3, "annotation_metadata")
-        annotation_metadata$pathway_pval_cutoff_mets <- pval_cutoff_mets
+        annotation_metadata$pathway_pval_cutoff_mets <- pvalCutoffMets
         if (isTRUE(verbose) && length(annotation_metadata$engine)) {
             ramp_label <- annotation_metadata$ramp_version
             if (is.null(ramp_label) || is.na(ramp_label)) ramp_label <- "unknown"
@@ -553,39 +553,39 @@ findRegionalPathways <- function(
     }
 
     ### Adding DE Results
-    if (length(DE.list) != length(analyte_types)) {
+    if (length(deList) != length(analyteTypes)) {
         stop(
             "Number of DE data.frames provided does not match the number of analyte types specified. Please make sure a DE dataframe is provided for each analyte type"
         )
     }
     verbose_message(
-        message_text = "Constructing DE dataframes.... ",
+        messageText = "Constructing DE dataframes.... ",
         verbose = verbose
     )
-    if (!is.null(names(DE.list))) {
-        if (anyDuplicated(names(DE.list)) || !setequal(names(DE.list), analyte_types)) {
-            stop("Named DE.list entries must match analyte_types exactly.", call. = FALSE)
+    if (!is.null(names(deList))) {
+        if (anyDuplicated(names(deList)) || !setequal(names(deList), analyteTypes)) {
+            stop("Named deList entries must match analyteTypes exactly.", call. = FALSE)
         }
-        DE.list <- DE.list[analyte_types]
+        deList <- deList[analyteTypes]
     }
-    source_de <- DE.list
-    DE.list <- stats::setNames(vector("list", length(analyte_types)), analyte_types)
-    for (i in seq_along(analyte_types)) {
+    source_de <- deList
+    deList <- stats::setNames(vector("list", length(analyteTypes)), analyteTypes)
+    for (i in seq_along(analyteTypes)) {
         verbose_message(
-            message_text = paste0(
+            messageText = paste0(
                 "Assuming DE.list[",
                 i,
                 "] contains ",
-                analyte_types[i],
+                analyteTypes[i],
                 " results .... "
             ),
             verbose = verbose
         )
         DE <- .standardizeRegionalDE(source_de[[i]], i)
-        if (analyte_types[i] == "metabolites") {
+        if (analyteTypes[i] == "metabolites") {
             DE <- DE %>% dplyr::rename(mz_name = "gene")
             db_3 <- merge(db_3, DE, by = "mz_name")
-            DE.list[[analyte_types[i]]] <- db_3
+            deList[[analyteTypes[i]]] <- db_3
         } else {
             if (!is.null(gene_view$index)) {
                 source_gene <- .gene_prepare_de(DE, gene_view$index)
@@ -597,22 +597,22 @@ findRegionalPathways <- function(
                     by = "commonName"
                 )
             }
-            DE.list[[analyte_types[i]]] <- source_gene
+            deList[[analyteTypes[i]]] <- source_gene
         }
     }
     # Get pathway db
     verbose_message(
-        message_text = "Constructing pathway database ...",
+        messageText = "Constructing pathway database ...",
         verbose = verbose
     )
     measured_ids <- character()
-    if ("genes" %in% analyte_types) {
+    if ("genes" %in% analyteTypes) {
         measured_ids <- .pathway_gene_ids(
-            rownames(.assayData(SpaMTP, ST_assay, stAssayName)),
+            rownames(.assayData(object, stAssay, stAssayName)),
             gene_view$pathway_index
         )
     }
-    if ("metabolites" %in% analyte_types) measured_ids <- unique(c(measured_ids, DE.list[["metabolites"]]$ramp_id))
+    if ("metabolites" %in% analyteTypes) measured_ids <- unique(c(measured_ids, deList[["metabolites"]]$ramp_id))
     coverage_by_cluster <- list()
 
     gc()
@@ -620,21 +620,21 @@ findRegionalPathways <- function(
     per_cluster <- lapply(cluster, function(i) {
         i <- as.character(i)
         ranks <- c()
-        if ("metabolites" %in% analyte_types) {
+        if ("metabolites" %in% analyteTypes) {
             ## metabolites
-            DE_met <- DE.list[["metabolites"]]
+            DE_met <- deList[["metabolites"]]
             sub_db3 <- DE_met[which(as.character(DE_met$cluster) == i), ] %>%
-                dplyr::filter(.data$p_val_adj <= pval_cutoff_mets %||% 0.05) %>%
+                dplyr::filter(.data$p_val_adj <= pvalCutoffMets %||% 0.05) %>%
                 dplyr::filter(!duplicated(.data$ramp_id))
             met_ranks <- scale(sub_db3$avg_log2FC, center = 0)
             names(met_ranks) <- sub_db3$ramp_id
             ranks <- c(ranks, met_ranks)
         }
-        if ("genes" %in% names(DE.list)) {
+        if ("genes" %in% names(deList)) {
             ## genes
-            DE_rna <- DE.list[["genes"]]
+            DE_rna <- deList[["genes"]]
             sub_de_gene <- DE_rna[which(as.character(DE_rna$cluster) == i), ] %>%
-                dplyr::filter(.data$p_val_adj <= pval_cutoff_genes %||% 0.05) %>%
+                dplyr::filter(.data$p_val_adj <= pvalCutoffGenes %||% 0.05) %>%
                 dplyr::filter(!duplicated(.data$rampId))
             ranks_gene_vector <- scale(sub_de_gene$avg_log2FC, center = 0)
             names(ranks_gene_vector) <- sub_de_gene$rampId
@@ -647,9 +647,9 @@ findRegionalPathways <- function(
 
         coverage <- .pathway_coverage(gene_view$pathway_index,
             measured_ids,
-            used_ids = names(cluster_ranks),
-            types = ifelse(analyte_types == "genes", "G", "C"),
-            min_size = min_path_size, max_size = max_path_size
+            usedIds = names(cluster_ranks),
+            types = ifelse(analyteTypes == "genes", "G", "C"),
+            minSize = minPathSize, maxSize = maxPathSize
         )
         pathway_db <- .pathway_sets_from_coverage(coverage)
         gsea_result <- c()
@@ -658,8 +658,8 @@ findRegionalPathways <- function(
                 gsea_result <- fgsea::fgsea(
                     pathways = pathway_db,
                     stats = cluster_ranks,
-                    minSize = min_path_size,
-                    maxSize = max_path_size,
+                    minSize = minPathSize,
+                    maxSize = maxPathSize,
                     BPPARAM = BPPARAM
                 ) %>% dplyr::mutate(Cluster_id = i)
             })
@@ -685,10 +685,10 @@ findRegionalPathways <- function(
         }
         additional_entry <- do.call(rbind, lapply(
             gsea_result$leadingEdge, .regionalLeadingEdge,
-            analyte_types = analyte_types,
-            metabolite_de = if ("metabolites" %in% analyte_types) sub_db3 else NULL,
-            gene_source = short_source, ranks = ranks,
-            gene_results = "genes" %in% names(DE.list)
+            analyteTypes = analyteTypes,
+            metaboliteDe = if ("metabolites" %in% analyteTypes) sub_db3 else NULL,
+            geneSource = short_source, ranks = ranks,
+            geneResults = "genes" %in% names(deList)
         ))
         gsea_result <- cbind(gsea_result, additional_entry)
         .progressTick(pb3, as.numeric(which(cluster == i)))
@@ -709,7 +709,7 @@ findRegionalPathways <- function(
         attr(result, "pathway_coverage") <- coverage_by_cluster
         attr(result, "pathway_index") <- gene_view$pathway_index$provenance
         attr(result, "annotation_metadata") <- annotation_metadata
-        attr(result, "gene_mapping") <- if (!is.null(gene_view$index)) attr(DE.list[["genes"]], "gene_mapping") else list(mode = "ramp")
+        attr(result, "gene_mapping") <- if (!is.null(gene_view$index)) attr(deList[["genes"]], "gene_mapping") else list(mode = "ramp")
         return(result)
     }
     gsea_all_cluster <- na.omit(gsea_all_cluster) %>%
@@ -724,7 +724,7 @@ findRegionalPathways <- function(
     attr(gsea_all_cluster, "pathway_index") <- gene_view$pathway_index$provenance
     attr(gsea_all_cluster, "annotation_metadata") <- annotation_metadata
     attr(gsea_all_cluster, "gene_mapping") <- if (!is.null(gene_view$index)) {
-        attr(DE.list[["genes"]], "gene_mapping")
+        attr(deList[["genes"]], "gene_mapping")
     } else {
         list(mode = "ramp")
     }
@@ -737,12 +737,12 @@ findRegionalPathways <- function(
 #'
 #' This function is adapted from the [fgsea::geseca](https://github.com/alserglab/fgsea/blob/master/R/geseca-multilevel.R) package to identify significantly expressed RAMP_DB pathways based on an expression/feature embedding matrix.
 #'
-#' @param E Expression matrix with gene identifiers or RaMP IDs as rows and
+#' @param expression Expression matrix with gene identifiers or RaMP IDs as rows and
 #'   observations as columns.
 #' @param minSize Minimal size of a gene set to test. All pathways below the
 #'   threshold are excluded (default = 1).
 #' @param maxSize Maximal size of a gene set to test. All pathways above the
-#'   threshold are excluded (default = `nrow(E) - 1`).
+#'   threshold are excluded (default = `nrow(expression) - 1`).
 #' @param center a logical value indicating whether the gene expression should
 #'   be centered to have zero mean before the analysis takes place (default =
 #'   TRUE).
@@ -760,13 +760,13 @@ findRegionalPathways <- function(
 #'   for preliminary estimation of P-values (default = 1000).
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
-#' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #'
 #' @inheritParams createPathwayAssay
 #' @param organism Species of the input. HGNC mapping requires `"Homo sapiens"`.
-#'   RaMP-only mapping (`gene_mapping = "ramp"`, or a pathway index without an
+#'   RaMP-only mapping (`geneMapping = "ramp"`, or a pathway index without an
 #'   HGNC index) does not perform orthology conversion. Non-human gene analysis
 #'   requires a separately curated species-specific database.
 #' @return A table with GESECA results. Each row corresponds to a tested RAMP_DB
@@ -781,14 +781,14 @@ findRegionalPathways <- function(
 #'     SingleCellExperiment::altExp(spe, "transcriptome"), "logcounts"
 #' )
 #' result <- withr::with_seed(1, runRAMPGeseca(expression,
-#'     pathway_index = index,
+#'     pathwayIndex = index,
 #'     minSize = 2, maxSize = 6, nPermSimple = 100, eps = 0.01
 #' ))
 #' head(result)
 runRAMPGeseca <- function(
-    E,
+    expression,
     minSize = 1,
-    maxSize = nrow(E) - 1,
+    maxSize = nrow(expression) - 1,
     center = TRUE,
     scale = FALSE,
     sampleSize = 101,
@@ -796,52 +796,52 @@ runRAMPGeseca <- function(
     BPPARAM = BiocParallel::SerialParam(progressbar = verbose),
     nPermSimple = 1000,
     database = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL, pathway_index = NULL,
-    gene_mapping = c("auto", "hgnc", "ramp"), gene_reference = NULL,
-    gene_index = NULL, gene_reference_version = "latest",
-    gene_reference_local_dir = NULL, organism = "Homo sapiens",
-    duplicate_genes = c("error", "mean", "sum"),
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL, pathwayIndex = NULL,
+    geneMapping = c("auto", "hgnc", "ramp"), geneReference = NULL,
+    geneIndex = NULL, geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL, organism = "Homo sapiens",
+    duplicateGenes = c("error", "mean", "sum"),
     verbose = FALSE
 ) {
-    database <- .pathway_database(database, pathway_index)
-    if (is.null(pathway_index)) {
-        pathway_index <- buildPathwayIndex(
+    database <- .pathway_database(database, pathwayIndex)
+    if (is.null(pathwayIndex)) {
+        pathwayIndex <- buildPathwayIndex(
             database,
-            match.arg(gene_mapping), gene_reference, gene_index, gene_reference_version,
-            gene_reference_local_dir, organism, database_version, match.arg(database_source), database_local_dir
+            match.arg(geneMapping), geneReference, geneIndex, geneReferenceVersion,
+            geneReferenceLocalDir, organism, databaseVersion, match.arg(databaseSource), databaseLocalDir
         )
     } else {
         .pathway_context(
-            database, database, match.arg(gene_mapping), gene_reference,
-            gene_index, gene_reference_version, gene_reference_local_dir, organism, pathway_index
+            database, database, match.arg(geneMapping), geneReference,
+            geneIndex, geneReferenceVersion, geneReferenceLocalDir, organism, pathwayIndex
         )
     }
-    mapped <- .pathway_expression(E, pathway_index, match.arg(duplicate_genes))
-    E <- as.matrix(mapped$expression)
-    if (missing(maxSize)) maxSize <- nrow(E) - 1L
-    types <- if (all(grepl("^RAMP_[GC]_", rownames(E)))) {
-        unique(sub("^RAMP_([GC])_.*", "\\1", rownames(E)))
+    mapped <- .pathway_expression(expression, pathwayIndex, match.arg(duplicateGenes))
+    expression <- as.matrix(mapped$expression)
+    if (missing(maxSize)) maxSize <- nrow(expression) - 1L
+    types <- if (all(grepl("^RAMP_[GC]_", rownames(expression)))) {
+        unique(sub("^RAMP_([GC])_.*", "\\1", rownames(expression)))
     } else {
         NULL
     }
     coverage <- .pathway_coverage(
-        pathway_index,
-        rownames(E),
+        pathwayIndex,
+        rownames(expression),
         types = types,
-        min_size = minSize,
-        max_size = maxSize
+        minSize = minSize,
+        maxSize = maxSize
     )
     pathway_db <- .pathway_sets_from_coverage(coverage)
-    gesecaRes <- fgsea::geseca(pathway_db, E,
+    gesecaRes <- fgsea::geseca(pathway_db, expression,
         minSize = minSize, maxSize = maxSize,
         center = center, scale = scale, sampleSize = sampleSize, eps = eps,
         BPPARAM = BPPARAM, nPermSimple = nPermSimple
     )
 
     attr(gesecaRes, "pathway_coverage") <- coverage
-    attr(gesecaRes, "pathway_index") <- pathway_index$provenance
+    attr(gesecaRes, "pathway_index") <- pathwayIndex$provenance
     attr(gesecaRes, "gene_mapping") <- mapped$mapping
     return(gesecaRes)
 }
@@ -854,9 +854,9 @@ runRAMPGeseca <- function(
 #' expression for enrichment or co-regulation analysis, or call
 #' [createPathwayObject()] to construct pathway-level scores.
 #'
-#' @param SpaMTP A SingleCellExperiment, including SpatialExperiment, containing
+#' @param object A SingleCellExperiment, including SpatialExperiment, containing
 #'   metabolomic or transcriptomic expression.
-#' @param analyte_type Character string specifying the type of analytes to
+#' @param analyteType Character string specifying the type of analytes to
 #'   process.Must be either "genes" or "metabolites" (default = "metabolites").
 #' @param assay Primary (`"main"`) or alternative experiment name. The default
 #'   is `"main"` for the primary experiment.
@@ -865,22 +865,22 @@ runRAMPGeseca <- function(
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param outputExperiment Name for the identity-level `altExp()` (default =
 #'   `"pathway"`); this is not an expression assay name.
-#' @param annotation_score_threshold Minimum indexed annotation score used to
+#' @param annotationScoreThreshold Minimum indexed annotation score used to
 #'   map m/z features to RaMP compounds (default = 0.05).
-#' @param annotation_source Metabolite annotation provenance. `"current"`
+#' @param annotationSource Metabolite annotation provenance. `"current"`
 #'   requires the indexed, scored RaMP output; `"auto"` and `"legacy"` enable
 #'   compatibility with older serialized SpaMTP objects.
 #' @param verbose Boolean logical value indicating whether to print verbose
 #'   messages during execution. (default = TRUE).
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
-#' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #'
 #' @inheritParams fishersPathwayAnalysis
 #' @inheritParams buildGeneMappingIndex
-#' @param duplicate_genes How to aggregate expression rows of one gene.
+#' @param duplicateGenes How to aggregate expression rows of one gene.
 #'   The default errors for differing rows and deduplicates identical rows.
 #'   Explicit mean or sum requires choosing an appropriate expression scale;
 #'   sum is generally inappropriate for log-transformed expression.
@@ -907,48 +907,48 @@ runRAMPGeseca <- function(
 #' spe <- spamtp_example$experiment
 #' index <- buildPathwayIndex(spamtp_example$database)
 #' mapped <- createPathwayAssay(spe,
-#'     analyte_type = "genes", assay = "transcriptome",
-#'     outputExperiment = "gene_ids", pathway_index = index, verbose = FALSE
+#'     analyteType = "genes", assay = "transcriptome",
+#'     outputExperiment = "gene_ids", pathwayIndex = index, verbose = FALSE
 #' )
 #' rownames(SingleCellExperiment::altExp(mapped, "gene_ids"))
 #'
 #' ## Create a pathway assay from gene data with verbose output
 #' # spamtp_obj <- createPathwayAssay(spamtp_obj, analyte_type = "genes", assay = "SPT", outputExperiment = "gene_pathway", verbose = TRUE)
-#' @param metabolite_ambiguity Expand a mass feature into candidate compounds
+#' @param metaboliteAmbiguity Expand a mass feature into candidate compounds
 #' (historical behavior), or exclude features mapping to more than one compound.
 #'   The workflow explicitly defaults to exclude. Candidate pairs, excluded
 #'   features and exact aggregation weights are retained in metadata.
 createPathwayAssay <- function(
-    SpaMTP, analyte_type = "metabolites", assay = "main", assayName = "counts", outputExperiment = "pathway", annotation_score_threshold = 0.05, annotation_source = c("current", "auto", "legacy"), verbose = TRUE, database = NULL, database_version = "latest", database_source = c("auto", "spamtpdb"), database_local_dir = NULL,
-    gene_mapping = c("auto", "hgnc", "ramp"), gene_reference = NULL, gene_index = NULL,
-    gene_reference_version = "latest", gene_reference_local_dir = NULL,
-    organism = "Homo sapiens", pathway_index = NULL,
-    duplicate_genes = c("error", "mean", "sum"), id_column = NULL,
-    metabolite_ambiguity = c("expand", "exclude")
+    object, analyteType = "metabolites", assay = "main", assayName = "counts", outputExperiment = "pathway", annotationScoreThreshold = 0.05, annotationSource = c("current", "auto", "legacy"), verbose = TRUE, database = NULL, databaseVersion = "latest", databaseSource = c("auto", "spamtpdb"), databaseLocalDir = NULL,
+    geneMapping = c("auto", "hgnc", "ramp"), geneReference = NULL, geneIndex = NULL,
+    geneReferenceVersion = "latest", geneReferenceLocalDir = NULL,
+    organism = "Homo sapiens", pathwayIndex = NULL,
+    duplicateGenes = c("error", "mean", "sum"), idColumn = NULL,
+    metaboliteAmbiguity = c("expand", "exclude")
 ) {
-    .requireExperiment(SpaMTP, "SingleCellExperiment")
-    gene_mapping <- match.arg(gene_mapping)
-    database <- .pathway_database(database, pathway_index)
-    if (identical(analyte_type, "genes")) {
+    .requireExperiment(object, "SingleCellExperiment")
+    geneMapping <- match.arg(geneMapping)
+    database <- .pathway_database(database, pathwayIndex)
+    if (identical(analyteType, "genes")) {
         needed <- "source_df"
         if (is.null(database) || "analytehaspathway" %in% names(database)) needed <- c(needed, "analytehaspathway", "pathway")
         resources <- .spamtp_db_bundle(needed, database,
-            version = database_version,
-            source = match.arg(database_source), local_dir = database_local_dir
+            version = databaseVersion,
+            source = match.arg(databaseSource), localDir = databaseLocalDir
         )
         view <- .pathway_context(
-            resources, database, gene_mapping, gene_reference, gene_index,
-            gene_reference_version, gene_reference_local_dir, organism, pathway_index
+            resources, database, geneMapping, geneReference, geneIndex,
+            geneReferenceVersion, geneReferenceLocalDir, organism, pathwayIndex
         )
-        if (!is.null(view$index)) .gene_check_experiment_species(SpaMTP, assay, organism)
-        E <- .assayData(SpaMTP, assay, assayName)
+        if (!is.null(view$index)) .gene_check_experiment_species(object, assay, organism)
+        E <- .assayData(object, assay, assayName)
         ids <- rownames(E)
-        if (!is.null(id_column)) {
-            rd <- .featureMetadata(SpaMTP, assay)
-            if (length(id_column) != 1L || !id_column %in% names(rd)) stop("id_column was not found.", call. = FALSE)
-            ids <- as.character(rd[[id_column]])
+        if (!is.null(idColumn)) {
+            rd <- .featureMetadata(object, assay)
+            if (length(idColumn) != 1L || !idColumn %in% names(rd)) stop("idColumn was not found.", call. = FALSE)
+            ids <- as.character(rd[[idColumn]])
         }
-        policy <- if (is.null(view$index) && missing(duplicate_genes)) "mean" else match.arg(duplicate_genes)
+        policy <- if (is.null(view$index) && missing(duplicateGenes)) "mean" else match.arg(duplicateGenes)
         mapped <- .pathway_expression(
             E,
             view$pathway_index,
@@ -976,38 +976,38 @@ createPathwayAssay <- function(
             provenance = view$pathway_index$provenance, inputs = mapped$mapping,
             original_features = mapped$original_features, duplicate_genes = policy, coverage = coverage
         )
-        SingleCellExperiment::altExp(SpaMTP, outputExperiment) <- target
-        return(SpaMTP)
+        SingleCellExperiment::altExp(object, outputExperiment) <- target
+        return(object)
     }
 
 
-    annotation_source <- match.arg(annotation_source)
+    annotationSource <- match.arg(annotationSource)
     database_resources <- .spamtp_db_bundle(
         c("chem_props", "source_df"),
         database = database,
-        version = database_version,
-        source = match.arg(database_source),
-        local_dir = database_local_dir
+        version = databaseVersion,
+        source = match.arg(databaseSource),
+        localDir = databaseLocalDir
     )
     chem_props <- database_resources$chem_props
     source_df <- database_resources$source_df
 
-    if (!analyte_type %in% c("genes", "metabolites")) {
-        stop("Incorrect `analyte_type` provided! must be either 'genes' or 'metabolites'. Please provided the correct analyte matching the selected assay data.")
+    if (!analyteType %in% c("genes", "metabolites")) {
+        stop("Incorrect `analyteType` provided! must be either 'genes' or 'metabolites'. Please provided the correct analyte matching the selected assay data.")
     }
 
-    assayMatrix <- .assayData(SpaMTP, assay, assayName)
+    assayMatrix <- .assayData(object, assay, assayName)
     annotations <- .resolve_pathway_metabolite_annotations(
-        .pathwayAnnotationObject(SpaMTP, assay),
-        annotation_source = annotation_source,
-        score_threshold = annotation_score_threshold, chemical_properties = chem_props
+        .pathwayAnnotationObject(object, assay),
+        annotationSource = annotationSource,
+        scoreThreshold = annotationScoreThreshold, chemicalProperties = chem_props
     )
     annotation_pairs <- unique(annotations[c("mz_name", "ramp_id")])
     annotation_pairs <- annotation_pairs[annotation_pairs$mz_name %in% rownames(assayMatrix) &
         !is.na(annotation_pairs$ramp_id) & grepl("^RAMP_C_", annotation_pairs$ramp_id), , drop = FALSE]
     counts <- table(annotation_pairs$mz_name)
     conflicts <- names(counts)[counts > 1L]
-    ambiguity <- match.arg(metabolite_ambiguity)
+    ambiguity <- match.arg(metaboliteAmbiguity)
     pairs <- annotation_pairs
     if (ambiguity == "exclude") pairs <- pairs[!pairs$mz_name %in% conflicts, , drop = FALSE]
     identifiers <- unique(pairs$ramp_id)
@@ -1047,10 +1047,10 @@ createPathwayAssay <- function(
         candidate_conflicts = conflicts, aggregation = "Mean of measured features per explicit RaMP compound",
         original_features = original_features, weights = weights,
         annotation = attr(annotations, "annotation_metadata"),
-        provenance = if (is.null(pathway_index)) list(database_version = database_version) else pathway_index$provenance
+        provenance = if (is.null(pathwayIndex)) list(database_version = databaseVersion) else pathwayIndex$provenance
     )
-    SingleCellExperiment::altExp(SpaMTP, outputExperiment) <- pathwayExperiment
-    SpaMTP
+    SingleCellExperiment::altExp(object, outputExperiment) <- pathwayExperiment
+    object
 }
 
 
@@ -1076,17 +1076,17 @@ createPathwayAssay <- function(
 #' @param outputExperiment Name for the pathway-level `altExp()` (default =
 #'   `"pathway"`).
 #'   Scores are stored in that experiment's `pathwayScores` expression assay.
-#' @param remove.nans Remove pathways without matched analytes (default TRUE).
+#' @param removeNans Remove pathways without matched analytes (default TRUE).
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
-#' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #'
 #' @inheritParams createPathwayAssay
 #' @inheritParams fishersPathwayAnalysis
-#' @param min_path_size Minimum measured unique members to score (default 1).
-#' @param max_path_size Maximum measured unique members to score (default Inf).
+#' @param minPathSize Minimum measured unique members to score (default 1).
+#' @param maxPathSize Maximum measured unique members to score (default Inf).
 #' @details Accepts gene identifiers directly or a harmonized RaMP assay.
 #'   min_path_size and max_path_size are applied to measured unique members.
 #'   rowData contains database_size (after identity reconciliation),
@@ -1105,33 +1105,33 @@ createPathwayAssay <- function(
 #' data(spamtp_example)
 #' spe <- spamtp_example$experiment
 #' index <- buildPathwayIndex(spamtp_example$database)
-#' spe <- createPathwayObject(spe, assay = "transcriptome", pathway_index = index)
+#' spe <- createPathwayObject(spe, assay = "transcriptome", pathwayIndex = index)
 #' SummarizedExperiment::assay(SingleCellExperiment::altExp(spe, "pathway"), "pathwayScores")[, 1:4]
 createPathwayObject <- function(
     object, assay = NULL, assayName = "logcounts",
-    outputExperiment = "pathway", remove.nans = TRUE, database = NULL,
-    database_version = "latest", database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL, gene_mapping = c("auto", "hgnc", "ramp"),
-    gene_reference = NULL, gene_index = NULL, gene_reference_version = "latest",
-    gene_reference_local_dir = NULL, organism = "Homo sapiens", pathway_index = NULL,
-    duplicate_genes = c("error", "mean", "sum"), min_path_size = 1, max_path_size = Inf
+    outputExperiment = "pathway", removeNans = TRUE, database = NULL,
+    databaseVersion = "latest", databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL, geneMapping = c("auto", "hgnc", "ramp"),
+    geneReference = NULL, geneIndex = NULL, geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL, organism = "Homo sapiens", pathwayIndex = NULL,
+    duplicateGenes = c("error", "mean", "sum"), minPathSize = 1, maxPathSize = Inf
 ) {
     .requireExperiment(object, "SingleCellExperiment")
     if (missing(assayName)) assayName <- .integrationAssay(.experimentForAssay(object, assay))
     context <- .pathway_score_context(
-        object, assay, assayName, database, pathway_index,
-        match.arg(gene_mapping), gene_reference, gene_index, gene_reference_version,
-        gene_reference_local_dir, organism, database_version, match.arg(database_source),
-        database_local_dir, match.arg(duplicate_genes), min_path_size, max_path_size
+        object, assay, assayName, database, pathwayIndex,
+        match.arg(geneMapping), geneReference, geneIndex, geneReferenceVersion,
+        geneReferenceLocalDir, organism, databaseVersion, match.arg(databaseSource),
+        databaseLocalDir, match.arg(duplicateGenes), minPathSize, maxPathSize
     )
     coverage <- context$coverage
-    keep <- coverage$eligible | (!remove.nans & coverage$used_size == 0)
+    keep <- coverage$eligible | (!removeNans & coverage$used_size == 0)
     selected <- coverage[keep, , drop = FALSE]
     if (!nrow(selected)) stop(
         "No pathways contain features from the selected assay within the size limits.",
         call. = FALSE
     )
-    sets <- .pathway_sets_from_coverage(selected, eligible_only = FALSE)
+    sets <- .pathway_sets_from_coverage(selected, eligibleOnly = FALSE)
     scores <- .pathway_score_matrix(context$expression, sets)
     target <- SingleCellExperiment::SingleCellExperiment(
         assays = list(pathwayScores = scores),
@@ -1149,8 +1149,8 @@ createPathwayObject <- function(
 ############################# PATHWAY HELPER FUNCTIONS ########################################
 
 #' @noRd
-get_analytes_db <- function(input_id, analytehaspathway, chem_props, pathway) {
-    rampid <- unique(chem_props$ramp_id[which(chem_props$chem_source_id %in% unique(input_id))])
+get_analytes_db <- function(inputId, analytehaspathway, chemProps, pathway) {
+    rampid <- unique(chemProps$ramp_id[which(chemProps$chem_source_id %in% unique(inputId))])
     #
     pathway_ids <- unique(analytehaspathway$pathwayRampId[which(analytehaspathway$rampId %in% rampid)])
 

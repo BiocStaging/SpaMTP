@@ -32,7 +32,7 @@ SingleCellExperiment::altExp(experiment, "transcriptome") <- normalizeSMData(
     "LogNormalize", verbose = FALSE)
 index <- buildMZAnnotationIndex(metabolites, adducts = c("M+H", "M+Na"))
 experiment <- annotateSM(experiment, index = index, ppm = 5,
-    min_score = 0, return.only.annotated = FALSE, save.intermediate = TRUE,
+    minScore = 0, returnOnlyAnnotated = FALSE, saveIntermediate = TRUE,
     verbose = FALSE)
 experiment <- withr::with_seed(1,
     runMetabolicPCA(experiment, npcs = 3, verbose = FALSE))

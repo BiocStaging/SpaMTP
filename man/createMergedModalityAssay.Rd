@@ -5,16 +5,16 @@
 \title{Combine paired modalities in a scaled alternative experiment}
 \usage{
 createMergedModalityAssay(
-  SpaMTP,
-  assays.to.merge,
+  object,
+  assaysToMerge,
   outputExperiment = "merged",
-  return.original = TRUE
+  returnOriginal = TRUE
 )
 }
 \arguments{
-\item{SpaMTP}{A SpatialExperiment containing at least two paired modalities.}
+\item{object}{A SpatialExperiment containing at least two paired modalities.}
 
-\item{assays.to.merge}{At least two distinct modality names: \code{"main"} and/or
+\item{assaysToMerge}{At least two distinct modality names: \code{"main"} and/or
 names in \code{SingleCellExperiment::altExpNames(SpaMTP)}. Multiple aliases for
 the same primary experiment are not distinct modalities. See
 \link{experimentAccess}.}
@@ -22,11 +22,11 @@ the same primary experiment are not distinct modalities. See
 \item{outputExperiment}{Name of the output alternative experiment, not an expression
 matrix (default = \code{"merged"}).}
 
-\item{return.original}{TRUE adds an altExp; FALSE returns only the merged
+\item{returnOriginal}{TRUE adds an altExp; FALSE returns only the merged
 feature space.}
 }
 \value{
-If \code{return.original = TRUE}, the input SpatialExperiment with
+If \code{returnOriginal = TRUE}, the input SpatialExperiment with
 \code{altExp(SpaMTP, outputExperiment)} containing a \code{scaled} assay. Otherwise a new
 SpatialExperiment with merged rows, the same pixels and a \code{scaled} assay.
 }

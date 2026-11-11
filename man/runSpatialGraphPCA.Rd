@@ -6,24 +6,24 @@
 \usage{
 runSpatialGraphPCA(
   data,
-  n_components = 50,
+  nComponents = 50,
   assay = "main",
   assayName = "scaled",
   platform = "Visium",
   lambda = 0.5,
-  n_neighbors = NULL,
-  include_self = FALSE,
+  nNeighbors = NULL,
+  includeSelf = FALSE,
   alg = "kd_tree",
   fast = TRUE,
-  graph_name = "SpatialKNN",
-  reduction_name = "SpatialPCA",
+  graphName = "SpatialKNN",
+  reductionName = "SpatialPCA",
   verbose = TRUE
 )
 }
 \arguments{
 \item{data}{A SpatialExperiment or aligned Cardinal MSImagingExperiment.}
 
-\item{n_components}{Integer specifying the number of principal components to
+\item{nComponents}{Integer specifying the number of principal components to
 compute (default = 50).}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
@@ -34,18 +34,18 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{platform}{Character string matching either \code{"Visium"} or \code{"ST"} to
 determine how the k-NN graph is constructed. If "Visium" k-nns will handle
-the hexagon spot arrangement, including setting \code{n_neighbors} = 6, else
-"ST" assignment will set \code{n_neighbors} = 4 unless a value is specifically
+the hexagon spot arrangement, including setting \code{nNeighbors} = 6, else
+"ST" assignment will set \code{nNeighbors} = 4 unless a value is specifically
 provided (default = "Visium").}
 
 \item{lambda}{Numeric value defining the regularisation parameter that
 controls the influence of the graph Laplacian (default = 0.5).}
 
-\item{n_neighbors}{Integer value specifying the number of spatial neighbours
+\item{nNeighbors}{Integer value specifying the number of spatial neighbours
 to use. If \code{NULL}, will default of 6 for "Visium" data and 4 for "ST"
 platforms (default = NULL).}
 
-\item{include_self}{Boolean logical value indicating whether to include
+\item{includeSelf}{Boolean logical value indicating whether to include
 self-connections in the graph (default = FALSE).}
 
 \item{alg}{Character string specifying the algorithm to use for nearest
@@ -55,11 +55,11 @@ neighbour search (passed to \code{FNN::get.knn()}) (default ="kd_tree").}
 (default \code{TRUE}). For wide inputs requesting few components, matrix-vector
 products avoid forming the dense feature-by-feature covariance matrix.}
 
-\item{graph_name}{Name for pixel edges in \code{SingleCellExperiment::colPair()}
+\item{graphName}{Name for pixel edges in \code{SingleCellExperiment::colPair()}
 and the graph matrix in \code{S4Vectors::metadata(data)$spatialGraphs}
 (default = \code{"SpatialKNN"}).}
 
-\item{reduction_name}{Name for the parent object's
+\item{reductionName}{Name for the parent object's
 \code{SingleCellExperiment::reducedDim()} (default = \code{"SpatialPCA"}).}
 
 \item{verbose}{Boolean indicating whether to show the message. If TRUE the
@@ -95,8 +95,8 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 spe <- scaleSMData(spe)
 spe <- runSpatialGraphPCA(spe,
-    n_components = 2, platform = "ST",
-    n_neighbors = 3, verbose = FALSE
+    nComponents = 2, platform = "ST",
+    nNeighbors = 3, verbose = FALSE
 )
 head(SingleCellExperiment::reducedDim(spe, "SpatialPCA"))
 }

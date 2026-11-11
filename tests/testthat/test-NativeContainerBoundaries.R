@@ -3,7 +3,7 @@ test_that("normalization targets the selected experiment and validates intensiti
     original <- SummarizedExperiment::assays(object)
     result <- normalizeSMData(object, "LogNormalize",
         assay = "transcriptome",
-        scale.factor = 100, verbose = FALSE
+        scaleFactor = 100, verbose = FALSE
     )
     expect_equal(SummarizedExperiment::assays(result), original)
     transcriptome <- SingleCellExperiment::altExp(result, "transcriptome")
@@ -13,13 +13,13 @@ test_that("normalization targets the selected experiment and validates intensiti
         as.matrix(SummarizedExperiment::assay(transcriptome, "logcounts")),
         expected
     )
-    expect_error(normalizeSMData(object, scale.factor = 0), "scale.factor")
+    expect_error(normalizeSMData(object, scaleFactor = 0), "scaleFactor")
     SummarizedExperiment::assay(object, "counts")[1, 1] <- -1
     expect_error(normalizeSMData(object), "non-negative")
     sce <- SingleCellExperiment::SingleCellExperiment(
         assays = list(counts = matrix(c(0, 0, 1, 3), 2))
     )
-    sce <- normalizeSMData(sce, scale.factor = 10, verbose = FALSE)
+    sce <- normalizeSMData(sce, scaleFactor = 10, verbose = FALSE)
     expect_equal(
         as.numeric(colSums(SummarizedExperiment::assay(sce, "normcounts"))),
         c(0, 10)
@@ -39,7 +39,7 @@ test_that("TMM supports a plain alternative SummarizedExperiment", {
         SingleCellExperiment::altExp(result, "transcriptome")
     ))
     expect_error(
-        tmmNormalize(object, "region", "edge", normalisation.type = "bad"),
+        tmmNormalize(object, "region", "edge", normalizationType = "bad"),
         "arg"
     )
 })
@@ -110,7 +110,7 @@ test_that("integration excludes derived assays and standardizes merged modalitie
     expect_equal(as.numeric(rowMeans(merged)), rep(0, nrow(merged)), tolerance = 1e-12)
     expect_true(all(is.finite(merged)))
     result <- suppressWarnings(multiOmicIntegration(object,
-        dims.list = list(1, 1), return.intermediate = TRUE
+        dimsList = list(1, 1), returnIntermediate = TRUE
     ))
     expect_identical(
         S4Vectors::metadata(result)$spamtp_integration$modalities,
@@ -129,8 +129,8 @@ test_that("spatial graphs and plots separate interleaved tissue samples", {
     SpatialExperiment::spatialCoords(object) <-
         cbind(x = rep(1:3, each = 2), y = 0)
     result <- runSpatialGraphPCA(object,
-        n_components = 2, assayName = "counts",
-        n_neighbors = 2, platform = "ST", verbose = FALSE
+        nComponents = 2, assayName = "counts",
+        nNeighbors = 2, platform = "ST", verbose = FALSE
     )
     graph <- S4Vectors::metadata(result)$spatialGraphs$SpatialKNN
     expect_true(all(graph[object$sample_id == "s1", object$sample_id == "s2"] == 0))
@@ -146,7 +146,7 @@ test_that("spatial graphs and plots separate interleaved tissue samples", {
 test_that("Cardinal normalization never silently ignores an argument", {
     object <- asCardinal(nativeFixture())
     expect_error(normalizeSMData(object, "RC"), "Cardinal input supports TIC")
-    expect_error(normalizeSMData(object, scale.factor = 100), "scale.factor")
+    expect_error(normalizeSMData(object, scaleFactor = 100), "scaleFactor")
     result <- binSpaMTP(object, resolution = 100, units = "mz")
     expect_s4_class(result, "SpatialExperiment")
     reference <- Cardinal::bin(object, resolution = 100, units = "mz", method = "sum")
@@ -195,7 +195,7 @@ test_that("technical pooling uses edgeR and limma treatment tables are valid", {
     )
     expect_equal(as.numeric(table(pooled$group)), c(3, 3))
     result <- runDE(pooled, object, "group",
-        output_dir = NULL, run_name = "test", logFC_threshold = 1.2, annotation.column = NULL,
+        outputDir = NULL, runName = "test", foldChangeThreshold = 1.2, annotationColumn = NULL,
         assay = "main", verbose = FALSE
     )
     expect_true(all(c("FDR", "regulate", "cluster") %in% colnames(result$DEMs)))
@@ -214,7 +214,7 @@ test_that("RaMP aggregation retains feature IDs and pixel ordering", {
         commonName = c("GENEA", "GENEC", "GENEB")
     ))
     result <- createPathwayAssay(object,
-        analyte_type = "genes", assay = "transcriptome",
+        analyteType = "genes", assay = "transcriptome",
         outputExperiment = "ramp", database = database, verbose = FALSE
     )
     ramp <- .assayData(result, "ramp")

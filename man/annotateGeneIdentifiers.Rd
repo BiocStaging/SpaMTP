@@ -7,8 +7,8 @@
 annotateGeneIdentifiers(
   object,
   assay = "main",
-  id_column = NULL,
-  id_type = c("auto", "symbol", "entrez", "ensembl", "uniprot", "hgnc"),
+  idColumn = NULL,
+  idType = c("auto", "symbol", "entrez", "ensembl", "uniprot", "hgnc"),
   ...
 )
 }
@@ -18,10 +18,10 @@ SpatialExperiment, including native objects provided by SpaMTPData.}
 
 \item{assay}{The primary experiment (\code{"main"}) or transcriptome altExp name.}
 
-\item{id_column}{Gene identifier column in the selected \code{rowData()}.
+\item{idColumn}{Gene identifier column in the selected \code{rowData()}.
 \code{NULL} uses its row names.}
 
-\item{id_type}{Identifier type. \code{"auto"} accepts the same input formats as
+\item{idType}{Identifier type. \code{"auto"} accepts the same input formats as
 \code{\link[=mapGeneIdentifiers]{mapGeneIdentifiers()}}. Other values explicitly prefix unqualified IDs.}
 
 \item{...}{Passed to \code{\link[=mapGeneIdentifiers]{mapGeneIdentifiers()}}, including \code{organism}, \code{index},
@@ -43,7 +43,7 @@ data(spamtp_example)
 spe <- spamtp_example$experiment
 spe <- annotateGeneIdentifiers(spe,
     assay = "transcriptome",
-    database = spamtp_example$database, gene_reference = spamtp_example$gene_reference
+    database = spamtp_example$database, geneReference = spamtp_example$gene_reference
 )
 head(SummarizedExperiment::rowData(SingleCellExperiment::altExp(spe, "transcriptome")))
 }

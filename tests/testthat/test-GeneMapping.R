@@ -62,7 +62,7 @@ test_that("record conflicts cannot create transitive merges of distinct genes", 
     out <- mapGeneIdentifiers(c("GENEA", "GENEC"), index = index)
     expect_equal(out$canonical_ramp_id, c("RAMP_G_1", "RAMP_G_4"))
     expect_false(any(grepl("RAMP_G_5", out$ramp_ids)))
-    view <- .gene_pathway_view(db, db, gene_index = index)
+    view <- .gene_pathway_view(db, db, geneIndex = index)
     expect_false("RAMP_G_5" %in% view$resources$analytehaspathway$rampId)
     expect_equal(sum(view$resources$analytehaspathway$rampId == "RAMP_G_1" &
         view$resources$analytehaspathway$pathwayRampId == "P1"), 1L)
@@ -93,7 +93,7 @@ test_that("differential features are never arbitrarily chosen after gene merging
     compact <- .gene_prepare_de(de, index)
     expect_equal(nrow(compact), 2L)
     expect_equal(compact$rampId, c("RAMP_G_1", "RAMP_G_3"))
-    network <- .pn_prepare_gene_de(de, db$source_df, gene_index = index)
+    network <- .pn_prepare_gene_de(de, db$source_df, geneIndex = index)
     expect_setequal(network$rampId, c("RAMP_G_1", "RAMP_G_2", "RAMP_G_7", "RAMP_G_3"))
     de$avg_log2FC[2] <- 2
     expect_error(.gene_prepare_de(de, index), "different differential statistics")
@@ -104,7 +104,7 @@ test_that("foreground and background collapse by gene before Fisher testing", {
     out <- fishersPathwayAnalysis(
         list(genes = c("GENEA", "OLDA", "RAMP_G_2")),
         universe = list(genes = c("101", "GENEB", "ENSG0003.5", "RAMP_G_7")),
-        database = db, min_path_size = 1, pathway_all_info = TRUE, verbose = FALSE
+        database = db, minPathSize = 1, pathwayAllInfo = TRUE, verbose = FALSE
     )
     expect_equal(out$pathwayRampId, c("P1", "P2"))
     expect_equal(out$foreground_analytes_number, c(1L, 1L))
@@ -126,7 +126,7 @@ test_that("mapping status remains explicit for unresolved foreground and univers
     out <- withCallingHandlers(fishersPathwayAnalysis(
         list(genes = c("GENEA", "SHARED")),
         universe = list(genes = c("GENEA", "GENEB", "SHARED")),
-        database = db, min_path_size = 1, verbose = FALSE
+        database = db, minPathSize = 1, verbose = FALSE
     ), warning = function(w) {
         messages <<- c(messages, conditionMessage(w))
         invokeRestart("muffleWarning")
@@ -147,7 +147,7 @@ test_that("SpaMTPData paired experiments retain alignment and assays after mappi
     index <- buildGeneMappingIndex(db$source_df, db$gene_reference)
     expect_warning(mapped <- annotateGeneIdentifiers(object,
         assay = "transcriptome",
-        id_column = "symbol", index = index
+        idColumn = "symbol", index = index
     ), "2 gene input")
     target <- SingleCellExperiment::altExp(mapped, "transcriptome")
     expect_identical(SummarizedExperiment::assay(target), SummarizedExperiment::assay(paired))
@@ -160,9 +160,9 @@ test_that("SpaMTPData paired experiments retain alignment and assays after mappi
         c("mapped", "mapped", "mapped", "ambiguous", "not_in_ramp")
     )
     expect_equal(S4Vectors::metadata(target)$gene_mapping$provenance$organism, "Homo sapiens")
-    expect_error(annotateGeneIdentifiers(object, assay = "transcriptome", id_column = "missing", index = index), "id_column")
+    expect_error(annotateGeneIdentifiers(object, assay = "transcriptome", idColumn = "missing", index = index), "idColumn")
     S4Vectors::metadata(object)$SpaMTPData <- list(organism = "Mus musculus")
-    expect_error(annotateGeneIdentifiers(object, assay = "transcriptome", id_column = "symbol", index = index), "Experiment species")
+    expect_error(annotateGeneIdentifiers(object, assay = "transcriptome", idColumn = "symbol", index = index), "Experiment species")
 })
 
 test_that("mapping preserves row order, empty inputs and duplicate feature IDs", {
@@ -186,19 +186,19 @@ test_that("custom non-human and historical RaMP-only workflows stay explicit", {
     index <- buildGeneMappingIndex(db$source_df, db$gene_reference)
     expect_error(fishersPathwayAnalysis(list(genes = "GENEA"),
         database = db,
-        gene_index = index, organism = "Mus musculus"
+        geneIndex = index, organism = "Mus musculus"
     ), "organism")
     db$gene_reference <- NULL
     out <- fishersPathwayAnalysis(list(genes = "GENEB"),
         database = db,
-        min_path_size = 1, organism = "Mus musculus", verbose = FALSE
+        minPathSize = 1, organism = "Mus musculus", verbose = FALSE
     )
     expect_equal(attr(out, "enrichment")$gene_mapping$mode, "ramp")
     bad <- index
     bad$nodes <- bad$nodes[-1, ]
     expect_error(fishersPathwayAnalysis(list(genes = "GENEA"),
         database = db,
-        gene_index = bad
+        geneIndex = bad
     ), "does not match")
 })
 
@@ -225,9 +225,9 @@ test_that("regional pathway ranks and memberships use the same gene identities",
         )
     }, .package = "fgsea")
     result <- findRegionalPathways(object,
-        ident = "region", DE.list = list(genes = de),
-        analyte_types = "genes", database = db,
-        min_path_size = 2, verbose = FALSE
+        ident = "region", deList = list(genes = de),
+        analyteTypes = "genes", database = db,
+        minPathSize = 2, verbose = FALSE
     )
     expect_length(seen, 2L)
     expect_setequal(names(seen[[1]]$stats), c("RAMP_G_1", "RAMP_G_3", "RAMP_G_4"))
@@ -244,20 +244,20 @@ test_that("source fingerprints reject changed identities with unchanged RaMP IDs
         changed <- db
         changed$source_df[[column]][changed$source_df$rampId == "RAMP_G_3"] <-
             if (column == "sourceId") "entrez:103" else "GENEC"
-        expect_error(.gene_pathway_view(changed, changed, gene_index = index), "does not match")
+        expect_error(.gene_pathway_view(changed, changed, geneIndex = index), "does not match")
         expect_error(fishersPathwayAnalysis(list(genes = "GENEB"),
             database = changed,
-            gene_index = index, min_path_size = 1, verbose = FALSE
+            geneIndex = index, minPathSize = 1, verbose = FALSE
         ), "does not match")
         expect_error(mapGeneIdentifiers("GENEB", database = changed, index = index), "does not match")
     }
     changed <- db
     changed$source_df <- changed$source_df[, c("rampId", "sourceId")]
-    expect_error(.gene_pathway_view(changed, changed, gene_index = index), "does not match")
+    expect_error(.gene_pathway_view(changed, changed, geneIndex = index), "does not match")
     old <- index
     old$provenance$schema_version <- 1L
     old$provenance$source_fingerprint <- NULL
-    expect_error(.gene_pathway_view(db, db, gene_index = old), "Rebuild")
+    expect_error(.gene_pathway_view(db, db, geneIndex = old), "Rebuild")
     expect_error(mapGeneIdentifiers("GENEA", index = old), "Rebuild")
 })
 
@@ -272,11 +272,11 @@ test_that("source fingerprints ignore row order, duplicate evidence and unrelate
     reordered <- buildGeneMappingIndex(changed$source_df, changed$gene_reference)
     expect_identical(index$provenance$source_fingerprint, reordered$provenance$source_fingerprint)
     expect_identical(index$nodes, reordered$nodes)
-    expect_identical(.gene_pathway_view(changed, changed, gene_index = index)$index, index)
+    expect_identical(.gene_pathway_view(changed, changed, geneIndex = index)$index, index)
     path <- tempfile(fileext = ".rds")
     on.exit(unlink(path), add = TRUE)
     saveRDS(index, path)
-    expect_identical(.gene_pathway_view(changed, changed, gene_index = readRDS(path))$index, index)
+    expect_identical(.gene_pathway_view(changed, changed, geneIndex = readRDS(path))$index, index)
 })
 
 test_that("shared crossreferences retain unresolved and conflicting competitors", {
@@ -295,7 +295,7 @@ test_that("shared crossreferences retain unresolved and conflicting competitors"
         expect_identical(out$candidate_gene_ids, if (competitor == "RAMP_G_6") "HGNC:1" else "HGNC:1;HGNC:3")
         expect_error(mapGeneIdentifiers("legacy:shared", index = index, ambiguous = "error"), "Ambiguous gene mapping")
         expect_warning(enriched <- fishersPathwayAnalysis(list(genes = "legacy:shared"),
-            database = db, gene_index = index, min_path_size = 1, verbose = FALSE
+            database = db, geneIndex = index, minPathSize = 1, verbose = FALSE
         ), "unmapped")
         expect_true(all(enriched$foreground_analytes_number == 0L))
         expect_identical(attr(enriched, "enrichment")$gene_mapping$inputs$status, "ambiguous")

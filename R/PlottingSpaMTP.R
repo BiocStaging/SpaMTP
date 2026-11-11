@@ -49,28 +49,28 @@ findNearestMZ <- function(data, mz, assay = NULL) {
 #' @param assay Primary or alternative experiment.
 #' @param assayName Expression assay.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param bin_name Output colData column name. Existing columns are protected.
+#' @param binName Output colData column name. Existing columns are protected.
 #' @return The updated SpatialExperiment.
 #' @export
 #' @examples
 #' data(spamtp_example)
 #' spe <- spamtp_example$experiment
-#' binned <- binMetabolites(spe, c("ion1", "ion2"), bin_name = "combined")
+#' binned <- binMetabolites(spe, c("ion1", "ion2"), binName = "combined")
 #' head(binned$combined)
 binMetabolites <- function(
     data, mzs, assay = "main", assayName = "counts",
-    bin_name = "Binned_Metabolites"
+    binName = "Binned_Metabolites"
 ) {
     data <- .nativeSpatialObject(data)
     values <- .nativeExpression(data, assay, assayName)
     if (!length(mzs) || anyNA(mzs) || any(!mzs %in% rownames(values))) {
         stop("Supply existing feature IDs.", call. = FALSE)
     }
-    if (length(bin_name) != 1L || is.na(bin_name) || !nzchar(bin_name) ||
-        bin_name %in% colnames(SummarizedExperiment::colData(data))) {
+    if (length(binName) != 1L || is.na(binName) || !nzchar(binName) ||
+        binName %in% colnames(SummarizedExperiment::colData(data))) {
         stop("Choose a new colData column name.", call. = FALSE)
     }
-    SummarizedExperiment::colData(data)[[bin_name]] <-
+    SummarizedExperiment::colData(data)[[binName]] <-
         as.numeric(Matrix::colSums(values[unique(mzs), , drop = FALSE]))
     data
 }
@@ -129,23 +129,23 @@ pixelPlot <- function(plot) {
 #' @param fov Optional sample IDs from colData(object)$sample_id.
 #' @param cols Gradient colours.
 #' @param size Point size.
-#' @param min.cutoff,max.cutoff One cutoff or one per query; numeric or
+#' @param minCutoff,maxCutoff One cutoff or one per query; numeric or
 #'   quantile strings such as "q10". NA uses the observed range.
-#' @param split.by Optional colData column for separate panels within samples.
+#' @param splitBy Optional colData column for separate panels within samples.
 #' @param alpha Point opacity, or a two-value range mapped to expression.
-#' @param border.color,border.size Point border colour and width.
-#' @param dark.background Use a black plot background.
+#' @param borderColor,borderSize Point border colour and width.
+#' @param darkBackground Use a black plot background.
 #' @param crop Crop to the selected pixels.
 #' @param cells Optional pixel IDs to display.
 #' @param scale Colour limits: "feature" across samples, "all" across all
 #'   queries, or "none" separately for each panel.
 #' @param axes Show axes.
 #' @param combine Combine panels; FALSE returns a list of ggplots.
-#' @param coord.fixed Use a fixed coordinate aspect ratio.
+#' @param coordFixed Use a fixed coordinate aspect ratio.
 #' @param assay Primary experiment ("main") or altExp name.
 #' @param assayName Expression assay name, e.g. "counts" or "logcounts".
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param plot.pixel Draw square rather than circular point symbols.
+#' @param plotPixel Draw square rather than circular point symbols.
 #' @param ... Former Seurat segmentation, molecule and blending arguments
 #'   are unsupported and cause an error; convert and plot these separately.
 #' @return A ggplot, or a list of panels when combine is FALSE.
@@ -161,11 +161,11 @@ pixelPlot <- function(plot) {
 imageMZPlot <- function(
     object, mzs, plusminus = NULL, fov = NULL,
     cols = c("lightgrey", "firebrick1"), size = 0.5,
-    min.cutoff = NA, max.cutoff = NA, split.by = NULL, alpha = 1,
-    border.color = "white", border.size = 0, dark.background = TRUE,
+    minCutoff = NA, maxCutoff = NA, splitBy = NULL, alpha = 1,
+    borderColor = "white", borderSize = 0, darkBackground = TRUE,
     crop = FALSE, cells = NULL, scale = c("feature", "all", "none"),
-    axes = FALSE, combine = TRUE, coord.fixed = TRUE,
-    assay = "main", assayName = "counts", plot.pixel = FALSE, ...
+    axes = FALSE, combine = TRUE, coordFixed = TRUE,
+    assay = "main", assayName = "counts", plotPixel = FALSE, ...
 ) {
     if (length(list(...))) stop(
         "Seurat-specific plotting arguments are unsupported.",
@@ -175,11 +175,11 @@ imageMZPlot <- function(
     values <- .mzPlotValues(object, mzs, assay, assayName, plusminus)
     .plotNativeExpression(object, values,
         sampleIds = fov, colors = cols,
-        pointSize = size, minCutoff = min.cutoff, maxCutoff = max.cutoff,
-        splitBy = split.by, alpha = alpha, borderColor = border.color,
-        stroke = border.size %||% 0, dark = dark.background, crop = crop,
+        pointSize = size, minCutoff = minCutoff, maxCutoff = maxCutoff,
+        splitBy = splitBy, alpha = alpha, borderColor = borderColor,
+        stroke = borderSize %||% 0, dark = darkBackground, crop = crop,
         cells = cells, scale = match.arg(scale), axes = axes, combine = combine,
-        coordFixed = coord.fixed, pixel = plot.pixel
+        coordFixed = coordFixed, pixel = plotPixel
     )
 }
 
@@ -189,8 +189,8 @@ imageMZPlot <- function(
 #' mass-tolerance windows is counted once. No temporary metadata is written.
 #' @inheritParams imageMZPlot
 #' @param metabolites Metabolite names to search in feature annotations.
-#' @param column.name Annotation column in rowData.
-#' @param plot.exact Match complete semicolon-delimited names
+#' @param columnName Annotation column in rowData.
+#' @param plotExact Match complete semicolon-delimited names
 #'   (case-insensitive).
 #' @return A ggplot or list of panels.
 #' @export
@@ -201,12 +201,12 @@ imageMZPlot <- function(
 imageMZAnnotationPlot <- function(
     object, metabolites, plusminus = NULL, fov = NULL,
     cols = c("lightgrey", "firebrick1"), size = 0.5,
-    min.cutoff = NA, max.cutoff = NA, split.by = NULL, alpha = 1,
-    border.color = "white", border.size = 0, dark.background = TRUE,
+    minCutoff = NA, maxCutoff = NA, splitBy = NULL, alpha = 1,
+    borderColor = "white", borderSize = 0, darkBackground = TRUE,
     crop = FALSE, cells = NULL, scale = c("feature", "all", "none"),
-    axes = FALSE, combine = TRUE, coord.fixed = TRUE,
-    assay = "main", assayName = "counts", column.name = "all_IsomerNames",
-    plot.exact = TRUE, plot.pixel = FALSE, ...
+    axes = FALSE, combine = TRUE, coordFixed = TRUE,
+    assay = "main", assayName = "counts", columnName = "all_IsomerNames",
+    plotExact = TRUE, plotPixel = FALSE, ...
 ) {
     if (length(list(...))) stop(
         "Seurat-specific plotting arguments are unsupported.",
@@ -215,15 +215,15 @@ imageMZAnnotationPlot <- function(
     object <- .nativeSpatialObject(object)
     values <- .mzPlotValues(
         object, NULL, assay, assayName, plusminus,
-        metabolites, column.name, plot.exact
+        metabolites, columnName, plotExact
     )
     .plotNativeExpression(object, values,
         sampleIds = fov, colors = cols,
-        pointSize = size, minCutoff = min.cutoff, maxCutoff = max.cutoff,
-        splitBy = split.by, alpha = alpha, borderColor = border.color,
-        stroke = border.size %||% 0, dark = dark.background, crop = crop,
+        pointSize = size, minCutoff = minCutoff, maxCutoff = maxCutoff,
+        splitBy = splitBy, alpha = alpha, borderColor = borderColor,
+        stroke = borderSize %||% 0, dark = darkBackground, crop = crop,
         cells = cells, scale = match.arg(scale), axes = axes, combine = combine,
-        coordFixed = coord.fixed, pixel = plot.pixel
+        coordFixed = coordFixed, pixel = plotPixel
     )
 }
 
@@ -234,11 +234,11 @@ imageMZAnnotationPlot <- function(
 #' all samples are plotted without an image.
 #' @inheritParams imageMZPlot
 #' @param images Optional image IDs in imgData.
-#' @param keep.scale Colour scaling: "feature", "all" or "none"; NULL means
+#' @param keepScale Colour scaling: "feature", "all" or "none"; NULL means
 #'   "none".
 #' @param ncol Number of columns in combined plots.
-#' @param pt.size.factor Point size.
-#' @param image.alpha Optical image opacity.
+#' @param ptSizeFactor Point size.
+#' @param imageAlpha Optical image opacity.
 #' @param stroke Point border width.
 #' @param interactive Return Plotly widgets rather than static plots.
 #' @param information Deprecated Seurat hover data; non-NULL is unsupported.
@@ -250,9 +250,9 @@ imageMZAnnotationPlot <- function(
 #' spatialMZPlot(spe, c("ion1", "ion3"))
 spatialMZPlot <- function(
     object, mzs, plusminus = NULL, images = NULL, crop = TRUE,
-    assay = "main", assayName = "counts", keep.scale = "feature",
-    min.cutoff = NA, max.cutoff = NA, ncol = NULL, combine = TRUE,
-    pt.size.factor = 1.6, alpha = c(1, 1), image.alpha = 1,
+    assay = "main", assayName = "counts", keepScale = "feature",
+    minCutoff = NA, maxCutoff = NA, ncol = NULL, combine = TRUE,
+    ptSizeFactor = 1.6, alpha = c(1, 1), imageAlpha = 1,
     stroke = 0.25, interactive = FALSE, information = NULL) {
     if (!is.null(information)) {
         stop(
@@ -264,9 +264,9 @@ spatialMZPlot <- function(
     values <- .mzPlotValues(object, mzs, assay, assayName, plusminus)
     .plotNativeExpression(object, values,
         images = images, crop = crop,
-        scale = keep.scale %||% "none", minCutoff = min.cutoff,
-        maxCutoff = max.cutoff, ncol = ncol, combine = combine,
-        pointSize = pt.size.factor, alpha = alpha, imageAlpha = image.alpha,
+        scale = keepScale %||% "none", minCutoff = minCutoff,
+        maxCutoff = maxCutoff, ncol = ncol, combine = combine,
+        pointSize = ptSizeFactor, alpha = alpha, imageAlpha = imageAlpha,
         stroke = stroke, interactive = interactive
     )
 }
@@ -284,11 +284,11 @@ spatialMZPlot <- function(
 #' spatialMZAnnotationPlot(spe, "Glucose")
 spatialMZAnnotationPlot <- function(
     object, metabolites, plusminus = NULL, images = NULL, crop = TRUE,
-    assay = "main", assayName = "counts", keep.scale = "feature",
-    min.cutoff = NA, max.cutoff = NA, ncol = NULL, combine = TRUE,
-    pt.size.factor = 1.6, alpha = c(1, 1), image.alpha = 1,
+    assay = "main", assayName = "counts", keepScale = "feature",
+    minCutoff = NA, maxCutoff = NA, ncol = NULL, combine = TRUE,
+    ptSizeFactor = 1.6, alpha = c(1, 1), imageAlpha = 1,
     stroke = 0.25, interactive = FALSE, information = NULL,
-    column.name = "all_IsomerNames", plot.exact = TRUE) {
+    columnName = "all_IsomerNames", plotExact = TRUE) {
     if (!is.null(information)) {
         stop(
             "information is a retired Seurat hover-data argument.",
@@ -298,13 +298,13 @@ spatialMZAnnotationPlot <- function(
     object <- .nativeSpatialObject(object)
     values <- .mzPlotValues(
         object, NULL, assay, assayName, plusminus,
-        metabolites, column.name, plot.exact
+        metabolites, columnName, plotExact
     )
     .plotNativeExpression(object, values,
         images = images, crop = crop,
-        scale = keep.scale %||% "none", minCutoff = min.cutoff,
-        maxCutoff = max.cutoff, ncol = ncol, combine = combine,
-        pointSize = pt.size.factor, alpha = alpha, imageAlpha = image.alpha,
+        scale = keepScale %||% "none", minCutoff = minCutoff,
+        maxCutoff = maxCutoff, ncol = ncol, combine = combine,
+        pointSize = ptSizeFactor, alpha = alpha, imageAlpha = imageAlpha,
         stroke = stroke, interactive = interactive
     )
 }
@@ -314,49 +314,49 @@ spatialMZAnnotationPlot <- function(
 #'
 #' Feature masses come from rowData, so arbitrary feature IDs are supported.
 #' @param data A SpatialExperiment or aligned Cardinal experiment.
-#' @param group.by Optional colData column defining overlaid groups.
-#' @param split.by Optional colData column defining separate panels; mutually
+#' @param groupBy Optional colData column defining overlaid groups.
+#' @param splitBy Optional colData column defining separate panels; mutually
 #'   exclusive with group.by.
 #' @param cols Optional group colours.
 #' @param assay Primary or alternative experiment.
 #' @param assayName Expression assay.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param label.annotations Display annotations instead of m/z labels.
-#' @param annotation.column Annotation column in rowData.
-#' @param mz.labels Numeric m/z values to label using nearest measured peaks.
-#' @param metabolite.labels Metabolite names to label; mutually exclusive with
+#' @param labelAnnotations Display annotations instead of m/z labels.
+#' @param annotationColumn Annotation column in rowData.
+#' @param mzLabels Numeric m/z values to label using nearest measured peaks.
+#' @param metaboliteLabels Metabolite names to label; mutually exclusive with
 #'   mz.labels.
 #' @param xlab,ylab Axis labels.
-#' @param mass.range Optional two-value displayed mass range.
-#' @param y.lim Optional y-axis limits.
+#' @param massRange Optional two-value displayed mass range.
+#' @param yLim Optional y-axis limits.
 #' @param labelCex Text size.
 #' @param labelAdj,labelOffset Vertical and horizontal text justification.
 #' @param labelCol Text colour.
-#' @param nlabels.to.show Maximum annotations displayed per feature.
+#' @param nlabelsToShow Maximum annotations displayed per feature.
 #' @return A ggplot.
 #' @export
 #' @examples
 #' data(spamtp_example)
 #' spe <- spamtp_example$experiment
-#' massIntensityPlot(spe, group.by = "region")
+#' massIntensityPlot(spe, groupBy = "region")
 massIntensityPlot <- function(
-    data, group.by = NULL, split.by = NULL, cols = NULL, assay = "main",
-    assayName = "counts", label.annotations = FALSE, annotation.column = "all_IsomerNames",
-    mz.labels = NULL, metabolite.labels = NULL, xlab = "m/z", ylab = "intensity",
-    mass.range = NULL, y.lim = NULL, labelCex = 5, labelAdj = -1,
-    labelOffset = 0, labelCol = "#eb4034", nlabels.to.show = NULL
+    data, groupBy = NULL, splitBy = NULL, cols = NULL, assay = "main",
+    assayName = "counts", labelAnnotations = FALSE, annotationColumn = "all_IsomerNames",
+    mzLabels = NULL, metaboliteLabels = NULL, xlab = "m/z", ylab = "intensity",
+    massRange = NULL, yLim = NULL, labelCex = 5, labelAdj = -1,
+    labelOffset = 0, labelCol = "#eb4034", nlabelsToShow = NULL
 ) {
     data <- .nativeSpatialObject(data)
     expression <- .nativeExpression(data, assay, assayName)
     metadata <- .featureMetadata(data, assay)
     masses <- .massValues(metadata, rownames(expression))
-    if (!is.null(group.by) && !is.null(split.by)) {
-        stop("Choose group.by or split.by, not both.", call. = FALSE)
+    if (!is.null(groupBy) && !is.null(splitBy)) {
+        stop("Choose groupBy or splitBy, not both.", call. = FALSE)
     }
-    if (!is.null(mz.labels) && !is.null(metabolite.labels)) {
-        stop("Choose mz.labels or metabolite.labels, not both.", call. = FALSE)
+    if (!is.null(mzLabels) && !is.null(metaboliteLabels)) {
+        stop("Choose mzLabels or metaboliteLabels, not both.", call. = FALSE)
     }
-    grouping <- group.by %||% split.by
+    grouping <- groupBy %||% splitBy
     if (is.null(grouping)) {
         groups <- rep("Sample mean", ncol(data))
     } else {
@@ -367,21 +367,21 @@ massIntensityPlot <- function(
         if (anyNA(groups)) stop("Grouping contains missing values.", call. = FALSE)
     }
     selected <- integer()
-    if (!is.null(mz.labels)) {
-        if (!is.numeric(mz.labels) || any(!is.finite(mz.labels))) {
-            stop("mz.labels must be finite numeric masses.", call. = FALSE)
+    if (!is.null(mzLabels)) {
+        if (!is.numeric(mzLabels) || any(!is.finite(mzLabels))) {
+            stop("mzLabels must be finite numeric masses.", call. = FALSE)
         }
         selected <- vapply(
-            mz.labels,
+            mzLabels,
             function(mass) which.min(abs(masses - mass)),
             integer(1)
         )
     }
-    if (!is.null(metabolite.labels)) {
-        selected <- unique(unlist(lapply(metabolite.labels, function(metabolite) {
+    if (!is.null(metaboliteLabels)) {
+        selected <- unique(unlist(lapply(metaboliteLabels, function(metabolite) {
             rows <- searchAnnotations(data, metabolite, assay,
-                search.exact = TRUE,
-                column.name = annotation.column
+                searchExact = TRUE,
+                columnName = annotationColumn
             )
             if (!nrow(rows)) stop("No annotation for: ", metabolite, call. = FALSE)
             match(rows$mz_names, rownames(expression))
@@ -389,16 +389,16 @@ massIntensityPlot <- function(
     }
     labels <- rep(NA_character_, nrow(expression))
     if (length(selected)) {
-        if (label.annotations) {
-            if (is.null(annotation.column) || !annotation.column %in% names(metadata)) {
+        if (labelAnnotations) {
+            if (is.null(annotationColumn) || !annotationColumn %in% names(metadata)) {
                 stop(
                     "Annotation column was not found in rowData.",
                     call. = FALSE
                 )
             }
-            labels[selected] <- as.character(metadata[[annotation.column]][selected])
-            if (!is.null(nlabels.to.show)) {
-                labels[selected] <- labels_to_show(labels[selected], n = nlabels.to.show)
+            labels[selected] <- as.character(metadata[[annotationColumn]][selected])
+            if (!is.null(nlabelsToShow)) {
+                labels[selected] <- labels_to_show(labels[selected], n = nlabelsToShow)
             }
         } else {
             labels[selected] <- paste0("m/z ", format(masses[selected], trim = TRUE))
@@ -414,17 +414,17 @@ massIntensityPlot <- function(
     })
     frame <- do.call(rbind, frames)
     if (any(!is.finite(frame$intensity))) stop("Expression must be finite.", call. = FALSE)
-    if (!is.null(mass.range)) {
-        if (length(mass.range) != 2L || any(!is.finite(mass.range)) || diff(mass.range) < 0) {
+    if (!is.null(massRange)) {
+        if (length(massRange) != 2L || any(!is.finite(massRange)) || diff(massRange) < 0) {
             stop(
-                "mass.range must contain increasing finite limits.",
+                "massRange must contain increasing finite limits.",
                 call. = FALSE
             )
         }
-        frame <- frame[frame$mass >= mass.range[1L] & frame$mass <= mass.range[2L], ]
+        frame <- frame[frame$mass >= massRange[1L] & frame$mass <= massRange[2L], ]
     }
     annotations <- frame[!is.na(frame$annotation), , drop = FALSE]
-    if (is.null(split.by)) {
+    if (is.null(splitBy)) {
         annotations <- annotations[order(annotations$mass, -annotations$intensity), ]
         annotations <- annotations[!duplicated(annotations$mass), ]
     }
@@ -445,9 +445,9 @@ massIntensityPlot <- function(
             vjust = labelAdj, hjust = labelOffset, colour = labelCol
         )
     }
-    if (!is.null(split.by)) plot <- plot + ggplot2::facet_wrap(~variable, ncol = 1, scales = "free_y")
+    if (!is.null(splitBy)) plot <- plot + ggplot2::facet_wrap(~variable, ncol = 1, scales = "free_y")
     if (!is.null(cols)) plot <- plot + ggplot2::scale_colour_manual(values = cols)
-    if (!is.null(y.lim)) plot <- plot + ggplot2::coord_cartesian(ylim = y.lim)
+    if (!is.null(yLim)) plot <- plot + ggplot2::coord_cartesian(ylim = yLim)
     plot
 }
 
@@ -463,15 +463,15 @@ massIntensityPlot <- function(
 #' @param assays One or two primary/altExp names.
 #' @param assayNames One or two expression assay names.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param between.layer.height Distance between layers.
+#' @param betweenLayerHeight Distance between layers.
 #' @param names Optional layer labels.
 #' @param size Marker size.
-#' @param col.palette One or two Plotly colour palettes.
-#' @param x.axis.label,y.axis.label,z.axis.label Axis labels.
-#' @param show.x.ticks,show.y.ticks,show.z.ticks Show axis tick labels.
-#' @param show.image Optional image ID from imgData.
-#' @param plot.height,plot.width Widget dimensions.
-#' @param downscale.image Optional positive integer raster sampling stride.
+#' @param colPalette One or two Plotly colour palettes.
+#' @param xAxisLabel,yAxisLabel,zAxisLabel Axis labels.
+#' @param showXTicks,showYTicks,showZTicks Show axis tick labels.
+#' @param showImage Optional image ID from imgData.
+#' @param plotHeight,plotWidth Widget dimensions.
+#' @param downscaleImage Optional positive integer raster sampling stride.
 #' @param sampleId Sample ID; required when data contains multiple samples.
 #' @return A Plotly widget.
 #' @export
@@ -484,14 +484,14 @@ massIntensityPlot <- function(
 #' )
 plot3DFeature <- function(
     data, features, assays = c("transcriptome", "main"), assayNames = "counts",
-    between.layer.height = 100, names = NULL, size = 3, col.palette = "Reds",
-    x.axis.label = "x", y.axis.label = "y", z.axis.label = "z",
-    show.x.ticks = FALSE, show.y.ticks = FALSE, show.z.ticks = FALSE,
-    show.image = NULL, plot.height = 800, plot.width = 1500,
-    downscale.image = NULL, sampleId = NULL
+    betweenLayerHeight = 100, names = NULL, size = 3, colPalette = "Reds",
+    xAxisLabel = "x", yAxisLabel = "y", zAxisLabel = "z",
+    showXTicks = FALSE, showYTicks = FALSE, showZTicks = FALSE,
+    showImage = NULL, plotHeight = 800, plotWidth = 1500,
+    downscaleImage = NULL, sampleId = NULL
 ) {
     data <- .nativeSingleSample(data, sampleId)
-    arguments <- list(features, assays, assayNames, col.palette)
+    arguments <- list(features, assays, assayNames, colPalette)
     if (any(!lengths(arguments) %in% c(1L, 2L))) {
         stop(
             "Supply one or two features, assays, assay names and palettes.",
@@ -501,7 +501,7 @@ plot3DFeature <- function(
     features <- rep(features, length.out = 2L)
     assays <- rep(assays, length.out = 2L)
     assayNames <- rep(assayNames, length.out = 2L)
-    palettes <- rep(as.list(col.palette), length.out = 2L)
+    palettes <- rep(as.list(colPalette), length.out = 2L)
     if (!is.null(names) && !length(names) %in% c(1L, 2L)) {
         stop("Supply one or two layer labels.", call. = FALSE)
     }
@@ -512,7 +512,7 @@ plot3DFeature <- function(
     }
     coordinates <- .nativeCoordinates(data)
     metadata <- .cellMetadata(data)
-    plot <- plotly::plot_ly(height = plot.height, width = plot.width)
+    plot <- plotly::plot_ly(height = plotHeight, width = plotWidth)
     for (i in seq_len(2L)) {
         if (features[i] %in% colnames(metadata)) {
             values <- metadata[[features[i]]]
@@ -526,7 +526,7 @@ plot3DFeature <- function(
         }
         plot <- plotly::add_trace(plot,
             x = coordinates$x, y = coordinates$y,
-            z = rep((2L - i) * between.layer.height, nrow(coordinates)),
+            z = rep((2L - i) * betweenLayerHeight, nrow(coordinates)),
             text = coordinates$cell, type = "scatter3d", mode = "markers",
             name = labels[i], marker = list(
                 color = values, size = size,
@@ -535,11 +535,11 @@ plot3DFeature <- function(
             )
         )
     }
-    if (!is.null(show.image)) {
-        image <- .nativeImage(data, show.image, unique(data$sample_id))
-        stride <- downscale.image %||% 1L
+    if (!is.null(showImage)) {
+        image <- .nativeImage(data, showImage, unique(data$sample_id))
+        stride <- downscaleImage %||% 1L
         if (length(stride) != 1L || !is.finite(stride) || stride < 1 || stride != floor(stride)) {
-            stop("downscale.image must be a positive integer.", call. = FALSE)
+            stop("downscaleImage must be a positive integer.", call. = FALSE)
         }
         rows <- seq.int(1L, nrow(image$raster), by = stride)
         columns <- seq.int(1L, ncol(image$raster), by = stride)
@@ -549,19 +549,19 @@ plot3DFeature <- function(
         plot <- plotly::add_trace(plot,
             x = (grid$column - 0.5) / image$scaleFactor,
             y = (grid$row - 0.5) / image$scaleFactor,
-            z = rep(-between.layer.height, nrow(grid)),
-            type = "scatter3d", mode = "markers", name = show.image,
+            z = rep(-betweenLayerHeight, nrow(grid)),
+            type = "scatter3d", mode = "markers", name = showImage,
             marker = list(color = colours, size = size, showscale = FALSE)
         )
     }
     plotly::layout(plot, scene = list(
         aspectmode = "data",
-        xaxis = list(title = x.axis.label, showticklabels = show.x.ticks),
+        xaxis = list(title = xAxisLabel, showticklabels = showXTicks),
         yaxis = list(
-            title = y.axis.label, showticklabels = show.y.ticks,
+            title = yAxisLabel, showticklabels = showYTicks,
             autorange = "reversed"
         ),
-        zaxis = list(title = z.axis.label, showticklabels = show.z.ticks)
+        zaxis = list(title = zAxisLabel, showticklabels = showZTicks)
     ))
 }
 

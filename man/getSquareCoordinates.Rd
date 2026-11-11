@@ -5,13 +5,13 @@
 \title{This function computes the coordinates of a square's four corners based on a
 given center point and width.}
 \usage{
-getSquareCoordinates(center_x, center_y, width, name)
+getSquareCoordinates(centerX, centerY, width, name)
 }
 \arguments{
-\item{center_x}{Numeric value defining the x-coordinate of the square's
+\item{centerX}{Numeric value defining the x-coordinate of the square's
 center.}
 
-\item{center_y}{Numeric value defining the y-coordinate of the square's
+\item{centerY}{Numeric value defining the y-coordinate of the square's
 center.}
 
 \item{width}{Numeric value indicating the width of the square.}
@@ -28,6 +28,6 @@ This function computes the coordinates of a square's four corners based on a
 given center point and width.
 }
 \examples{
-getSquareCoordinates(center_x = 10, center_y = 20, width = 5, name = "spot1")
-getSquareCoordinates(center_x = 5, center_y = 5, width = 4, name = "MySquare")
+getSquareCoordinates(centerX = 10, centerY = 20, width = 5, name = "spot1")
+getSquareCoordinates(centerX = 5, centerY = 5, width = 4, name = "MySquare")
 }

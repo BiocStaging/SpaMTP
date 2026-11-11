@@ -24,7 +24,7 @@
 #'   export.
 #' @param annotations Boolean values defining if the Bioconductor experiment
 #'   contains annotations to be saved (default = FALSE).
-#' @param generate.h5 Boolean value indicating whether to generate a
+#' @param generateH5 Boolean value indicating whether to generate a
 #'   filtered_feature_bc_matrix.h5 file. Often used by data loading functions
 #'   (e.g. scanpy.load_visium). If `FALSE`, only a filtered_feature_bc_matrix
 #'   folder will be generated (default = TRUE).
@@ -46,7 +46,7 @@
 #' spe <- spamtp_example$experiment
 #' if (requireNamespace("DropletUtils", quietly = TRUE)) {
 #'     folder <- tempfile("export-")
-#'     saveSpaMTPData(spe, folder, assay = "main", generate.h5 = FALSE, verbose = FALSE)
+#'     saveSpaMTPData(spe, folder, assay = "main", generateH5 = FALSE, verbose = FALSE)
 #'     list.files(folder)
 #'     unlink(folder, recursive = TRUE)
 #' }
@@ -57,7 +57,7 @@ saveSpaMTPData <- function(
     assayName = "counts",
     image = NULL,
     annotations = FALSE,
-    generate.h5 = TRUE,
+    generateH5 = TRUE,
     verbose = TRUE
 ) {
     .requireSuggested("DropletUtils")
@@ -67,7 +67,7 @@ saveSpaMTPData <- function(
 
     if (!dir.exists(outdir)) {
         verbose_message(
-            message_text = paste0(
+            messageText = paste0(
                 "Generating new directory to store output here: ",
                 outdir
             ),
@@ -76,7 +76,7 @@ saveSpaMTPData <- function(
         dir.create(outdir)
     } else {
         verbose_message(
-            message_text = paste0(
+            messageText = paste0(
                 "Directory already exists, storing output here: ",
                 outdir
             ),
@@ -84,7 +84,7 @@ saveSpaMTPData <- function(
         )
     }
 
-    verbose_message(message_text = paste0(
+    verbose_message(messageText = paste0(
         "Writing expression assay ", assayName,
         " to filtered_feature_bc_matrix"
     ), verbose = verbose)
@@ -99,7 +99,7 @@ saveSpaMTPData <- function(
     )
 
     verbose_message(
-        message_text = "Writing cell metadata to metadata.csv",
+        messageText = "Writing cell metadata to metadata.csv",
         verbose = verbose
     )
     data.table::fwrite(
@@ -107,7 +107,7 @@ saveSpaMTPData <- function(
         paste0(outdir, "/barcode_metadata.csv")
     )
 
-    if (generate.h5) {
+    if (generateH5) {
         DropletUtils::write10xCounts(
             assayMatrix,
             path = paste0(outdir, "/filtered_feature_bc_matrix.h5"),
@@ -119,7 +119,7 @@ saveSpaMTPData <- function(
 
     if (!is.null(image)) {
         verbose_message(
-            message_text = "Generating 'spatial' directory ... ",
+            messageText = "Generating 'spatial' directory ... ",
             verbose = verbose
         )
         dir.create(paste0(outdir, "/spatial/"))
@@ -180,7 +180,7 @@ saveSpaMTPData <- function(
     }
     if (annotations) {
         verbose_message(
-            message_text = "Writing feature metadata annotations to feature_metadata.csv",
+            messageText = "Writing feature metadata annotations to feature_metadata.csv",
             verbose = verbose
         )
         data.table::fwrite(

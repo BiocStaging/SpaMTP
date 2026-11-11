@@ -8,9 +8,9 @@ addCustomMZAnnotations(
   data,
   annotations,
   assay = "main",
-  return.only.annotated = FALSE,
-  mass.threshold = 0.05,
-  annotation.column = "all_IsomerNames",
+  returnOnlyAnnotated = FALSE,
+  massThreshold = 0.05,
+  annotationColumn = "all_IsomerNames",
   append = TRUE
 )
 }
@@ -24,16 +24,16 @@ the relative m/z mass respectively.}
 \item{assay}{Primary or alternative experiment whose \code{rowData()} receives
 the annotations (default = "main").}
 
-\item{return.only.annotated}{Boolean defining whether to return a
+\item{returnOnlyAnnotated}{Boolean defining whether to return a
 Bioconductor experiment containing only successfully annotated m/z values
 (default = FALSE).}
 
-\item{mass.threshold}{Numeric value defining the acceptable threshold
+\item{massThreshold}{Numeric value defining the acceptable threshold
 (plus-minus) between the custom annotations and the actual m/z values
 contained within the SpaMTP object, in Da (default = 0.05). The boundary
 is inclusive; zero keeps exact matches and NULL disables the distance limit.}
 
-\item{annotation.column}{Name of the \code{rowData()} column receiving annotations
+\item{annotationColumn}{Name of the \code{rowData()} column receiving annotations
 (default = "all_IsomerNames").}
 
 \item{append}{Append distinct labels and metadata values on matched features
@@ -52,7 +52,7 @@ If several features are exactly tied for the nearest mass, all receive the
 annotation. Features at unequal distances retain the nearest-mass rule.
 Existing labels are preserved by default, including on unmatched features.
 Custom labels are display metadata: they do not add scored candidates or
-change pathway evidence. Use a separate \code{annotation.column} to keep manual
+change pathway evidence. Use a separate \code{annotationColumn} to keep manual
 labels apart from the candidate summaries produced by \code{annotateSM()}.
 }
 \examples{

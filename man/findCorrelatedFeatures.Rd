@@ -9,8 +9,8 @@ findCorrelatedFeatures(
   mz = NULL,
   gene = NULL,
   ident = NULL,
-  SM.assay = "main",
-  ST.assay = NULL,
+  smAssay = "main",
+  stAssay = NULL,
   smAssayName = "counts",
   stAssayName = "counts",
   nfeatures = 10,
@@ -28,10 +28,10 @@ findCorrelatedFeatures(
 \item{ident}{A colData column defining groups. Supply exactly one of mz,
 gene and ident. Groups are compared with binary membership vectors.}
 
-\item{SM.assay}{MSI experiment name; \code{main} selects the primary
+\item{smAssay}{MSI experiment name; \code{main} selects the primary
 experiment. Legacy \code{SPM} and \code{Spatial} also select the primary experiment.}
 
-\item{ST.assay}{Alternative experiment name, or NULL for metabolites only.}
+\item{stAssay}{Alternative experiment name, or NULL for metabolites only.}
 
 \item{smAssayName}{Assay containing metabolite values.
 See \link{experimentAccess} for the experiment/matrix distinction.}

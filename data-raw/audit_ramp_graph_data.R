@@ -8,8 +8,8 @@ repo_root <- normalizePath(file.path(dirname(script_path), ".."), mustWork = TRU
 data_dir <- file.path(repo_root, "data")
 source(file.path(repo_root, "data-raw", "ramp_graph_utils.R"))
 
-graphs <- stats::setNames(lapply(.rgu_graph_objects, function(object_name) {
-  .rgu_load_object(file.path(data_dir, paste0(object_name, ".rda")), object_name)
+graphs <- stats::setNames(lapply(.rgu_graph_objects, function(objectName) {
+  .rgu_load_object(file.path(data_dir, paste0(objectName, ".rda")), objectName)
 }), .rgu_graph_objects)
 analyte <- .rgu_load_object(file.path(data_dir, "analyte.rda"), "analyte")
 source_df <- .rgu_load_object(file.path(data_dir, "source_df.rda"), "source_df")

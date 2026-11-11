@@ -4,9 +4,9 @@
 #' This function computes the coordinates of a square's four corners based on a
 #' given center point and width.
 #'
-#' @param center_x Numeric value defining the x-coordinate of the square's
+#' @param centerX Numeric value defining the x-coordinate of the square's
 #'   center.
-#' @param center_y Numeric value defining the y-coordinate of the square's
+#' @param centerY Numeric value defining the y-coordinate of the square's
 #'   center.
 #' @param width Numeric value indicating the width of the square.
 #' @param name Character string specifying the label assigned to the square for
@@ -17,26 +17,26 @@
 #' @export
 #'
 #' @examples
-#' getSquareCoordinates(center_x = 10, center_y = 20, width = 5, name = "spot1")
-#' getSquareCoordinates(center_x = 5, center_y = 5, width = 4, name = "MySquare")
-getSquareCoordinates <- function(center_x, center_y, width, name) {
+#' getSquareCoordinates(centerX = 10, centerY = 20, width = 5, name = "spot1")
+#' getSquareCoordinates(centerX = 5, centerY = 5, width = 4, name = "MySquare")
+getSquareCoordinates <- function(centerX, centerY, width, name) {
     # Calculate half width
     half_width <- width / 2
 
     # Calculate coordinates of the four corners
     x_coords <- c(
-        center_x - half_width,
-        center_x + half_width,
-        center_x + half_width,
-        center_x - half_width,
-        center_x - half_width
+        centerX - half_width,
+        centerX + half_width,
+        centerX + half_width,
+        centerX - half_width,
+        centerX - half_width
     )
     y_coords <- c(
-        center_y - half_width,
-        center_y - half_width,
-        center_y + half_width,
-        center_y + half_width,
-        center_y - half_width
+        centerY - half_width,
+        centerY - half_width,
+        centerY + half_width,
+        centerY + half_width,
+        centerY - half_width
     )
 
     # Return the coordinates as a matrix
@@ -51,13 +51,13 @@ getSquareCoordinates <- function(center_x, center_y, width, name) {
 
 rotate <- function(
     angle,
-    center.cur
+    centerCur
 ) {
     alpha <- 2 * pi * (angle / 360)
     # center.cur <- c(center.cur, 0)
     # points(center.cur[1], center.cur[2], col = "red")
-    tr <- rigid.transl(-center.cur[1], -center.cur[2])
-    tr <- rigid.transf(center.cur[1], center.cur[2], alpha) %*% tr
+    tr <- rigid.transl(-centerCur[1], -centerCur[2])
+    tr <- rigid.transf(centerCur[1], centerCur[2], alpha) %*% tr
     return(tr)
 }
 
@@ -65,14 +65,14 @@ rotate <- function(
 #' Creates a transformation matrix that translates an object
 #' in 2D
 #'
-#' @param translate.x,translate.y translation of x, y coordinates
+#' @param translateX,translateY translation of x, y coordinates
 #' @noRd
 
 translate <- function(
-    translate.x,
-    translate.y
+    translateX,
+    translateY
 ) {
-    tr <- rigid.transl(translate.x, translate.y)
+    tr <- rigid.transl(translateX, translateY)
     return(tr)
 }
 
@@ -81,21 +81,21 @@ translate <- function(
 #' in 2D along either the x axis or y axis around its
 #' center of mass
 #'
-#' @param mirror.x,mirror.y Logical specifying whether or not an
+#' @param mirrorX,mirrorY Logical specifying whether or not an
 #' object should be reflected
-#' @param center.cur Coordinates of the current center of mass
+#' @param centerCur Coordinates of the current center of mass
 #'
 #' @noRd
 
 mirror <- function(
-    mirror.x = FALSE,
-    mirror.y = FALSE,
-    center.cur
+    mirrorX = FALSE,
+    mirrorY = FALSE,
+    centerCur
 ) {
-    center.cur <- c(center.cur, 0)
-    tr <- rigid.transl(-center.cur[1], -center.cur[2])
-    tr <- rigid.refl(mirror.x, mirror.y) %*% tr
-    tr <- rigid.transl(center.cur[1], center.cur[2]) %*% tr
+    centerCur <- c(centerCur, 0)
+    tr <- rigid.transl(-centerCur[1], -centerCur[2])
+    tr <- rigid.refl(mirrorX, mirrorY) %*% tr
+    tr <- rigid.transl(centerCur[1], centerCur[2]) %*% tr
     return(tr)
 }
 
@@ -107,17 +107,17 @@ mirror <- function(
 #'
 #' @param r stretching factor
 #' @param alpha angle
-#' @param center.cur Coordinates of the current center of mass
+#' @param centerCur Coordinates of the current center of mass
 #'
 #' @noRd
 
-stretch <- function(r, alpha, center.cur) {
-    center.cur <- c(center.cur, 0)
-    tr <- rigid.transl(-center.cur[1], -center.cur[2])
+stretch <- function(r, alpha, centerCur) {
+    centerCur <- c(centerCur, 0)
+    tr <- rigid.transl(-centerCur[1], -centerCur[2])
     tr <- rigid.rot(alpha, forward = TRUE) %*% tr
     tr <- rigid.stretch(r) %*% tr
     tr <- rigid.rot(alpha, forward = FALSE) %*% tr
-    tr <- rigid.transl(center.cur[1], center.cur[2]) %*% tr
+    tr <- rigid.transl(centerCur[1], centerCur[2]) %*% tr
     return(tr)
 }
 
@@ -200,18 +200,18 @@ rigid.transl <- function(
 #' points along the x axis and mirror.y will reflect thepoints along the y axis.
 #' Points are assumed to be centered at (0, 0)
 #'
-#' @param mirror.x,mirror.y Logical: mirrors x or y axis if set to TRUE
+#' @param mirrorX,mirrorY Logical: mirrors x or y axis if set to TRUE
 #' @noRd
 
 rigid.refl <- function(
-    mirror.x,
-    mirror.y
+    mirrorX,
+    mirrorY
 ) {
     tr <- diag(c(1, 1, 1))
-    if (mirror.x) {
+    if (mirrorX) {
         tr[1, 1] <- -tr[1, 1]
     }
-    if (mirror.y) {
+    if (mirrorY) {
         tr[2, 2] <- -tr[2, 2]
     }
     return(tr)
@@ -238,21 +238,21 @@ rigid.stretch <- function(
 #' translation of points to origin (0, 0) -> reflection of points
 #' -> rotation by alpha degrees and translation of points to new center
 #'
-#' @param center.cur (x, y) image pixel coordinates specifying the current
+#' @param centerCur (x, y) image pixel coordinates specifying the current
 #'   center of the tissue (stored as the `centers` auxiliary entry)
-#' @param center.new (x, y) image pixel coordinates specifying the new center
+#' @param centerNew (x, y) image pixel coordinates specifying the new center
 #'   (image center)
 #' @param alpha Rotation angle
-#' @param mirror.x,mirror.y Logical values indicating reflection across the x
+#' @param mirrorX,mirrorY Logical values indicating reflection across the x
 #'   or y axis before rotation.
 #'
 #' @return A 3-by-3 homogeneous affine-transformation matrix.
 #'
 #' @examples
-#' combineTransformations(center.cur = c(0, 0), center.new = c(10, 20), alpha = 30)
+#' combineTransformations(centerCur = c(0, 0), centerNew = c(10, 20), alpha = 30)
 #' transformation <- combineTransformations(
-#'     center.cur = c(0, 0),
-#'     center.new = c(10, 20),
+#'     centerCur = c(0, 0),
+#'     centerNew = c(10, 20),
 #'     alpha = 90
 #' )
 #' transformation
@@ -260,21 +260,21 @@ rigid.stretch <- function(
 #' @export
 
 combineTransformations <- function(
-    center.cur,
-    center.new,
+    centerCur,
+    centerNew,
     alpha,
-    mirror.x = FALSE,
-    mirror.y = FALSE
+    mirrorX = FALSE,
+    mirrorY = FALSE
 ) {
     alpha <- 2 * pi * (alpha / 360)
-    center.cur <- c(center.cur, 0)
-    tr <- rigid.transl(-center.cur[1], -center.cur[2])
+    centerCur <- c(centerCur, 0)
+    tr <- rigid.transl(-centerCur[1], -centerCur[2])
 
     # reflect
-    tr <- rigid.refl(mirror.x, mirror.y) %*% tr
+    tr <- rigid.refl(mirrorX, mirrorY) %*% tr
 
     # rotate and translate to new center
-    tr <- rigid.transf(center.new[1], center.new[2], alpha) %*% tr
+    tr <- rigid.transf(centerNew[1], centerNew[2], alpha) %*% tr
     tr
 }
 

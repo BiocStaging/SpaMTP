@@ -6,30 +6,30 @@
 #' The user can provide a bin/resolution size to increase the bin size and
 #' reduce the dimensionality/noise of the SM dataset prior to calculating PCAs.
 #'
-#' @param SpaMTP A SingleCellExperiment, including SpatialExperiment, containing
+#' @param object A SingleCellExperiment, including SpatialExperiment, containing
 #'   the selected primary or alternative experiment.
 #' @param npcs Positive number of PCs, capped by matrix dimensions. NULL uses
 #'   the variance threshold.
-#' @param variance_explained_threshold Cumulative variance fraction in (0, 1],
+#' @param varianceExplainedThreshold Cumulative variance fraction in (0, 1],
 #'   used only when npcs is NULL.
 #' @param assay Primary (`main`) or alternative experiment name.
 #' @param assayName Expression assay name within the selected experiment
 #'   (default = `"counts"`), read with `SummarizedExperiment::assay()`.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param show_variance_plot Whether to store a variance plot in
-#'   `metadata(SpaMTP)$reduction_plots[[reduction.name]]` (default = FALSE).
+#' @param showVariancePlot Whether to store a variance plot in
+#'   `metadata(SpaMTP)$reduction_plots[[reductionName]]` (default = FALSE).
 #'   The plot is returned with the object and is never printed automatically.
-#' @param bin_resolution Numeric value defining the resolution to use for
+#' @param binResolution Numeric value defining the resolution to use for
 #'   binning m/z peaks. If set to `NULL`, no binning will be performed (default
 #'   = NULL).
-#' @param resolution_units Character string specifying the units of the
-#'   `bin_resolution`. Either 'ppm' or 'mz' can be provided. `bin_resolution`
+#' @param resolutionUnits Character string specifying the units of the
+#'   `binResolution`. Either 'ppm' or 'mz' can be provided. `binResolution`
 #'   must be provided for this parameter to be implemented (default = "ppm").
-#' @param bin_method Character string defining the method to use for binning
+#' @param binMethod Character string defining the method to use for binning
 #'   respective m/z peaks that fall within a bin. Options for this parameter can
-#'   be one of "sum", "mean", "max" or "min". `bin_resolution` must be provided
+#'   be one of "sum", "mean", "max" or "min". `binResolution` must be provided
 #'   for this parameter to be implemented (default = "sum").
-#' @param reduction.name Name in `SingleCellExperiment::reducedDimNames(SpaMTP)`
+#' @param reductionName Name in `SingleCellExperiment::reducedDimNames(SpaMTP)`
 #'   for the resulting embedding (default = `"pca"`). Even when the input
 #'   expression is in an alternative experiment, the embedding is stored in
 #'   the parent object's `reducedDim()`.
@@ -55,23 +55,23 @@
 #' ## For running PCA on increased peak bin sizes
 #' # spamtp_obj <- runMetabolicPCA(spamtp_obj, npcs = 50, bin_resolution = 50)
 runMetabolicPCA <- function(
-    SpaMTP,
+    object,
     npcs = 30,
-    variance_explained_threshold = 0.9,
+    varianceExplainedThreshold = 0.9,
     assay = "main",
     assayName = "counts",
-    show_variance_plot = FALSE,
-    bin_resolution = NULL,
-    resolution_units = "ppm",
-    bin_method = "sum",
-    reduction.name = "pca",
+    showVariancePlot = FALSE,
+    binResolution = NULL,
+    resolutionUnits = "ppm",
+    binMethod = "sum",
+    reductionName = "pca",
     verbose = TRUE, features = NULL, scale = FALSE,
     ntop = 500
 ) {
-    .requireExperiment(SpaMTP, "SingleCellExperiment")
-    analysisData <- .experimentForAssay(SpaMTP, assay)
-    if (!is.null(bin_resolution)) {
-        if (!identical(analysisData, SpaMTP)) {
+    .requireExperiment(object, "SingleCellExperiment")
+    analysisData <- .experimentForAssay(object, assay)
+    if (!is.null(binResolution)) {
+        if (!identical(analysisData, object)) {
             stop(
                 "Bin the primary MSI experiment, not an alternative modality.",
                 call. = FALSE
@@ -79,8 +79,8 @@ runMetabolicPCA <- function(
         }
         analysisData <- binSpaMTP(
             analysisData,
-            resolution = bin_resolution, units = resolution_units,
-            method = bin_method, assay = assay, assayName = assayName
+            resolution = binResolution, units = resolutionUnits,
+            method = binMethod, assay = assay, assayName = assayName
         )
         assayName <- "counts"
     }
@@ -107,11 +107,11 @@ runMetabolicPCA <- function(
     }
     if (!is.null(npcs)) {
         .validateFeatureCount(npcs, "npcs")
-    } else if (length(variance_explained_threshold) != 1L ||
-        !is.finite(variance_explained_threshold) ||
-        variance_explained_threshold <= 0 ||
-        variance_explained_threshold > 1) {
-        stop("variance_explained_threshold must be in (0, 1] when npcs is NULL.",
+    } else if (length(varianceExplainedThreshold) != 1L ||
+        !is.finite(varianceExplainedThreshold) ||
+        varianceExplainedThreshold <= 0 ||
+        varianceExplainedThreshold > 1) {
+        stop("varianceExplainedThreshold must be in (0, 1] when npcs is NULL.",
             call. = FALSE
         )
     }
@@ -122,7 +122,7 @@ runMetabolicPCA <- function(
     )
     percentVar <- attr(embedding, "percentVar")
     if (is.null(npcs)) {
-        retained <- which(cumsum(percentVar) / 100 >= variance_explained_threshold)[1L]
+        retained <- which(cumsum(percentVar) / 100 >= varianceExplainedThreshold)[1L]
         if (is.na(retained)) retained <- ncol(embedding)
         loadings <- attr(embedding, "rotation")
         embedding <- embedding[, seq_len(retained), drop = FALSE]
@@ -131,11 +131,11 @@ runMetabolicPCA <- function(
             attr(embedding, "rotation") <- loadings[, seq_len(retained), drop = FALSE]
         }
     }
-    if (isTRUE(show_variance_plot)) {
+    if (isTRUE(showVariancePlot)) {
         varianceData <- data.frame(
             component = seq_along(percentVar), cumulative = cumsum(percentVar) / 100
         )
-        S4Vectors::metadata(SpaMTP)$reduction_plots[[reduction.name]] <-
+        S4Vectors::metadata(object)$reduction_plots[[reductionName]] <-
             ggplot2::ggplot(
                 varianceData,
                 ggplot2::aes(.data$component, .data$cumulative)
@@ -147,16 +147,16 @@ runMetabolicPCA <- function(
                 y = "Cumulative variance explained"
             )
     }
-    SingleCellExperiment::reducedDim(SpaMTP, reduction.name) <- embedding
-    S4Vectors::metadata(SpaMTP)$reduction_inputs[[reduction.name]] <- list(
+    SingleCellExperiment::reducedDim(object, reductionName) <- embedding
+    S4Vectors::metadata(object)$reduction_inputs[[reductionName]] <- list(
         assay = assay, layer = assayName, features = rownames(attr(embedding, "rotation")),
         scale = scale, method = "scrapper::runPca"
     )
     verbose_message(paste0(
         "Stored ", ncol(embedding), " principal components in reducedDim `",
-        reduction.name, "`."
+        reductionName, "`."
     ), verbose = verbose)
-    SpaMTP
+    object
 }
 
 # PCA shared by runMetabolicPCA() and multiOmicIntegration(). With ntop, the
@@ -192,7 +192,7 @@ runMetabolicPCA <- function(
 #' (\doi{10.1186/s13059-024-03429-x}).
 #'
 #' @param data A SpatialExperiment or aligned Cardinal MSImagingExperiment.
-#' @param n_components Integer specifying the number of principal components to
+#' @param nComponents Integer specifying the number of principal components to
 #'   compute (default = 50).
 #' @param assay Primary (`main`) or alternative experiment name.
 #' @param assayName Expression assay name within the selected experiment
@@ -200,25 +200,25 @@ runMetabolicPCA <- function(
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param platform Character string matching either `"Visium"` or `"ST"` to
 #'   determine how the k-NN graph is constructed. If "Visium" k-nns will handle
-#'   the hexagon spot arrangement, including setting `n_neighbors` = 6, else
-#'   "ST" assignment will set `n_neighbors` = 4 unless a value is specifically
+#'   the hexagon spot arrangement, including setting `nNeighbors` = 6, else
+#'   "ST" assignment will set `nNeighbors` = 4 unless a value is specifically
 #'   provided (default = "Visium").
 #' @param lambda Numeric value defining the regularisation parameter that
 #'   controls the influence of the graph Laplacian (default = 0.5).
-#' @param n_neighbors Integer value specifying the number of spatial neighbours
+#' @param nNeighbors Integer value specifying the number of spatial neighbours
 #'   to use. If `NULL`, will default of 6 for "Visium" data and 4 for "ST"
 #'   platforms (default = NULL).
-#' @param include_self Boolean logical value indicating whether to include
+#' @param includeSelf Boolean logical value indicating whether to include
 #'   self-connections in the graph (default = FALSE).
 #' @param alg Character string specifying the algorithm to use for nearest
 #'   neighbour search (passed to `FNN::get.knn()`) (default ="kd_tree").
 #' @param fast Use partial eigendecomposition via `RSpectra::eigs_sym()`
 #'   (default `TRUE`). For wide inputs requesting few components, matrix-vector
 #'   products avoid forming the dense feature-by-feature covariance matrix.
-#' @param graph_name Name for pixel edges in `SingleCellExperiment::colPair()`
+#' @param graphName Name for pixel edges in `SingleCellExperiment::colPair()`
 #'   and the graph matrix in `S4Vectors::metadata(data)$spatialGraphs`
 #'   (default = `"SpatialKNN"`).
-#' @param reduction_name Name for the parent object's
+#' @param reductionName Name for the parent object's
 #'   `SingleCellExperiment::reducedDim()` (default = `"SpatialPCA"`).
 #' @param verbose Boolean indicating whether to show the message. If TRUE the
 #'   message will be show, else the message will be suppressed (default = TRUE).
@@ -247,23 +247,23 @@ runMetabolicPCA <- function(
 #' spe <- spamtp_example$experiment
 #' spe <- scaleSMData(spe)
 #' spe <- runSpatialGraphPCA(spe,
-#'     n_components = 2, platform = "ST",
-#'     n_neighbors = 3, verbose = FALSE
+#'     nComponents = 2, platform = "ST",
+#'     nNeighbors = 3, verbose = FALSE
 #' )
 #' head(SingleCellExperiment::reducedDim(spe, "SpatialPCA"))
 runSpatialGraphPCA <- function(
     data,
-    n_components = 50,
+    nComponents = 50,
     assay = "main",
     assayName = "scaled",
     platform = "Visium",
     lambda = 0.5,
-    n_neighbors = NULL,
-    include_self = FALSE,
+    nNeighbors = NULL,
+    includeSelf = FALSE,
     alg = "kd_tree",
     fast = TRUE,
-    graph_name = "SpatialKNN",
-    reduction_name = "SpatialPCA",
+    graphName = "SpatialKNN",
+    reductionName = "SpatialPCA",
     verbose = TRUE
 ) {
     data <- .nativeSpatialObject(data)
@@ -277,7 +277,7 @@ runSpatialGraphPCA <- function(
     if (!is.numeric(lambda) || length(lambda) != 1L || !is.finite(lambda) || lambda < 0) {
         stop("lambda must be one finite, non-negative number.", call. = FALSE)
     }
-    .validateFeatureCount(n_components, "n_components")
+    .validateFeatureCount(nComponents, "n_components")
 
     assayMatrix <- .assayData(data, assay, assayName)
     if (.isDelayed(assayMatrix)) {
@@ -289,30 +289,30 @@ runSpatialGraphPCA <- function(
             call. = FALSE
         )
     }
-    n_components <- min(n_components, nrow(assayMatrix), ncol(assayMatrix))
+    nComponents <- min(nComponents, nrow(assayMatrix), ncol(assayMatrix))
     Expr <- t(assayMatrix)
 
 
-    if (is.null(n_neighbors)) {
+    if (is.null(nNeighbors)) {
         if (platform == "Visium") {
-            n_neighbors <- 6
+            nNeighbors <- 6
             verbose_message(
-                message_text = "No nearest neighbour value provided. Based on 'Visium' platform type setting n-neighbours = 6 ...",
+                messageText = "No nearest neighbour value provided. Based on 'Visium' platform type setting n-neighbours = 6 ...",
                 verbose = verbose
             )
         } else {
             verbose_message(
-                message_text = "No nearest neighbour value provided. Based on 'ST' platform type setting n-neighbours = 4 ...",
+                messageText = "No nearest neighbour value provided. Based on 'ST' platform type setting n-neighbours = 4 ...",
                 verbose = verbose
             )
-            n_neighbors <- 4
+            nNeighbors <- 4
         }
     } else {
-        n_neighbors <- as.integer(n_neighbors)
+        nNeighbors <- as.integer(nNeighbors)
         verbose_message(
-            message_text = paste0(
+            messageText = paste0(
                 "Using a nearest neighbour value = ",
-                n_neighbors,
+                nNeighbors,
                 "! NOTE: the recomended values are -> 'Visium' data: n_neighbors = 6  / 'ST' data: n_neighbors = 4 ...."
             ),
             verbose = verbose
@@ -323,8 +323,8 @@ runSpatialGraphPCA <- function(
     sampleIndices <- split(seq_len(nrow(location)), location$sample_id)
     graphs <- lapply(sampleIndices, function(index) {
         kNeighborsGraph(location[index, c("x", "y"), drop = FALSE],
-            n_neighbors = n_neighbors, platform = platform,
-            include_self = include_self, alg = alg
+            nNeighbors = nNeighbors, platform = platform,
+            includeSelf = includeSelf, alg = alg
         )
     })
     graph <- Matrix::bdiag(graphs)
@@ -349,10 +349,10 @@ runSpatialGraphPCA <- function(
     rownames(graph) <- colnames(graph) <- colnames(assayMatrix)
 
     spatialGraphs <- S4Vectors::metadata(data)$spatialGraphs %||% list()
-    spatialGraphs[[graph_name]] <- graph
+    spatialGraphs[[graphName]] <- graph
     S4Vectors::metadata(data)$spatialGraphs <- spatialGraphs
     edges <- summary(methods::as(graph, "generalMatrix"))
-    SingleCellExperiment::colPair(data, graph_name) <- S4Vectors::SelfHits(
+    SingleCellExperiment::colPair(data, graphName) <- S4Vectors::SelfHits(
         edges$i, edges$j,
         nnode = ncol(data), weight = edges$x
     )
@@ -363,8 +363,8 @@ runSpatialGraphPCA <- function(
     rm(graphL)
 
     # 3. Eigendecomposition of C
-    if (fast && n_components < ncol(Expr)) {
-        if (ncol(Expr) >= 256L && n_components <= ncol(Expr) / 4) {
+    if (fast && nComponents < ncol(Expr)) {
+        if (ncol(Expr) >= 256L && nComponents <= ncol(Expr) / 4) {
             # C = t(Expr) %*% X, where X = solve(G, Expr). Applying C to a vector
             # costs O(n * p), avoiding the O(n * p^2) product and O(p^2) storage.
             # The same symmetric operator and partial eigensolver are used; neither
@@ -372,17 +372,17 @@ runSpatialGraphPCA <- function(
             multiply <- function(v, args) as.numeric(crossprod(Expr, X %*% v))
             eig <- RSpectra::eigs_sym(
                 multiply,
-                k = n_components,
+                k = nComponents,
                 n = ncol(Expr)
             )
         } else {
-            eig <- RSpectra::eigs_sym(crossprod(Expr, X), k = n_components)
+            eig <- RSpectra::eigs_sym(crossprod(Expr, X), k = nComponents)
         }
     } else {
         eig <- eigen(t(Expr) %*% X, symmetric = TRUE)
     }
 
-    W <- eig$vectors[, seq_len(n_components), drop = FALSE]
+    W <- eig$vectors[, seq_len(nComponents), drop = FALSE]
     Z <- X %*% W
 
     rownames(Z) <- colnames(assayMatrix) # cells
@@ -391,14 +391,14 @@ runSpatialGraphPCA <- function(
     colnames(W) <- paste0("PC_", seq_len(ncol(W)))
 
     # Create the PCA reduction
-    SingleCellExperiment::reducedDim(data, reduction_name) <- as.matrix(Z)
+    SingleCellExperiment::reducedDim(data, reductionName) <- as.matrix(Z)
     loadings <- S4Vectors::metadata(data)$reductionLoadings %||% list()
-    loadings[[reduction_name]] <- W
+    loadings[[reductionName]] <- W
     S4Vectors::metadata(data)$reductionLoadings <- loadings
-    S4Vectors::metadata(data)$reduction_inputs[[reduction_name]] <- list(
+    S4Vectors::metadata(data)$reduction_inputs[[reductionName]] <- list(
         assay = assay, layer = assayName, features = rownames(assayMatrix),
-        observations = colnames(assayMatrix), lambda = lambda, neighbors = n_neighbors,
-        graph = graph_name, sample_separated = TRUE, method = "runSpatialGraphPCA"
+        observations = colnames(assayMatrix), lambda = lambda, neighbors = nNeighbors,
+        graph = graphName, sample_separated = TRUE, method = "runSpatialGraphPCA"
     )
 
 
@@ -414,14 +414,14 @@ runSpatialGraphPCA <- function(
 #'
 #' @param location A data frame or matrix with columns `x` and `y` representing
 #'   spatial coordinates, and rownames match barcode/cell names.
-#' @param n_neighbors Integer value defining the number of neighbours to
+#' @param nNeighbors Integer value defining the number of neighbours to
 #'   consider.
 #' @param platform Character string being either `"Visium"` or `"ST"`,
 #'   specifying the platform of the dataset being analysed. Determines how
 #'   distance thresholds and adjacency are calculated whereby "Visium" data is
 #'   handled slightly differently to compensate for the hexagon shape of the
 #'   spots.
-#' @param include_self Boolean logical value stating whether to include
+#' @param includeSelf Boolean logical value stating whether to include
 #'   self-connections (default = FALSE).
 #' @param alg Character string specifying the algorithm to use for nearest
 #'   neighbour search. Passed to `FNN::get.knn()` (default = "kd_tree").
@@ -431,24 +431,24 @@ runSpatialGraphPCA <- function(
 #'
 #' @examples
 #' coordinates <- cbind(x = rep(1:3, 2), y = rep(1:2, each = 3))
-#' kNeighborsGraph(coordinates, n_neighbors = 2, platform = "ST")
+#' kNeighborsGraph(coordinates, nNeighbors = 2, platform = "ST")
 kNeighborsGraph <- function(
     location,
-    n_neighbors,
+    nNeighbors,
     platform,
-    include_self = FALSE,
+    includeSelf = FALSE,
     alg = "kd_tree"
 ) {
-    .validateFeatureCount(n_neighbors, "n_neighbors")
+    .validateFeatureCount(nNeighbors, "n_neighbors")
     if (any(!is.finite(as.matrix(location)))) {
         stop("Spatial coordinates must be finite.", call. = FALSE)
     }
     if (nrow(location) <= 1L) {
-        return(Matrix::Diagonal(nrow(location), x = as.numeric(include_self)))
+        return(Matrix::Diagonal(nrow(location), x = as.numeric(includeSelf)))
     }
-    n_neighbors <- min(n_neighbors, nrow(location) - 1L)
+    nNeighbors <- min(nNeighbors, nrow(location) - 1L)
     # Get the k-nearest neighbors using kd_tree (most similar to scikit-learn's default)
-    knn_result <- FNN::get.knn(location, k = n_neighbors, algorithm = alg)
+    knn_result <- FNN::get.knn(location, k = nNeighbors, algorithm = alg)
 
     if (platform == "Visium") {
         # Step 1: Flatten the distances and indices
@@ -459,7 +459,7 @@ kNeighborsGraph <- function(
         col_indices <- as.vector(t(knn_result$nn.index))
 
         # Create row indices (equivalent to np.repeat())
-        row_indices <- rep(seq_len(N), each = n_neighbors)
+        row_indices <- rep(seq_len(N), each = nNeighbors)
 
         # Apply neighbor correction if needed
 
@@ -482,13 +482,13 @@ kNeighborsGraph <- function(
         # Create empty adjacency matrix
         n <- nrow(location)
         adjacency <- Matrix::sparseMatrix(
-            i = rep(seq_len(n), each = n_neighbors),
+            i = rep(seq_len(n), each = nNeighbors),
             j = as.vector(t(knn_result$nn.index)), x = 1, dims = c(n, n)
         )
     }
 
     # Include self-loops if requested (in this case, no)
-    if (include_self) {
+    if (includeSelf) {
         diag(adjacency) <- 1
     }
 
@@ -507,11 +507,11 @@ kNeighborsGraph <- function(
 #'   an embedding such as the result of `runMetabolicPCA()`.
 #' @param reduction Name in `SingleCellExperiment::reducedDimNames(data)`
 #'   (default = `"pca"`).
-#' @param cluster.name Column name in `SummarizedExperiment::colData(data)`
+#' @param clusterName Column name in `SummarizedExperiment::colData(data)`
 #'   for cluster labels (default = `"spatial_clusters"`).
 #' @param clusters Integer defining the number of clusters to form (default =
 #'   8).
-#' @param iter.max Integer defining the maximum number of iterations allowed
+#' @param iterMax Integer defining the maximum number of iterations allowed
 #'   (default = 10).
 #' @param nstart Integer stating the number of random sets to choose (default =
 #'   1).
@@ -524,7 +524,7 @@ kNeighborsGraph <- function(
 #'   888).
 #'
 #' @return The input container with cluster assignments in
-#'   `SummarizedExperiment::colData(data)[[cluster.name]]`.
+#'   `SummarizedExperiment::colData(data)[[clusterName]]`.
 #' @export
 #'
 #' @examples
@@ -535,9 +535,9 @@ kNeighborsGraph <- function(
 getKmeanClusters <- function(
     data,
     reduction = "pca",
-    cluster.name = "spatial_clusters",
+    clusterName = "spatial_clusters",
     clusters = 8,
-    iter.max = 10,
+    iterMax = 10,
     nstart = 1,
     algorithm = c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen"),
     trace = FALSE,
@@ -559,7 +559,7 @@ getKmeanClusters <- function(
     labels <- .kmeanLabels(
         embedding,
         clusters,
-        iter.max,
+        iterMax,
         nstart,
         algorithm,
         trace,
@@ -567,13 +567,13 @@ getKmeanClusters <- function(
     )
 
     metadata <- .cellMetadata(data)
-    metadata[[cluster.name]] <- labels
+    metadata[[clusterName]] <- labels
     data <- .setCellMetadata(data, metadata)
     return(data)
 }
 
 .kmeanLabels <- function(
-    embedding, clusters, iter.max = 100, nstart = 20,
+    embedding, clusters, iterMax = 100, nstart = 20,
     algorithm = "Hartigan-Wong", trace = FALSE, seed = 888
 ) {
     withr::with_seed(
@@ -581,7 +581,7 @@ getKmeanClusters <- function(
         stats::kmeans(
             embedding,
             centers = clusters,
-            iter.max = iter.max,
+            iter.max = iterMax,
             nstart = nstart,
             algorithm = algorithm,
             trace = trace

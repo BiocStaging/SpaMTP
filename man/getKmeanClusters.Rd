@@ -7,9 +7,9 @@
 getKmeanClusters(
   data,
   reduction = "pca",
-  cluster.name = "spatial_clusters",
+  clusterName = "spatial_clusters",
   clusters = 8,
-  iter.max = 10,
+  iterMax = 10,
   nstart = 1,
   algorithm = c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen"),
   trace = FALSE,
@@ -23,13 +23,13 @@ an embedding such as the result of \code{runMetabolicPCA()}.}
 \item{reduction}{Name in \code{SingleCellExperiment::reducedDimNames(data)}
 (default = \code{"pca"}).}
 
-\item{cluster.name}{Column name in \code{SummarizedExperiment::colData(data)}
+\item{clusterName}{Column name in \code{SummarizedExperiment::colData(data)}
 for cluster labels (default = \code{"spatial_clusters"}).}
 
 \item{clusters}{Integer defining the number of clusters to form (default =
 8).}
 
-\item{iter.max}{Integer defining the maximum number of iterations allowed
+\item{iterMax}{Integer defining the maximum number of iterations allowed
 (default = 10).}
 
 \item{nstart}{Integer stating the number of random sets to choose (default =
@@ -47,7 +47,7 @@ information on the progress of the algorithm (default = FALSE).}
 }
 \value{
 The input container with cluster assignments in
-\code{SummarizedExperiment::colData(data)[[cluster.name]]}.
+\code{SummarizedExperiment::colData(data)[[clusterName]]}.
 }
 \description{
 Runs K-means on an embedding read through

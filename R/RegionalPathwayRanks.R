@@ -1,5 +1,5 @@
 .regionalPathwaysFromRanks <- function(
-    ranks, index, min_size, max_size, rank_scale,
+    ranks, index, minSize, maxSize, rankScale,
     nPermSimple, regions = NULL,
     BPPARAM = BiocParallel::SerialParam()
 ) {
@@ -59,10 +59,10 @@
     measured <- unique(unlist(lapply(mapped, rownames)))
     coverage <- used_ranks <- tables <- list()
     for (region in regions) {
-        blocks <- lapply(mapped, function(E) {
-            v <- stats::setNames(E[, region], rownames(E))
+        blocks <- lapply(mapped, function(expression) {
+            v <- stats::setNames(expression[, region], rownames(expression))
             v <- v[is.finite(v)]
-            if (rank_scale == "rms" && length(v)) {
+            if (rankScale == "rms" && length(v)) {
                 divisor <- sqrt(mean(v^2))
                 if (divisor > 0) v <- v / divisor
             }
@@ -76,15 +76,15 @@
         )
         used_ranks[[region]] <- sort(stat, decreasing = TRUE)
         c <- .pathway_coverage(index, measured,
-            used_ids = names(stat),
-            types = ifelse(names(ranks) == "genes", "G", "C"), min_size = min_size, max_size = max_size
+            usedIds = names(stat),
+            types = ifelse(names(ranks) == "genes", "G", "C"), minSize = minSize, maxSize = maxSize
         )
         coverage[[region]] <- c
         sets <- .pathway_sets_from_coverage(c)
         if (!length(sets) || length(stat) < 2L || all(stat == 0)) next
         t <- as.data.frame(fgsea::fgseaMultilevel(
             pathways = sets, stats = used_ranks[[region]],
-            minSize = min_size, maxSize = max_size, nPermSimple = nPermSimple,
+            minSize = minSize, maxSize = maxSize, nPermSimple = nPermSimple,
             eps = 1e-10, BPPARAM = BPPARAM
         ))
         if (!nrow(t)) next
@@ -139,7 +139,7 @@
     attr(answer, "ranks") <- used_ranks
     attr(answer, "rank_analysis") <- list(
         input = "complete unfiltered feature rankings",
-        rank_scale = rank_scale, analyte_types = names(ranks), nPermSimple = nPermSimple,
+        rank_scale = rankScale, analyte_types = names(ranks), nPermSimple = nPermSimple,
         family = "All measured/used-size-eligible pathways, BH within region and configured modality combination",
         interpretation = "Competitive feature-set enrichment conditional on supplied ranks; P values do not test between-specimen regional reproducibility. Joint ranks are RMS-scaled per modality; pathways with many measured genes can still be gene-dominated."
     )

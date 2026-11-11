@@ -4,12 +4,12 @@
 \alias{cardinalToSeurat}
 \title{Convert a Cardinal object to an optional Seurat object}
 \usage{
-cardinalToSeurat(data, seurat.coord = NULL, assay = "Spatial", verbose = TRUE)
+cardinalToSeurat(data, seuratCoord = NULL, assay = "Spatial", verbose = TRUE)
 }
 \arguments{
 \item{data}{A Cardinal \code{MSImagingExperiment} with aligned spectra.}
 
-\item{seurat.coord}{Optional replacement coordinates with \code{X_new} and
+\item{seuratCoord}{Optional replacement coordinates with \code{X_new} and
 \code{Y_new} columns.}
 
 \item{assay}{Name of the Seurat assay.}

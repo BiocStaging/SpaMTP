@@ -9,23 +9,23 @@ plotSinglePathwaySpatially(
   object,
   images = NULL,
   title = NULL,
-  image.alpha = 1,
+  imageAlpha = 1,
   assay = "main",
   assayName = "logcounts",
   colors = c("darkblue", "lightgrey", "darkred"),
   guide = "colourbar",
   crop = TRUE,
-  min.cutoff = NA,
-  max.cutoff = NA,
+  minCutoff = NA,
+  maxCutoff = NA,
   ncol = NULL,
-  pt.size.factor = 1.6,
+  ptSizeFactor = 1.6,
   alpha = 1,
   shape = 16,
   stroke = 0,
   interactive = FALSE,
-  image.labels = NULL,
-  pathway_index = NULL,
-  duplicate_genes = "error"
+  imageLabels = NULL,
+  pathwayIndex = NULL,
+  duplicateGenes = "error"
 )
 }
 \arguments{
@@ -37,7 +37,7 @@ plotSinglePathwaySpatially(
 
 \item{title}{Optional plot title.}
 
-\item{image.alpha}{Image opacity.}
+\item{imageAlpha}{Image opacity.}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name.}
 
@@ -51,11 +51,11 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{crop}{Whether to restrict plotting to the pixel extent.}
 
-\item{min.cutoff, max.cutoff}{Numeric or quantile colour cutoffs.}
+\item{minCutoff, maxCutoff}{Numeric or quantile colour cutoffs.}
 
 \item{ncol}{Number of columns in the combined plot.}
 
-\item{pt.size.factor}{Point size.}
+\item{ptSizeFactor}{Point size.}
 
 \item{alpha}{Point opacity (the first value is used).}
 
@@ -65,14 +65,14 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{interactive}{Convert the result to an interactive plotly plot.}
 
-\item{image.labels}{Optional labels for the selected images.}
+\item{imageLabels}{Optional labels for the selected images.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
 
-\item{duplicate_genes}{How to aggregate expression rows of one gene.
+\item{duplicateGenes}{How to aggregate expression rows of one gene.
 The default errors for differing rows and deduplicates identical rows.
 Explicit mean or sum requires choosing an appropriate expression scale;
 sum is generally inappropriate for log-transformed expression.}

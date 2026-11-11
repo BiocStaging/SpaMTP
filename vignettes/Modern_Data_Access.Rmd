@@ -88,7 +88,7 @@ numeric m/z column names. This example writes eight measured masses at
 demonstrates the file format; subsequent analysis uses the complete `spe`
 object above.
 
-`project.name` sets the imported sample label. The CSV importer generates
+`projectName` sets the imported sample label. The CSV importer generates
 pixel IDs from coordinates, so archived barcodes and RNA pairing must be
 retained separately. For raw imzML input, see the
 [native workflow](SpaMTP_Bioconductor.html).
@@ -103,7 +103,7 @@ names(table_input) <- c("x", "y", rowData(spe)[export_features, "mz"])
 csv_file <- tempfile(fileext = ".csv")
 write.csv(table_input, csv_file, row.names = FALSE)
 
-imported <- readSMMatrix(csv_file, project.name = "mouse_brain", verbose = FALSE)
+imported <- readSMMatrix(csv_file, projectName = "mouse_brain", verbose = FALSE)
 imported
 rowData(imported)$mz
 ```
@@ -314,8 +314,11 @@ to retrieve pinned annotation references, or the
 
 ## Migrating existing scripts {#migrating-existing-scripts}
 
-The native API uses lower-camel-case names and Bioconductor containers. These
-common calls replace their historical Seurat-oriented counterparts:
+The native API uses lower-camel-case names and Bioconductor containers.
+Function arguments follow the same convention: `smAssay`, `minScore` and
+`databaseLocalDir`. `help("argumentNaming")` lists the argument changes for
+existing scripts. These common calls replace their historical Seurat-oriented
+counterparts:
 
 ::: {.interface-reference}
 

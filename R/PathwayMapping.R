@@ -48,11 +48,11 @@
 .pathway_validate_index <- function(
     index,
     resources = NULL,
-    gene_index = NULL
+    geneIndex = NULL
 ) {
     if (!inherits(index, "spamtp_pathway_index") || !identical(index$provenance$schema_version, 1L)) {
         stop(
-            "pathway_index must be built by buildPathwayIndex().",
+            "pathwayIndex must be built by buildPathwayIndex().",
             call. = FALSE
         )
     }
@@ -69,7 +69,7 @@
             index$provenance$membership_fingerprint
         )) {
             stop(
-                "pathway_index does not match pathway memberships or metadata; rebuild it.",
+                "pathwayIndex does not match pathway memberships or metadata; rebuild it.",
                 call. = FALSE
             )
         }
@@ -77,24 +77,24 @@
             .gene_check_source_index(resources$source_df, index$gene_index)
         }
     }
-    if (!is.null(gene_index) && !identical(gene_index, index$gene_index)) {
+    if (!is.null(geneIndex) && !identical(geneIndex, index$gene_index)) {
         stop(
-            "gene_index and pathway_index use different gene identities.",
+            "geneIndex and pathwayIndex use different gene identities.",
             call. = FALSE
         )
     }
     invisible(TRUE)
 }
 
-.pathway_database <- function(database, pathway_index) {
-    if (is.null(pathway_index)) {
+.pathway_database <- function(database, pathwayIndex) {
+    if (is.null(pathwayIndex)) {
         return(database)
     }
-    .pathway_validate_index(pathway_index)
+    .pathway_validate_index(pathwayIndex)
     if (!is.null(database)) {
         return(database)
     }
-    database <- pathway_index$raw_resources
+    database <- pathwayIndex$raw_resources
     if (is.null(database$source_df)) {
         database$source_df <- data.frame(
             rampId = character(), sourceId = character()
@@ -105,54 +105,54 @@
 
 .pathway_context <- function(
     resources, database = resources,
-    gene_mapping = "auto", gene_reference = NULL, gene_index = NULL,
-    gene_reference_version = "latest", gene_reference_local_dir = NULL,
-    organism = "Homo sapiens", pathway_index = NULL
+    geneMapping = "auto", geneReference = NULL, geneIndex = NULL,
+    geneReferenceVersion = "latest", geneReferenceLocalDir = NULL,
+    organism = "Homo sapiens", pathwayIndex = NULL
 ) {
-    gene_mapping <- match.arg(gene_mapping, c("auto", "hgnc", "ramp"))
-    if (!is.null(pathway_index)) {
-        .pathway_validate_index(pathway_index, resources, gene_index)
-        if (!is.null(pathway_index$gene_index) &&
+    geneMapping <- match.arg(geneMapping, c("auto", "hgnc", "ramp"))
+    if (!is.null(pathwayIndex)) {
+        .pathway_validate_index(pathwayIndex, resources, geneIndex)
+        if (!is.null(pathwayIndex$gene_index) &&
             !identical(
                 organism,
-                pathway_index$gene_index$provenance$organism
+                pathwayIndex$gene_index$provenance$organism
             )) {
             stop(
-                "pathway_index organism does not match organism.",
+                "pathwayIndex organism does not match organism.",
                 call. = FALSE
             )
         }
-        if (identical(gene_mapping, "ramp") && !is.null(pathway_index$gene_index)) {
+        if (identical(geneMapping, "ramp") && !is.null(pathwayIndex$gene_index)) {
             stop(
-                "gene_mapping = 'ramp' conflicts with the HGNC pathway_index.",
+                "geneMapping = 'ramp' conflicts with the HGNC pathway_index.",
                 call. = FALSE
             )
         }
-        if (identical(gene_mapping, "hgnc") && is.null(pathway_index$gene_index)) {
+        if (identical(geneMapping, "hgnc") && is.null(pathwayIndex$gene_index)) {
             stop(
-                "gene_mapping = 'hgnc' requires an HGNC pathway_index.",
+                "geneMapping = 'hgnc' requires an HGNC pathway_index.",
                 call. = FALSE
             )
         }
-        resources[names(pathway_index$resources)] <- pathway_index$resources
+        resources[names(pathwayIndex$resources)] <- pathwayIndex$resources
         return(list(
             resources = resources,
-            index = pathway_index$gene_index, pathway_index = pathway_index
+            index = pathwayIndex$gene_index, pathway_index = pathwayIndex
         ))
     }
     raw <- resources
     if (is.null(resources$source_df)) {
-        if (!is.null(gene_index) || !is.null(gene_reference) || identical(gene_mapping, "hgnc")) {
+        if (!is.null(geneIndex) || !is.null(geneReference) || identical(geneMapping, "hgnc")) {
             stop(
-                "Gene harmonization requires source_df or a prebuilt pathway_index.",
+                "Gene harmonization requires sourceDf or a prebuilt pathway_index.",
                 call. = FALSE
             )
         }
         view <- list(resources = resources, index = NULL)
     } else {
         view <- .gene_pathway_view(
-            resources, database, gene_mapping, gene_reference,
-            gene_index, gene_reference_version, gene_reference_local_dir, organism
+            resources, database, geneMapping, geneReference,
+            geneIndex, geneReferenceVersion, geneReferenceLocalDir, organism
         )
     }
     links <- .pathway_links(view$resources$analytehaspathway)
@@ -236,17 +236,17 @@
 #' ), pathway = data.frame(pathwayRampId = "P1"))
 #' buildPathwayIndex(db)$members
 buildPathwayIndex <- function(
-    database = NULL, gene_mapping = c("auto", "hgnc", "ramp"),
-    gene_reference = NULL, gene_index = NULL, gene_reference_version = "latest",
-    gene_reference_local_dir = NULL, organism = "Homo sapiens",
-    database_version = "latest", database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL
+    database = NULL, geneMapping = c("auto", "hgnc", "ramp"),
+    geneReference = NULL, geneIndex = NULL, geneReferenceVersion = "latest",
+    geneReferenceLocalDir = NULL, organism = "Homo sapiens",
+    databaseVersion = "latest", databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL
 ) {
     needed <- c("analytehaspathway", "pathway")
     if (is.null(database) || "source_df" %in% names(database)) needed <- c(needed, "source_df")
     resources <- .spamtp_db_bundle(needed, database,
-        version = database_version,
-        source = match.arg(database_source), local_dir = database_local_dir
+        version = databaseVersion,
+        source = match.arg(databaseSource), localDir = databaseLocalDir
     )
     if (!is.null(database$analyte)) resources$analyte <- database$analyte
     if (is.null(resources$analyte)) {
@@ -258,20 +258,20 @@ buildPathwayIndex <- function(
         )
     }
     .pathway_context(
-        resources, database, match.arg(gene_mapping), gene_reference,
-        gene_index, gene_reference_version, gene_reference_local_dir, organism
+        resources, database, match.arg(geneMapping), geneReference,
+        geneIndex, geneReferenceVersion, geneReferenceLocalDir, organism
     )$pathway_index
 }
 
 .pathway_coverage <- function(
-    index, measured_ids, used_ids = measured_ids,
-    foreground_ids = character(), types = c("G", "C"), min_size = 1, max_size = Inf
+    index, measuredIds, usedIds = measuredIds,
+    foregroundIds = character(), types = c("G", "C"), minSize = 1, maxSize = Inf
 ) {
     members <- .filterPathwayMembers(index$members, types = types)
     raw <- .filterPathwayMembers(index$raw_members, types = types)
-    measured <- .filterPathwayMembers(members, measured_ids)
-    used <- .filterPathwayMembers(measured, used_ids)
-    foreground <- .filterPathwayMembers(measured, foreground_ids)
+    measured <- .filterPathwayMembers(members, measuredIds)
+    used <- .filterPathwayMembers(measured, usedIds)
+    foreground <- .filterPathwayMembers(measured, foregroundIds)
     coverage <- index$metadata
     coverage$database_size <- lengths(members)
     coverage$database_raw_size <- lengths(raw)
@@ -282,7 +282,7 @@ buildPathwayIndex <- function(
         NA_real_
     )
     coverage$used_size <- lengths(used)
-    coverage$eligible <- lengths(used) >= min_size & lengths(used) <= max_size & lengths(used) > 0
+    coverage$eligible <- lengths(used) >= minSize & lengths(used) <= maxSize & lengths(used) > 0
     coverage$database_members <- I(unname(members))
     coverage$measured_members <- I(unname(measured))
     coverage$used_members <- I(unname(used))
@@ -315,8 +315,8 @@ buildPathwayIndex <- function(
     stats::setNames(unname(split(values[keep], group)), names(sets))
 }
 
-.pathway_sets_from_coverage <- function(coverage, eligible_only = TRUE) {
-    rows <- if (eligible_only) which(coverage$eligible) else seq_len(nrow(coverage))
+.pathway_sets_from_coverage <- function(coverage, eligibleOnly = TRUE) {
+    rows <- if (eligibleOnly) which(coverage$eligible) else seq_len(nrow(coverage))
     stats::setNames(
         unclass(coverage$used_members[rows]),
         coverage$pathwayRampId[rows]
@@ -346,15 +346,15 @@ buildPathwayIndex <- function(
 }
 
 .pathway_expression <- function(
-    E, index, duplicate_genes = c("error", "mean", "sum"),
-    feature_ids = rownames(E), verbose = TRUE
+    expression, index, duplicateGenes = c("error", "mean", "sum"),
+    featureIds = rownames(expression), verbose = TRUE
 ) {
-    duplicate_genes <- match.arg(duplicate_genes)
-    if (is.null(feature_ids) || length(feature_ids) != nrow(E) || anyNA(feature_ids) ||
-        any(!nzchar(feature_ids))) {
+    duplicateGenes <- match.arg(duplicateGenes)
+    if (is.null(featureIds) || length(featureIds) != nrow(expression) || anyNA(featureIds) ||
+        any(!nzchar(featureIds))) {
         stop("Expression features need non-missing identifiers.", call. = FALSE)
     }
-    ids <- as.character(feature_ids)
+    ids <- as.character(featureIds)
     canonical <- ids
     genes <- !grepl("^RAMP_C_", ids, ignore.case = TRUE)
     audit <- NULL
@@ -403,7 +403,7 @@ buildPathwayIndex <- function(
         }
     }
     keep <- !is.na(canonical)
-    values <- E[keep, , drop = FALSE]
+    values <- expression[keep, , drop = FALSE]
     canonical <- canonical[keep]
     if (!length(canonical)) stop(
         "No expression features have usable identities.",
@@ -418,7 +418,7 @@ buildPathwayIndex <- function(
         factor(canonical, levels = unique(canonical))
     )
     choose <- lapply(groups, function(rows) {
-        if (length(rows) > 1L && duplicate_genes == "error") {
+        if (length(rows) > 1L && duplicateGenes == "error") {
             if (!all(vapply(rows[-1L], function(i) {
                 isTRUE(all.equal(
                     as.numeric(values[i, ]), as.numeric(values[rows[1L], ]),
@@ -426,7 +426,7 @@ buildPathwayIndex <- function(
                 ))
             }, logical(1)))) {
                 stop("Multiple expression features map to ", canonical[rows[1L]],
-                    "; choose duplicate_genes = 'mean' or 'sum' after reviewing the assay scale.",
+                    "; choose duplicateGenes = 'mean' or 'sum' after reviewing the assay scale.",
                     call. = FALSE
                 )
             }
@@ -436,7 +436,7 @@ buildPathwayIndex <- function(
     })
     j <- unlist(choose, use.names = FALSE)
     i <- rep(seq_along(choose), lengths(choose))
-    weight <- if (duplicate_genes == "mean") rep(1 / lengths(choose), lengths(choose)) else rep(1, length(j))
+    weight <- if (duplicateGenes == "mean") rep(1 / lengths(choose), lengths(choose)) else rep(1, length(j))
     W <- Matrix::sparseMatrix(
         i = i,
         j = j,
@@ -444,14 +444,14 @@ buildPathwayIndex <- function(
         dims = c(length(groups), nrow(values))
     )
     result <- W %*% values
-    dimnames(result) <- list(names(groups), colnames(E))
+    dimnames(result) <- list(names(groups), colnames(expression))
     list(
         expression = result, mapping = audit,
         original_features = stats::setNames(
             lapply(groups, function(rows) ids[keep][rows]),
             names(groups)
         ),
-        duplicate_genes = duplicate_genes
+        duplicate_genes = duplicateGenes
     )
 }
 
@@ -473,13 +473,13 @@ buildPathwayIndex <- function(
     )$rampId)
 }
 
-.pathway_score_matrix <- function(E, sets, standardize = TRUE) {
+.pathway_score_matrix <- function(expression, sets, standardize = TRUE) {
     scores <- lapply(sets, function(ids) {
-        ids <- intersect(ids, rownames(E))
+        ids <- intersect(ids, rownames(expression))
         if (!length(ids)) {
-            return(rep(NA_real_, ncol(E)))
+            return(rep(NA_real_, ncol(expression)))
         }
-        value <- as.numeric(Matrix::colSums(E[ids, , drop = FALSE])) / sqrt(length(ids))
+        value <- as.numeric(Matrix::colSums(expression[ids, , drop = FALSE])) / sqrt(length(ids))
         value <- value - mean(value)
         if (standardize) {
             deviation <- stats::sd(value)
@@ -491,64 +491,64 @@ buildPathwayIndex <- function(
         return(matrix(
             numeric(),
             0L,
-            ncol(E),
-            dimnames = list(character(), colnames(E))
+            ncol(expression),
+            dimnames = list(character(), colnames(expression))
         ))
     }
     answer <- do.call(rbind, scores)
-    dimnames(answer) <- list(names(sets), colnames(E))
+    dimnames(answer) <- list(names(sets), colnames(expression))
     answer
 }
 
 .pathway_score_context <- function(
-    object, assay, assayName, database, pathway_index,
-    gene_mapping, gene_reference, gene_index, gene_reference_version,
-    gene_reference_local_dir, organism, database_version, database_source,
-    database_local_dir, duplicate_genes, min_path_size = 1, max_path_size = Inf
+    object, assay, assayName, database, pathwayIndex,
+    geneMapping, geneReference, geneIndex, geneReferenceVersion,
+    geneReferenceLocalDir, organism, databaseVersion, databaseSource,
+    databaseLocalDir, duplicateGenes, minPathSize = 1, maxPathSize = Inf
 ) {
     # Validate the assay before touching external resources.
     E <- .assayData(object, assay, assayName)
-    database <- .pathway_database(database, pathway_index)
-    if (is.null(pathway_index)) {
-        pathway_index <- buildPathwayIndex(
-            database, gene_mapping, gene_reference,
-            gene_index, gene_reference_version, gene_reference_local_dir, organism,
-            database_version, database_source, database_local_dir
+    database <- .pathway_database(database, pathwayIndex)
+    if (is.null(pathwayIndex)) {
+        pathwayIndex <- buildPathwayIndex(
+            database, geneMapping, geneReference,
+            geneIndex, geneReferenceVersion, geneReferenceLocalDir, organism,
+            databaseVersion, databaseSource, databaseLocalDir
         )
     } else {
         .pathway_context(
-            database, database, gene_mapping, gene_reference, gene_index,
-            gene_reference_version, gene_reference_local_dir, organism, pathway_index
+            database, database, geneMapping, geneReference, geneIndex,
+            geneReferenceVersion, geneReferenceLocalDir, organism, pathwayIndex
         )
     }
-    if (!is.null(pathway_index$gene_index)) .gene_check_experiment_species(object, assay, organism)
+    if (!is.null(pathwayIndex$gene_index)) .gene_check_experiment_species(object, assay, organism)
     prior <- S4Vectors::metadata(.experimentForAssay(object, assay))$pathway_mapping$provenance
     if (!is.null(prior) && identical(prior$gene_mapping, "hgnc") &&
-        !identical(prior, pathway_index$provenance)) {
+        !identical(prior, pathwayIndex$provenance)) {
         stop(
             "The input assay was mapped with a different pathway index. Rebuild it from original features.",
             call. = FALSE
         )
     }
-    mapped <- .pathway_expression(E, pathway_index, duplicate_genes)
+    mapped <- .pathway_expression(E, pathwayIndex, duplicateGenes)
     types <- if (all(grepl("^RAMP_[GC]_", rownames(mapped$expression)))) {
         unique(sub("^RAMP_([GC])_.*", "\\1", rownames(mapped$expression)))
     } else {
         NULL
     }
-    if (length(min_path_size) != 1L || !is.finite(min_path_size) || min_path_size < 1 ||
-        min_path_size != floor(min_path_size) || length(max_path_size) != 1L ||
-        is.na(max_path_size) || max_path_size < min_path_size) {
+    if (length(minPathSize) != 1L || !is.finite(minPathSize) || minPathSize < 1 ||
+        minPathSize != floor(minPathSize) || length(maxPathSize) != 1L ||
+        is.na(maxPathSize) || maxPathSize < minPathSize) {
         stop("Invalid pathway size limits.", call. = FALSE)
     }
-    coverage <- .pathway_coverage(pathway_index, rownames(mapped$expression),
+    coverage <- .pathway_coverage(pathwayIndex, rownames(mapped$expression),
         types = types,
-        min_size = min_path_size, max_size = max_path_size
+        minSize = minPathSize, maxSize = maxPathSize
     )
     list(
-        index = pathway_index, expression = mapped$expression, coverage = coverage,
+        index = pathwayIndex, expression = mapped$expression, coverage = coverage,
         audit = list(
-            provenance = pathway_index$provenance, inputs = mapped$mapping,
+            provenance = pathwayIndex$provenance, inputs = mapped$mapping,
             original_features = mapped$original_features, duplicate_genes = mapped$duplicate_genes,
             coverage = coverage
         )

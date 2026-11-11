@@ -43,7 +43,7 @@
     )
 }
 
-.wf_report_plots <- function(x, max_points) {
+.wf_report_plots <- function(x, maxPoints) {
     plots <- list()
     qc <- x$qc
     plots$qc <- ggplot2::ggplot(
@@ -58,7 +58,7 @@
         )
     n <- ncol(x$object)
     # Evenly spaced deterministic preview; analyses use all retained observations.
-    idx <- unique(as.integer(round(seq(1, n, length.out = min(n, max_points)))))
+    idx <- unique(as.integer(round(seq(1, n, length.out = min(n, maxPoints)))))
     meta <- as.data.frame(SummarizedExperiment::colData(x$object))
     colour <- if (!is.null(x$settings$group)) {
         as.character(meta[[x$settings$group]])
@@ -67,13 +67,13 @@
     } else {
         rep("observations", n)
     }
-    embedding_plot <- function(E, title) {
-        if (ncol(E) < 2L) {
+    embedding_plot <- function(expression, title) {
+        if (ncol(expression) < 2L) {
             return(NULL)
         }
         frame <- data.frame(
-            axis1 = E[idx, 1],
-            axis2 = E[idx, 2],
+            axis1 = expression[idx, 1],
+            axis2 = expression[idx, 2],
             group = colour[idx]
         )
         ggplot2::ggplot(
@@ -128,7 +128,7 @@
             take <- function(frame) frame[unique(as.integer(round(seq(
                 1,
                 nrow(frame),
-                length.out = min(nrow(frame), max_points)
+                length.out = min(nrow(frame), maxPoints)
             )))), ]
             before <- take(a$before)
             after <- take(a$after)
@@ -188,8 +188,8 @@
 }
 
 .wf_validate_report <- function(
-    result, output_dir, max_points, preview_features,
-    preview_points, table_rows, interactive
+    result, outputDir, maxPoints, previewFeatures,
+    previewPoints, tableRows, interactive
 ) {
     if (!inherits(result, "spamtp_workflow") || !identical(result$schema_version, 1L)) {
         stop(
@@ -197,20 +197,20 @@
             call. = FALSE
         )
     }
-    .wf_number(max_points, "max_points", 3, TRUE)
-    .wf_number(preview_features, "preview_features", 1, TRUE)
-    .wf_number(preview_points, "preview_points", 3, TRUE)
-    .wf_number(table_rows, "table_rows", 1, TRUE)
+    .wf_number(maxPoints, "max_points", 3, TRUE)
+    .wf_number(previewFeatures, "preview_features", 1, TRUE)
+    .wf_number(previewPoints, "preview_points", 3, TRUE)
+    .wf_number(tableRows, "table_rows", 1, TRUE)
     if (!is.logical(interactive) || length(interactive) != 1 || is.na(interactive)) {
         stop("interactive must be TRUE or FALSE.", call. = FALSE)
     }
-    if (!is.character(output_dir) || length(output_dir) != 1L || !nzchar(output_dir)) {
-        stop("output_dir must be a directory path.", call. = FALSE)
+    if (!is.character(outputDir) || length(outputDir) != 1L || !nzchar(outputDir)) {
+        stop("outputDir must be a directory path.", call. = FALSE)
     }
-    if (file.exists(output_dir) && (!dir.exists(output_dir) ||
-        length(list.files(output_dir, all.files = TRUE, no.. = TRUE)))) {
+    if (file.exists(outputDir) && (!dir.exists(outputDir) ||
+        length(list.files(outputDir, all.files = TRUE, no.. = TRUE)))) {
         stop(
-            "output_dir must be new or empty; existing reports are preserved.",
+            "outputDir must be new or empty; existing reports are preserved.",
             call. = FALSE
         )
     }
@@ -319,11 +319,11 @@
 }
 
 .wf_write_report_records <- function(
-    result, staging, html, plots, table_index
+    result, staging, html, plots, tableIndex
 ) {
     writeLines(html, file.path(staging, "report.html"), useBytes = TRUE)
     utils::write.csv(
-        table_index$collect(),
+        tableIndex$collect(),
         file.path(staging, "table_index.csv"),
         row.names = FALSE
     )
@@ -358,14 +358,14 @@
 #' overwritten. A report is published to output_dir only after rendering
 #' succeeds.
 #' @param result A spamtp_workflow result from runSpaMTPWorkflow.
-#' @param output_dir New or empty output directory.
-#' @param max_points Maximum observations displayed per scatter plot. Analyses
+#' @param outputDir New or empty output directory.
+#' @param maxPoints Maximum observations displayed per scatter plot. Analyses
 #'   and exported tables are not subsampled.
 #' @param interactive Embed an offline region/DE explorer using local
 #'   JavaScript.
-#' @param preview_features Maximum feature profiles embedded in the explorer.
-#' @param preview_points Maximum spatial/distribution observations embedded.
-#' @param table_rows Maximum preloaded ranked rows per region or contrast.
+#' @param previewFeatures Maximum feature profiles embedded in the explorer.
+#' @param previewPoints Maximum spatial/distribution observations embedded.
+#' @param tableRows Maximum preloaded ranked rows per region or contrast.
 #'   Full tables are exported independently of this preview limit.
 #' @return Absolute path to report.html, invisibly.
 #' @export
@@ -377,27 +377,27 @@
 #'         main = list(type = "metabolomics", layer = "logcounts"),
 #'         transcriptome = list(type = "transcriptomics", layer = "logcounts")
 #'     ),
-#'     npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+#'     npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
 #'     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 #' )
 #' folder <- tempfile("report-")
-#' report <- renderSpaMTPReport(fit, folder, interactive = FALSE, max_points = 24)
+#' report <- renderSpaMTPReport(fit, folder, interactive = FALSE, maxPoints = 24)
 #' basename(report)
 #' unlink(folder, recursive = TRUE)
 renderSpaMTPReport <- function(
-    result, output_dir, max_points = 5000,
-    interactive = TRUE, preview_features = 180, preview_points = min(max_points, 2000), table_rows = 1000
+    result, outputDir, maxPoints = 5000,
+    interactive = TRUE, previewFeatures = 180, previewPoints = min(maxPoints, 2000), tableRows = 1000
 ) {
     .wf_validate_report(
-        result, output_dir, max_points, preview_features,
-        preview_points, table_rows, interactive
+        result, outputDir, maxPoints, previewFeatures,
+        previewPoints, tableRows, interactive
     )
-    dir.create(dirname(output_dir), recursive = TRUE, showWarnings = FALSE)
-    output_dir <- file.path(
-        normalizePath(dirname(output_dir), mustWork = TRUE),
-        basename(output_dir)
+    dir.create(dirname(outputDir), recursive = TRUE, showWarnings = FALSE)
+    outputDir <- file.path(
+        normalizePath(dirname(outputDir), mustWork = TRUE),
+        basename(outputDir)
     )
-    staging <- tempfile(".spamtp-report-", tmpdir = dirname(output_dir))
+    staging <- tempfile(".spamtp-report-", tmpdir = dirname(outputDir))
     dir.create(staging)
     on.exit(unlink(staging, recursive = TRUE), add = TRUE)
     dir.create(file.path(staging, "tables"))
@@ -418,20 +418,20 @@ renderSpaMTPReport <- function(
             nrow(data), " rows)</a></p>", .wf_html_table(preview)
         )
     }
-    basic <- .wf_report_plots(result, max_points)
-    native_plots <- .wf_native_plots(result, max_points)
+    basic <- .wf_report_plots(result, maxPoints)
+    native_plots <- .wf_native_plots(result, maxPoints)
     if (!is.null(result$structure)) {
         basic <- basic[!grepl("^(pca_|joint|spatial)", names(basic))]
         native_plots <- native_plots[grepl("^native_pathway", names(native_plots))]
     }
-    plots <- c(basic, native_plots, .wf_analysis_plots(result, max_points))
+    plots <- c(basic, native_plots, .wf_analysis_plots(result, maxPoints))
     plot_html <- .wf_report_figures(plots, staging)
     plot_group <- function(prefix) paste(
         unlist(plot_html[startsWith(names(plot_html), prefix)]),
         collapse = ""
     )
     widgets <- if (interactive) {
-        .wf_native_widgets(result, staging, min(max_points, 3000))
+        .wf_native_widgets(result, staging, min(maxPoints, 3000))
     } else {
         list(
             html = list(associations = character(), pathways = character()),
@@ -579,7 +579,7 @@ renderSpaMTPReport <- function(
         )
     }
     regionbody <- if (interactive && !is.null(result$region_analysis)) {
-        .wf_explorer_html(result, preview_points, preview_features, table_rows)
+        .wf_explorer_html(result, previewPoints, previewFeatures, tableRows)
     } else {
         '<p class="method-note">Interactive browsing is disabled or region summaries are absent. Use analyzeSpaMTPRegions() to add summaries to an earlier workflow result.</p>'
     }
@@ -890,35 +890,35 @@ renderSpaMTPReport <- function(
         section("methods", "Methods and reproducibility", provenance)
     )
     html <- .wf_report_page(result$title, content, interactive)
-    result$report <- file.path(output_dir, "report.html")
+    result$report <- file.path(outputDir, "report.html")
     result$report_settings <- list(
-        interactive = interactive, max_points = max_points,
-        preview_points = preview_points, preview_features = preview_features, table_rows = table_rows,
+        interactive = interactive, max_points = maxPoints,
+        preview_points = previewPoints, preview_features = previewFeatures, table_rows = tableRows,
         renderer_version = as.character(utils::packageVersion("SpaMTP"))
     )
     .wf_write_report_records(result, staging, html, plots, table_index)
-    .wf_publish_report(staging, output_dir)
-    invisible(file.path(output_dir, "report.html"))
+    .wf_publish_report(staging, outputDir)
+    invisible(file.path(outputDir, "report.html"))
 }
 
-.wf_publish_report <- function(staging, output_dir) {
+.wf_publish_report <- function(staging, outputDir) {
     # Rendering may take time: check again before removing the destination.
-    if (file.exists(output_dir)) {
-        if (!dir.exists(output_dir) ||
-            length(list.files(output_dir, all.files = TRUE, no.. = TRUE))) {
-            stop("output_dir must still be empty; existing files are preserved.",
+    if (file.exists(outputDir)) {
+        if (!dir.exists(outputDir) ||
+            length(list.files(outputDir, all.files = TRUE, no.. = TRUE))) {
+            stop("outputDir must still be empty; existing files are preserved.",
                 call. = FALSE
             )
         }
         # recursive=FALSE leaves even empty directories in place. Windows cannot
         # replace that directory with the completed staging directory by renaming.
-        if (unlink(output_dir, recursive = TRUE, expand = FALSE) != 0L ||
-            dir.exists(output_dir)) {
+        if (unlink(outputDir, recursive = TRUE, expand = FALSE) != 0L ||
+            dir.exists(outputDir)) {
             stop("Could not remove the empty report directory.", call. = FALSE)
         }
     }
-    if (!file.rename(staging, output_dir)) {
+    if (!file.rename(staging, outputDir)) {
         stop("Could not publish rendered report directory.", call. = FALSE)
     }
-    invisible(output_dir)
+    invisible(outputDir)
 }

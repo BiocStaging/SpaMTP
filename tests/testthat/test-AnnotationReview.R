@@ -16,7 +16,7 @@ test_that("accurate CHO acids and large lipids retain their chemical evidence", 
     for (mode in c("positive", "negative")) {
         adduct <- if (mode == "positive") "M+H" else "M-H"
         index <- buildMZAnnotationIndex(review_db(c("C2H2O4", "C60H116O6", "C61H114O6")),
-            polarity = mode, adducts = adduct, infer_structure = "never")
+            polarity = mode, adducts = adduct, inferStructure = "never")
         result <- queryMZAnnotationIndex(index$expected_mz, index, ppm = 0)
         expect_equal(result$chemical_score, rep(1, 3))
         expect_equal(result$mass_score, rep(1, 3))
@@ -42,7 +42,7 @@ test_that("equal-mass features receive one copy of each candidate", {
     expect_equal(nrow(table), 3L)
     expect_setequal(table$ID, c(8, 2, 5))
     obj <- annotateSM(review_spe(rep(mz, 3)), index = index, ppm = 0,
-        return.only.annotated = FALSE, verbose = FALSE)
+        returnOnlyAnnotated = FALSE, verbose = FALSE)
     expect_equal(nrow(annotationCandidates(obj)), 3L)
     expect_equal(annotationInfo(obj)$candidates, 3L)
     expect_identical(as.character(SummarizedExperiment::rowData(obj)$all_IsomerNames), rep("candidate 1", 3))
@@ -53,7 +53,7 @@ test_that("equal-mass features receive one copy of each candidate", {
 
 test_that("index reuse honors restrictions and rejects conflicting construction options", {
     db <- review_db()
-    index <- buildMZAnnotationIndex(db, adducts = c("M+H", "M+Na"), infer_structure = "never")
+    index <- buildMZAnnotationIndex(db, adducts = c("M+H", "M+Na"), inferStructure = "never")
     mz <- index$expected_mz
     hit <- annotateMZ(mz, index = index, adducts = "M+Na", ppm = 0)
     expect_identical(hit$adduct, "M+Na")
@@ -63,23 +63,23 @@ test_that("index reuse honors restrictions and rejects conflicting construction 
     expect_error(annotateMZ(mz, index = index, adducts = "M+K"), "unavailable")
     expect_error(annotateMZ(mz, index = index, db = db), "omit db")
     expect_error(annotateMZ(mz, index = index, rules = adductRules()), "omit db")
-    expect_error(annotateMZ(mz, index = index, infer_structure = "always"), "infer_structure")
-    expect_error(annotateMZ(mz, index = index, min_structure_score = 0.9), "min_structure_score")
-    expect_silent(annotateMZ(mz, index = index, infer_structure = "never"))
+    expect_error(annotateMZ(mz, index = index, inferStructure = "always"), "inferStructure")
+    expect_error(annotateMZ(mz, index = index, minStructureScore = 0.9), "minStructureScore")
+    expect_silent(annotateMZ(mz, index = index, inferStructure = "never"))
     expect_length(index$expected_mz, 2L)
 })
 
 test_that("annotation storage and inspection never fetch database provenance", {
     local_mocked_bindings(.spamtp_db_resource = function(...) stop("unexpected resource fetch"))
     db <- review_db()
-    index <- buildMZAnnotationIndex(db, adducts = "M+H", infer_structure = "never")
+    index <- buildMZAnnotationIndex(db, adducts = "M+H", inferStructure = "never")
     obj <- annotateSM(review_spe(index$expected_mz), index = index, ppm = 0,
-        verbose = FALSE, return.only.annotated = FALSE)
+        verbose = FALSE, returnOnlyAnnotated = FALSE)
     expect_true(is.na(annotationInfo(obj)$ramp_version))
     S4Vectors::metadata(obj)$mz_annotation <- NULL
     expect_true(is.na(annotationInfo(obj)$ramp_version))
     attr(db, "spamtp_database") <- list(version = "test-release", source = "spamtpdb")
-    index <- buildMZAnnotationIndex(db, adducts = "M+H", infer_structure = "never")
+    index <- buildMZAnnotationIndex(db, adducts = "M+H", inferStructure = "never")
     obj <- annotateSM(review_spe(index$expected_mz), index = index, verbose = FALSE)
     expect_identical(annotationInfo(obj)$ramp_version, "test-release")
 })
@@ -89,16 +89,16 @@ test_that("custom labels append without erasing unmatched annotations", {
     SummarizedExperiment::rowData(obj)$all_IsomerNames <- c("2-HG", "hexose; inositol", "No Annotation")
     SummarizedExperiment::rowData(obj)$all_Scores <- c("0.9", "0.8; 0.8", "No Annotation")
     labels <- data.frame(annotation = c("manual", "candidate A"), mass = c(100, 500.125))
-    out <- addCustomMZAnnotations(obj, labels, mass.threshold = 0.125)
+    out <- addCustomMZAnnotations(obj, labels, massThreshold = 0.125)
     rd <- SummarizedExperiment::rowData(out)
     expect_identical(as.character(rd$all_IsomerNames), c("2-HG; manual", "hexose; inositol", "candidate A"))
     expect_identical(rd$all_Scores, SummarizedExperiment::rowData(obj)$all_Scores)
     expect_equal(as.numeric(rd$mass_diff_da[3]), 0.125)
     expect_equal(as.numeric(rd$ppm_diff[3]), 0.125 / 500.125 * 1e6)
-    out <- addCustomMZAnnotations(obj, labels, mass.threshold = 0, append = FALSE)
+    out <- addCustomMZAnnotations(obj, labels, massThreshold = 0, append = FALSE)
     expect_identical(as.character(SummarizedExperiment::rowData(out)$all_IsomerNames),
         c("manual", "hexose; inositol", "No Annotation"))
-    again <- addCustomMZAnnotations(out, labels[1, ], mass.threshold = 0)
+    again <- addCustomMZAnnotations(out, labels[1, ], massThreshold = 0)
     expect_identical(SummarizedExperiment::rowData(again)$all_IsomerNames,
         SummarizedExperiment::rowData(out)$all_IsomerNames)
 })
@@ -110,7 +110,7 @@ test_that("curated FMP10 stores use exact reference row identities and ppm error
         Formula = "C8H11NO2", Isomers = "dopamine", Isomers_IDs = "hmdb:1", IsomerNames = "dopamine derivative")
     database <- list(filtered_fmp10 = reference, chem_props = data.frame(ramp_id = "RAMP_C_1", chem_source_id = "hmdb:1"))
     obj <- review_spe(c(mass, mass, 900))
-    out <- addFMP10Annotations(obj, database = database, mass.threshold = 0)
+    out <- addFMP10Annotations(obj, database = database, massThreshold = 0)
     candidates <- annotationCandidates(out)
     expect_equal(nrow(candidates), 2L)
     expect_identical(candidates$Reference_mz, rep(mass, 2))
@@ -137,11 +137,11 @@ test_that("literal annotation lookup and metadata helpers handle edge cases", {
     obj <- review_spe(c(100, 200, 300, 400, 500))
     SummarizedExperiment::rowData(obj)$all_IsomerNames <- c("2-{[amino]}acetic acid; a|b", "banana; 17xbeta", "17.beta", "No Annotation", "No Annotation")
     expect_identical(rownames(searchAnnotations(obj, "a|b")), "ion1")
-    expect_identical(rownames(searchAnnotations(obj, "2-{[amino]}acetic acid", search.exact = TRUE)), "ion1")
+    expect_identical(rownames(searchAnnotations(obj, "2-{[amino]}acetic acid", searchExact = TRUE)), "ion1")
     expect_identical(rownames(searchAnnotations(obj, "17.beta")), "ion3")
     expect_identical(findDuplicateAnnotations(obj), character())
     expect_error(getMZMetadata(obj, "missing"), "Unknown m/z feature: 'missing'")
-    expect_error(getMZMetadata(obj, "ion1", metadata.column = "missing"), "metadata column")
+    expect_error(getMZMetadata(obj, "ion1", metadataColumn = "missing"), "metadata column")
     expect_length(getMZMetadata(obj, "ion1"), 2L)
     expect_equal(nrow(getRefinedAnnotations(obj, n = 0)), 0L)
     expect_identical(rownames(getRefinedAnnotations(obj, n = 1)), "ion3")
@@ -153,7 +153,7 @@ test_that("refinement counts stored candidates rather than semicolons in names",
     db$isomers_names <- "hexose; glucose"
     index <- buildMZAnnotationIndex(db, adducts = "M+H")
     obj <- annotateSM(review_spe(c(index$expected_mz, 999)), index = index,
-        return.only.annotated = FALSE, verbose = FALSE)
+        returnOnlyAnnotated = FALSE, verbose = FALSE)
     expect_identical(rownames(getRefinedAnnotations(obj, n = 1)), "ion1")
 })
 
@@ -174,15 +174,15 @@ test_that("isotope evidence accounts for multimers and derivatization carbons", 
         carbon <- if (adduct == "2M+H") 12 else 8
         mz <- index$expected_mz
         spectrum <- data.frame(mz = c(mz, mz + 1.00335483507), intensity = c(100, 100 * carbon * 0.0107))
-        out <- queryMZAnnotationIndex(mz, index, ms1_spectrum = spectrum, check_adduct_network = FALSE)
+        out <- queryMZAnnotationIndex(mz, index, ms1Spectrum = spectrum, checkAdductNetwork = FALSE)
         expect_equal(out$isotope_score, 1)
     }
     db <- review_db("C8H11NO2")
     db$fmp10_reactive_sites <- 3
-    index <- buildMZAnnotationIndex(db, maldi_matrix = "FMP-10", adducts = "M+FMP10")
+    index <- buildMZAnnotationIndex(db, maldiMatrix = "FMP-10", adducts = "M+FMP10")
     mz <- index$expected_mz
     out <- queryMZAnnotationIndex(mz, index,
-        ms1_spectrum = data.frame(mz = c(mz, mz + 1.00335483507), intensity = c(100, 29.96)))
+        ms1Spectrum = data.frame(mz = c(mz, mz + 1.00335483507), intensity = c(100, 29.96)))
     expect_equal(out$isotope_score, 1)
 })
 
@@ -191,17 +191,17 @@ test_that("adduct aliases are deduplicated and FDR supports numeric spectra", {
     expect_length(index$expected_mz, 1L)
     mz <- index$expected_mz
     expect_equal(nrow(queryMZAnnotationIndex(mz, index)), 1L)
-    expect_error(estimateAnnotationFDR(mz, index, ppm = 0), "Supply non-zero shifts_da")
-    expect_s3_class(estimateAnnotationFDR(mz, index, ppm = 0, shifts_da = c(-1, 1)), "spamtp_annotation_fdr")
-    a <- estimateAnnotationFDR(mz, index, ms1_spectrum = c(mz + 1, mz))
-    b <- estimateAnnotationFDR(mz, index, ms1_spectrum = data.frame(mz = c(mz + 1, mz), intensity = 1))
+    expect_error(estimateAnnotationFDR(mz, index, ppm = 0), "Supply non-zero shiftsDa")
+    expect_s3_class(estimateAnnotationFDR(mz, index, ppm = 0, shiftsDa = c(-1, 1)), "spamtp_annotation_fdr")
+    a <- estimateAnnotationFDR(mz, index, ms1Spectrum = c(mz + 1, mz))
+    b <- estimateAnnotationFDR(mz, index, ms1Spectrum = data.frame(mz = c(mz + 1, mz), intensity = 1))
     expect_equal(a, b)
 })
 
 test_that("annotation rejects mistyped mass columns and missing feature names", {
     index <- buildMZAnnotationIndex(review_db(), adducts = "M+H")
     obj <- review_spe(index$expected_mz)
-    expect_error(annotateSM(obj, index = index, raw.mz.column = "typo"), "column 'typo'")
+    expect_error(annotateSM(obj, index = index, rawMzColumn = "typo"), "column 'typo'")
     rownames(obj) <- NULL
     expect_error(annotateSM(obj, index = index), "feature rownames")
 })
@@ -215,11 +215,11 @@ test_that("explicit structure parsing choices do not fetch precomputed tables", 
     db <- review_db("C6H7NO2S")
     db$smiles <- "NS(=O)(=O)c1ccccc1"
     attr(db, "spamtp_database") <- list(source = "spamtpdb", version = "old")
-    buildMZAnnotationIndex(db, adducts = "M+H", infer_structure = "never")
+    buildMZAnnotationIndex(db, adducts = "M+H", inferStructure = "never")
     db$structure_valid <- TRUE
     db$primary_amine_sites <- 1
     db$fmp10_reactive_sites <- 1
-    refreshed <- buildMZAnnotationIndex(db, adducts = "M+H", infer_structure = "always")
+    refreshed <- buildMZAnnotationIndex(db, adducts = "M+H", inferStructure = "always")
     expect_equal(calls, 0L)
     expect_equal(refreshed$compounds$primary_amine_sites, 0)
     expect_equal(refreshed$compounds$fmp10_reactive_sites, 0)

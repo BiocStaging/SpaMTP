@@ -5,32 +5,32 @@
 \title{Core METASPACE Data Retrieval}
 \usage{
 getMetaspace(
-  dataset_id,
+  datasetId,
   fdr = 0.1,
   database = c("HMDB", "v4"),
-  include_images = TRUE,
-  api_key = NULL,
-  isotope_idx = 1,
+  includeImages = TRUE,
+  apiKey = NULL,
+  isotopeIdx = 1,
   relative = TRUE,
   verbose = TRUE,
   BPPARAM = BiocParallel::SerialParam(progressbar = verbose)
 )
 }
 \arguments{
-\item{dataset_id}{Character string of the METASPACE dataset ID.}
+\item{datasetId}{Character string of the METASPACE dataset ID.}
 
 \item{fdr}{Numeric, the FDR level threshold (default = 0.1).}
 
 \item{database}{Character vector, specifying the database name and version
 (default = c("HMDB", "v4")).}
 
-\item{include_images}{Logical, if TRUE, downloads all ion image matrices
+\item{includeImages}{Logical, if TRUE, downloads all ion image matrices
 (default = TRUE).}
 
-\item{api_key}{Optional character string, your METASPACE API key (default =
+\item{apiKey}{Optional character string, your METASPACE API key (default =
 NULL).}
 
-\item{isotope_idx}{Integer, index of the isotope image to download for all
+\item{isotopeIdx}{Integer, index of the isotope image to download for all
 annotations (1 for main peak) (default = 1).}
 
 \item{relative}{Logical, if TRUE, normalizes pixel intensities (0-1 range)
@@ -56,7 +56,7 @@ images for a METASPACE dataset.
 # Requires the METASPACE service and an internet connection.
 if (interactive()) {
     result <- getMetaspace("2020-12-07_03h16m14s",
-        include_images = FALSE,
+        includeImages = FALSE,
         verbose = FALSE
     )
     head(result$annotations)

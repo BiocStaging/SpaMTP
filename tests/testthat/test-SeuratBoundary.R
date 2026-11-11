@@ -85,13 +85,13 @@ test_that("PCA and expression plots use the requested alternative experiment", {
     expect_error(runMetabolicPCA(object, npcs = 0), "npcs")
     result <- suppressWarnings(runMetabolicPCA(object,
         npcs = NULL,
-        variance_explained_threshold = 0.8
+        varianceExplainedThreshold = 0.8
     ))
     expect_gte(sum(attr(SingleCellExperiment::reducedDim(result, "pca"), "percentVar")), 80)
     skip_if_not_installed("scater")
     expect_s3_class(mzViolinPlot(object,
         assay = "transcriptome", mzs = "gene2",
-        group.by = "region"
+        groupBy = "region"
     ), "ggplot")
 })
 
@@ -290,7 +290,7 @@ test_that("native annotation and feature subsetting do not use Seurat assay inde
     expect_identical(rownames(SingleCellExperiment::altExp(selected, "transcriptome")), "gene2")
     expect_error(subsetMZFeatures(object, "absent"), "selected experiment")
     custom <- data.frame(annotation = "target", mass = 100)
-    selected <- addCustomMZAnnotations(object, custom, return.only.annotated = TRUE)
+    selected <- addCustomMZAnnotations(object, custom, returnOnlyAnnotated = TRUE)
     expect_identical(rownames(selected), "a")
     expect_equal(SummarizedExperiment::rowData(selected)$all_IsomerNames, "target")
     expect_equal(SingleCellExperiment::altExp(selected, "transcriptome"), originalTranscriptome)
@@ -307,7 +307,7 @@ test_that("native annotation and feature subsetting do not use Seurat assay inde
     expect_true(is.list(S4Vectors::metadata(result)$mz_annotation))
     result <- annotateSM(object,
         index = index, ppm = 5,
-        return.only.annotated = FALSE, verbose = FALSE
+        returnOnlyAnnotated = FALSE, verbose = FALSE
     )
     expect_identical(rownames(result), rownames(object))
     expect_true(is.numeric(SummarizedExperiment::rowData(result)$mz))
@@ -330,7 +330,7 @@ test_that("curated FMP10 annotations retain panel fields and arbitrary feature I
     )
     result <- addFMP10Annotations(object,
         database = database,
-        return.only.annotated = TRUE
+        returnOnlyAnnotated = TRUE
     )
     expect_identical(rownames(result), "a")
     expect_identical(SummarizedExperiment::rowData(result)$all_Ramp_IDs, "RAMP_C_1")

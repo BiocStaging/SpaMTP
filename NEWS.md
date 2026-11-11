@@ -1,5 +1,20 @@
 # SpaMTP 0.99.18
 
+* Public arguments now use lower camel case, with the conventional
+  Bioconductor `BPPARAM` name retained. For example, `SM.assay` and `SM_assay`
+  become `smAssay`, and annotation functions share `minScore`. See
+  `help("argumentNaming")` and `extdata/argument-renames.csv` for the
+  complete migration table. Update named calls to the new spelling.
+* `foldChangeThreshold` replaces the misleading `logFC_threshold` in
+  `findAllDEMs()` and `runDE()`. It is a finite fold-change ratio at least 1;
+  invalid values are rejected before pooling or fitting. The default 1.2
+  tests against a 20 percent change. `demsHeatmap()` uses `logFCThreshold`
+  for its filter on the returned log-fold-change values.
+* `workflowMetrics()` and `annotationIndexIons()` expose the tables used by
+  the guides. `summarizeFeatures()` can summarize paired ion and gene features
+  in one call, replacing the manual guide 7 summary.
+* Removed the unused `SM.boundary` argument from `applySpatialAlignment()`.
+* Added the maintainer's ORCID to the package metadata.
 * Marker ranking is now the default in `findAllDEMs()`. Explicit technical
   pooling divides sums by the number of pixels before the log2 transform;
   unequal region sizes no longer appear as fold changes. Random pools remain
@@ -7,11 +22,7 @@
 * `normalizeSMData(..., "LogNormalize")` and TMM log output use log2 units,
   matching `runSpaMTPWorkflow()`. Previously saved natural-log layers require
   explicit conversion or recomputation before comparing effect sizes.
-* Pre-release interface cleanup: annotation tolerances use `ppm` (default 5),
-  `check_formula_mass` names the formula/ion consistency check, and
-  `corr_threshold` replaces the misspelling. Functions creating an alternative
-  experiment share `outputExperiment`; `outputAssay` denotes an expression
-  matrix. Removed unused compatibility arguments and private helper help pages.
+* Removed unused compatibility arguments and private helper help pages.
 * `getKmeanClusters()` defaults to the `pca` reduction produced by
   `runMetabolicPCA()`. Clustering and ion plots support unnamed observations by
   position. Finite-value checks preserve sparse assays.
@@ -22,11 +33,6 @@
   results and descriptive summaries used in the guides.
 * Pathway interaction preparation and historical snapshot corrections now
   belong to SpaMTPdb (>= 0.99.6), including provenance and regression tests.
-
-# SpaMTP 0.99.17
-
-Changes in response to the Bioconductor review of 30 October 2026.
-
 * Annotation accuracy and usability review: CHO scoring checks formula/ion
   mass consistency instead of penalizing negative fractional mass defects.
   FMP10 product masses include the electron correction; isotope scoring
@@ -34,7 +40,7 @@ Changes in response to the Bioconductor review of 30 October 2026.
   counts distinguish amines from nitro, sulfonamide and quaternary nitrogen,
   and alcohols from phosphate OH groups.
   Rebuild saved indexes to apply corrected rules. Use
-  `infer_structure = "always"` to refresh older precomputed structure columns;
+  `inferStructure = "always"` to refresh older precomputed structure columns;
   `"never"` and `"always"` no longer fetch a precomputed structure table.
 * Equal-mass features no longer multiply candidate rows. Index reuse honors
   adduct restrictions and rejects conflicting construction settings. Stored
@@ -54,7 +60,7 @@ Changes in response to the Bioconductor review of 30 October 2026.
 * Annotation search treats punctuation literally, refinement counts stored
   candidates when available and excludes unannotated features, and single-pixel
   QC profiles no longer fail. Numeric pathway-statistics queries require a
-  match within `mz.ppm` (default 5) and reject ambiguous nearest features.
+  match within `mzPpm` (default 5) and reject ambiguous nearest features.
   Explicitly missing mass columns and unnamed features give actionable errors.
 
 * Compound pathway assays follow preserved feature identities after renaming,
@@ -103,7 +109,7 @@ Changes in response to the Bioconductor review of 30 October 2026.
   Serial execution is the default; progress follows `verbose` unless an
   explicit parameter object is supplied. This replaces `nproc`, `workers`
   and `structure_workers` and never changes the session's future plan.
-* The variance plot requested by `runMetabolicPCA(show_variance_plot = TRUE)`
+* The variance plot requested by `runMetabolicPCA(showVariancePlot = TRUE)`
   is stored in `metadata()$reduction_plots` instead of printed.
 * `densityMap()` exports an offline viewer using the plotly R package and
   bundled d3. Copy its HTML and `density_map_files` directory together.

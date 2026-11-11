@@ -38,11 +38,11 @@
     resources
 }
 
-.spamtp_db_cache_key <- function(resource, version, source, local_dir, verify) {
-    local_key <- if (is.null(local_dir)) {
+.spamtp_db_cache_key <- function(resource, version, source, localDir, verify) {
+    local_key <- if (is.null(localDir)) {
         "<default>"
     } else {
-        normalizePath(local_dir, mustWork = FALSE)
+        normalizePath(localDir, mustWork = FALSE)
     }
     paste(
         resource,
@@ -73,7 +73,7 @@
     resource,
     version = "latest",
     source = c("auto", "spamtpdb"),
-    local_dir = NULL,
+    localDir = NULL,
     hub = NULL,
     offline = FALSE,
     refresh = FALSE,
@@ -90,12 +90,12 @@
     if (!is.logical(verify) || length(verify) != 1L || is.na(verify)) {
         stop("verify must be TRUE or FALSE.", call. = FALSE)
     }
-    if (is.null(local_dir)) {
+    if (is.null(localDir)) {
         configured <- getOption("SpaMTPdb.resource_dir", "")
         if (!nzchar(configured)) configured <- Sys.getenv("SPAMTPDB_RESOURCE_DIR", "")
-        if (nzchar(configured)) local_dir <- configured
+        if (nzchar(configured)) localDir <- configured
     }
-    key <- .spamtp_db_cache_key(resource, version, source, local_dir, verify)
+    key <- .spamtp_db_cache_key(resource, version, source, localDir, verify)
     if (!isTRUE(refresh) && exists(key, envir = .spamtp_db_cache, inherits = FALSE)) {
         return(get(key, envir = .spamtp_db_cache, inherits = FALSE))
     }
@@ -111,7 +111,7 @@
     value <- SpaMTPdb::spaMTPdbResource(
         resource = resource,
         version = version,
-        local_dir = local_dir,
+        local_dir = localDir,
         hub = hub,
         offline = offline,
         verify = verify
@@ -132,7 +132,7 @@
             resource_metadata$location_prefix[[1L]],
             resource_metadata$rdata_path[[1L]]
         ),
-        local_dir = local_dir,
+        local_dir = localDir,
         offline = offline,
         verify_local = verify
     )
@@ -145,7 +145,7 @@
     database = NULL,
     version = "latest",
     source = c("auto", "spamtpdb"),
-    local_dir = NULL,
+    localDir = NULL,
     hub = NULL,
     offline = FALSE,
     refresh = FALSE,
@@ -180,7 +180,7 @@
             resource = resource,
             version = version,
             source = source,
-            local_dir = local_dir,
+            localDir = localDir,
             hub = hub,
             offline = offline,
             refresh = refresh,
@@ -212,7 +212,7 @@
 #'   resources through SpaMTPdb.
 #' @param database Optional named list containing the requested resources. When
 #'   supplied, no Hub lookup is performed.
-#' @param local_dir Optional directory containing staged SpaMTPdb `.rds` files.
+#' @param localDir Optional directory containing staged SpaMTPdb `.rds` files.
 #' @param hub Optional pre-created `AnnotationHub` object passed to SpaMTPdb.
 #' @param offline If `TRUE`, do not query AnnotationHub.
 #' @param refresh If `TRUE`, bypass SpaMTP's in-session resource cache.
@@ -244,7 +244,7 @@ loadSpaMTPDatabase <- function(
     version = "latest",
     source = c("auto", "spamtpdb"),
     database = NULL,
-    local_dir = NULL,
+    localDir = NULL,
     hub = NULL,
     offline = FALSE,
     refresh = FALSE,
@@ -255,7 +255,7 @@ loadSpaMTPDatabase <- function(
         database = database,
         version = version,
         source = match.arg(source),
-        local_dir = local_dir,
+        localDir = localDir,
         hub = hub,
         offline = offline,
         refresh = refresh,

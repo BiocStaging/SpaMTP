@@ -7,9 +7,9 @@
 #' @param gene Exact feature name in ST.assay.
 #' @param ident A colData column defining groups. Supply exactly one of mz,
 #'   gene and ident. Groups are compared with binary membership vectors.
-#' @param SM.assay MSI experiment name; `main` selects the primary
+#' @param smAssay MSI experiment name; `main` selects the primary
 #'   experiment. Legacy `SPM` and `Spatial` also select the primary experiment.
-#' @param ST.assay Alternative experiment name, or NULL for metabolites only.
+#' @param stAssay Alternative experiment name, or NULL for metabolites only.
 #' @param smAssayName Assay containing metabolite values.
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param stAssayName Assay containing transcriptomic values.
@@ -34,8 +34,8 @@
 #' )
 #' findCorrelatedFeatures(x, mz = 100)
 findCorrelatedFeatures <- function(
-    data, mz = NULL, gene = NULL, ident = NULL, SM.assay = "main",
-    ST.assay = NULL, smAssayName = "counts", stAssayName = "counts", nfeatures = 10,
+    data, mz = NULL, gene = NULL, ident = NULL, smAssay = "main",
+    stAssay = NULL, smAssayName = "counts", stAssayName = "counts", nfeatures = 10,
     covariates = NULL, features = NULL
 ) {
     data <- .nativeSpatialObject(data)
@@ -43,13 +43,13 @@ findCorrelatedFeatures <- function(
         stop("Supply exactly one of mz, gene, and ident.", call. = FALSE)
     }
     .validateFeatureCount(nfeatures, "nfeatures", allowNull = TRUE)
-    metabolites <- .assayData(data, SM.assay, smAssayName)
+    metabolites <- .assayData(data, smAssay, smAssayName)
     matrices <- list(metabolite = metabolites)
-    if (!is.null(ST.assay)) {
-        if (!ST.assay %in% SingleCellExperiment::altExpNames(data)) {
-            stop("ST.assay must name an alternative experiment.", call. = FALSE)
+    if (!is.null(stAssay)) {
+        if (!stAssay %in% SingleCellExperiment::altExpNames(data)) {
+            stop("stAssay must name an alternative experiment.", call. = FALSE)
         }
-        transcripts <- .assayData(data, ST.assay, stAssayName)
+        transcripts <- .assayData(data, stAssay, stAssayName)
         if (is.null(colnames(transcripts)) ||
             !setequal(colnames(transcripts), colnames(metabolites))) {
             stop(
@@ -60,13 +60,13 @@ findCorrelatedFeatures <- function(
         matrices$gene <- transcripts[, colnames(metabolites), drop = FALSE]
     }
     if (!is.null(mz)) {
-        feature <- if (is.numeric(mz)) findNearestMZ(data, mz, SM.assay) else mz
+        feature <- if (is.numeric(mz)) findNearestMZ(data, mz, smAssay) else mz
         if (length(feature) != 1L || !feature %in% rownames(metabolites)) {
             stop("mz must identify one primary feature.", call. = FALSE)
         }
         references <- list(reference = as.numeric(metabolites[feature, ]))
     } else if (!is.null(gene)) {
-        if (is.null(ST.assay) || length(gene) != 1L ||
+        if (is.null(stAssay) || length(gene) != 1L ||
             !gene %in% rownames(matrices$gene)) {
             stop("gene must identify one feature in ST.assay.", call. = FALSE)
         }
@@ -87,7 +87,7 @@ findCorrelatedFeatures <- function(
     # Numeric m/z queries were already validated by findNearestMZ above.
     masses <- tryCatch(
         .massValues(
-            .featureMetadata(data, SM.assay),
+            .featureMetadata(data, smAssay),
             rownames(metabolites)
         ),
         error = function(e) rep(NA_real_, nrow(metabolites))
@@ -143,7 +143,7 @@ findCorrelatedFeatures <- function(
                 features = rownames(expression), correlation = correlations[1, ],
                 correlation_raw = correlations[2, ],
                 modality = modality,
-                assay = if (modality == "metabolite") SM.assay else ST.assay,
+                assay = if (modality == "metabolite") smAssay else stAssay,
                 mz = if (modality == "metabolite") masses[match(rownames(expression), rownames(metabolites))] else NA_real_
             )
         })
@@ -235,7 +235,7 @@ findCorrelatedFeatures <- function(
 #' @param assayName Assay containing expression values.
 #'   See [experimentAccess] for the experiment/matrix distinction.
 #' @param nfeatures Maximum variable features selected.
-#' @param max_spots Maximum pixels for the dense distance matrix; NULL uses all.
+#' @param maxSpots Maximum pixels for the dense distance matrix; NULL uses all.
 #' @param seed Random seed for sampling; caller RNG state is restored.
 #' @param verbose Show progress messages.
 #' @param sampleId A sample_id in colData. Required for multiple samples.
@@ -256,12 +256,12 @@ findCorrelatedFeatures <- function(
 #' }
 findSpatiallyVariableMetabolites <- function(
     object, assay = "main", assayName = "counts", nfeatures = 2000,
-    max_spots = 5000, seed = 1, verbose = TRUE, sampleId = NULL
+    maxSpots = 5000, seed = 1, verbose = TRUE, sampleId = NULL
 ) {
-    if (!is.null(max_spots) &&
-        (!is.numeric(max_spots) || length(max_spots) != 1L ||
-            !is.finite(max_spots) || max_spots < 2 || max_spots != floor(max_spots))) {
-        stop("max_spots must be NULL or one finite number >= 2.", call. = FALSE)
+    if (!is.null(maxSpots) &&
+        (!is.numeric(maxSpots) || length(maxSpots) != 1L ||
+            !is.finite(maxSpots) || maxSpots < 2 || maxSpots != floor(maxSpots))) {
+        stop("maxSpots must be NULL or one finite number >= 2.", call. = FALSE)
     }
     if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed) ||
         abs(seed) > .Machine$integer.max) {
@@ -285,10 +285,10 @@ findSpatiallyVariableMetabolites <- function(
         stop("sampleId must identify one sample in colData.", call. = FALSE)
     }
     retained <- which(samples == sampleId)
-    if (!is.null(max_spots) && length(retained) > max_spots) {
+    if (!is.null(maxSpots) && length(retained) > maxSpots) {
         retained <- withr::with_seed(
             as.integer(seed),
-            sort(sample(retained, max_spots))
+            sort(sample(retained, maxSpots))
         )
     }
     if (length(retained) < 4L) {

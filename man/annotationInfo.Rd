@@ -4,10 +4,10 @@
 \alias{annotationInfo}
 \title{Inspect the metabolite annotation provenance stored in a SpaMTP object}
 \usage{
-annotationInfo(SpaMTP)
+annotationInfo(object)
 }
 \arguments{
-\item{SpaMTP}{A SingleCellExperiment, including SpatialExperiment.}
+\item{object}{A SingleCellExperiment, including SpatialExperiment.}
 }
 \value{
 A named list containing annotation schema, engine, RaMP version,

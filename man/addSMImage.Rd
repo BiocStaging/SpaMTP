@@ -5,8 +5,8 @@
 \title{Attach and optionally align an optical image to MSI}
 \usage{
 addSMImage(
-  image_path,
-  SpaMTP,
+  imagePath,
+  object,
   imageId = "optical",
   sampleId = NULL,
   scaleFactor = 1,
@@ -16,9 +16,9 @@ addSMImage(
 )
 }
 \arguments{
-\item{image_path}{Local image path.}
+\item{imagePath}{Local image path.}
 
-\item{SpaMTP}{A SpatialExperiment.}
+\item{object}{A SpatialExperiment.}
 
 \item{imageId}{Identifier for the attached image.}
 

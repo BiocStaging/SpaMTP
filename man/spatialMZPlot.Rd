@@ -12,14 +12,14 @@ spatialMZPlot(
   crop = TRUE,
   assay = "main",
   assayName = "counts",
-  keep.scale = "feature",
-  min.cutoff = NA,
-  max.cutoff = NA,
+  keepScale = "feature",
+  minCutoff = NA,
+  maxCutoff = NA,
   ncol = NULL,
   combine = TRUE,
-  pt.size.factor = 1.6,
+  ptSizeFactor = 1.6,
   alpha = c(1, 1),
-  image.alpha = 1,
+  imageAlpha = 1,
   stroke = 0.25,
   interactive = FALSE,
   information = NULL
@@ -41,21 +41,21 @@ spatialMZPlot(
 \item{assayName}{Expression assay name, e.g. "counts" or "logcounts".
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{keep.scale}{Colour scaling: "feature", "all" or "none"; NULL means
+\item{keepScale}{Colour scaling: "feature", "all" or "none"; NULL means
 "none".}
 
-\item{min.cutoff, max.cutoff}{One cutoff or one per query; numeric or
+\item{minCutoff, maxCutoff}{One cutoff or one per query; numeric or
 quantile strings such as "q10". NA uses the observed range.}
 
 \item{ncol}{Number of columns in combined plots.}
 
 \item{combine}{Combine panels; FALSE returns a list of ggplots.}
 
-\item{pt.size.factor}{Point size.}
+\item{ptSizeFactor}{Point size.}
 
 \item{alpha}{Point opacity, or a two-value range mapped to expression.}
 
-\item{image.alpha}{Optical image opacity.}
+\item{imageAlpha}{Optical image opacity.}
 
 \item{stroke}{Point border width.}
 

@@ -1,5 +1,5 @@
 .replicateRegionContrasts <- function(
-    E,
+    expression,
     metadata,
     group,
     replicate,
@@ -14,11 +14,11 @@
     labels <- as.character(metadata[[group]])
     means <- matrix(vapply(
         unique(labels), function(g) {
-            as.numeric(Matrix::rowMeans(E[, labels == g, drop = FALSE]))
+            as.numeric(Matrix::rowMeans(expression[, labels == g, drop = FALSE]))
         },
-        numeric(nrow(E))
-    ), nrow = nrow(E), ncol = length(unique(labels)))
-    dimnames(means) <- list(rownames(E), unique(labels))
+        numeric(nrow(expression))
+    ), nrow = nrow(expression), ncol = length(unique(labels)))
+    dimnames(means) <- list(rownames(expression), unique(labels))
     out <- list(group_means = means, tests = list())
     if (!length(contrasts)) {
         return(out)
@@ -68,11 +68,11 @@
         Y <- matrix(vapply(
             seq_len(nrow(units)), function(i) {
                 as.numeric(Matrix::rowMeans(
-                    E[, ids == units$replicate[i] & labels == units$group[i], drop = FALSE]
+                    expression[, ids == units$replicate[i] & labels == units$group[i], drop = FALSE]
                 ))
             },
-            numeric(nrow(E))
-        ), nrow = nrow(E), ncol = nrow(units))
+            numeric(nrow(expression))
+        ), nrow = nrow(expression), ncol = nrow(units))
         design <- cbind(
             denominator = as.numeric(units$group == c$denominator),
             numerator = as.numeric(units$group == c$numerator)
@@ -96,8 +96,8 @@
             sort.by = "none",
             confint = TRUE
         )
-        tab$feature <- rownames(E)
-        rownames(Y) <- rownames(E)
+        tab$feature <- rownames(expression)
+        rownames(Y) <- rownames(expression)
         colnames(Y) <- paste(units$replicate, units$group, sep = "::")
         list(
             status = "completed", table = tab, units = units,
@@ -144,13 +144,13 @@
 }
 
 .nativeRegionMarkers <- function(
-    data, ident, assay, assayName, min_region_size,
-    spatial_blocks, seed, annotation.column
+    data, ident, assay, assayName, minRegionSize,
+    spatialBlocks, seed, annotationColumn
 ) {
-    .validateFeatureCount(min_region_size, "min_region_size")
-    if (!is.numeric(spatial_blocks) || length(spatial_blocks) != 1L ||
-        is.na(spatial_blocks) || spatial_blocks < 0 || spatial_blocks != floor(spatial_blocks)) {
-        stop("spatial_blocks must be a non-negative integer.", call. = FALSE)
+    .validateFeatureCount(minRegionSize, "min_region_size")
+    if (!is.numeric(spatialBlocks) || length(spatialBlocks) != 1L ||
+        is.na(spatialBlocks) || spatialBlocks < 0 || spatialBlocks != floor(spatialBlocks)) {
+        stop("spatialBlocks must be a non-negative integer.", call. = FALSE)
     }
     E <- .assayData(data, assay, assayName)
     if (is.null(rownames(E)) || anyDuplicated(rownames(E)) || !.allFiniteAssay(E)) {
@@ -163,7 +163,7 @@
     valid <- !is.na(labels) & nzchar(trimws(labels))
     # Region order sets the DEM and marker-table order; keep it locale-independent.
     counts <- table(factor(labels[valid], levels = .sortLabels(labels[valid])))
-    groups <- names(counts)[counts >= min_region_size]
+    groups <- names(counts)[counts >= minRegionSize]
     valid <- valid & labels %in% groups
     eligibility <- data.frame(
         region = names(counts), observations = as.integer(counts),
@@ -177,8 +177,8 @@
     }
     conditions <- new.env(parent = emptyenv())
     conditions$deprecations <- character()
-    score <- function(E, groups) {
-        withCallingHandlers(scran::scoreMarkers(E, groups = groups),
+    score <- function(expression, groups) {
+        withCallingHandlers(scran::scoreMarkers(expression, groups = groups),
             warning = function(w) {
                 text <- conditionMessage(w)
                 if (grepl(
@@ -192,7 +192,7 @@
         )
     }
     fit <- score(E[, valid, drop = FALSE], groups = labels[valid])
-    blocks <- .nativeSpatialBlocks(data, spatial_blocks, seed)
+    blocks <- .nativeSpatialBlocks(data, spatialBlocks, seed)
     valid_blocks <- unique(stats::na.omit(blocks[valid]))
     omissions <- list()
     # The same coordinate-only partition is used for every modality and region.
@@ -200,7 +200,7 @@
     for (b in valid_blocks) {
         keep <- valid & (is.na(blocks) | blocks != b)
         n <- table(factor(labels[keep], levels = groups))
-        if (any(n < min_region_size)) next
+        if (any(n < minRegionSize)) next
         omissions[[b]] <- score(E[, keep, drop = FALSE], groups = labels[keep])
     }
     tables <- lapply(groups, function(g) {
@@ -251,10 +251,10 @@
         tab
     })
     dems <- do.call(rbind, tables)
-    if (!is.null(annotation.column)) {
+    if (!is.null(annotationColumn)) {
         rd <- .featureMetadata(data, assay)
-        if (!annotation.column %in% names(rd)) stop("Unknown annotation.column.", call. = FALSE)
-        dems[[annotation.column]] <- rd[[annotation.column]][match(dems$gene, rownames(E))]
+        if (!annotationColumn %in% names(rd)) stop("Unknown annotation.column.", call. = FALSE)
+        dems[[annotationColumn]] <- rd[[annotationColumn]][match(dems$gene, rownames(E))]
     }
     means <- matrix(vapply(
         groups, function(g) {
@@ -272,7 +272,7 @@
             provenance = list(
                 function_name = "findAllDEMs", method = "markers", ident = ident,
                 assay = assay, layer = assayName, features = rownames(E), observations = colnames(E)[valid],
-                min_region_size = min_region_size, spatial_blocks = spatial_blocks,
+                min_region_size = minRegionSize, spatial_blocks = spatialBlocks,
                 block_omissions = names(omissions), block_omissions_ineligible = setdiff(valid_blocks, names(omissions)),
                 stability = "Leave one coordinate-only k-means block out; region labels held fixed. Sensitivity, not independent replication or confidence intervals.",
                 seed = seed, upstream_deprecations = conditions$deprecations,

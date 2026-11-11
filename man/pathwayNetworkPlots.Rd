@@ -5,44 +5,44 @@
 \title{Construct an interactive pathway network visualization}
 \usage{
 pathwayNetworkPlots(
-  SpaMTP,
+  object,
   ident,
   regpathway,
-  DE.list,
-  selected_pathways = NULL,
+  deList,
+  selectedPathways = NULL,
   path = tempdir(),
   smAssayName = "counts",
   stAssayName = "counts",
-  colour_palette = NULL,
-  SM_assay = "main",
-  ST_assay = "transcriptome",
-  analyte_types = c("genes", "metabolites"),
-  annotation_source = c("current", "auto", "legacy"),
-  annotation_score_threshold = NULL,
-  annotation_score_floor = 0.01,
-  metabolite_detection = c("leading_edge", "annotated"),
+  colourPalette = NULL,
+  smAssay = "main",
+  stAssay = "transcriptome",
+  analyteTypes = c("genes", "metabolites"),
+  annotationSource = c("current", "auto", "legacy"),
+  annotationScoreThreshold = NULL,
+  annotationScoreFloor = 0.01,
+  metaboliteDetection = c("leading_edge", "annotated"),
   image = NULL,
   verbose = TRUE,
-  top_n_pathways = 10L,
-  max_nodes = 500L,
-  label_mode = c("detected", "all", "none"),
-  max_spatial_points = 50000L,
-  layout_mode = c("repulsion", "force", "radial", "bipartite"),
+  topNPathways = 10L,
+  maxNodes = 500L,
+  labelMode = c("detected", "all", "none"),
+  maxSpatialPoints = 50000L,
+  layoutMode = c("repulsion", "force", "radial", "bipartite"),
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  gene_mapping = c("auto", "hgnc", "ramp"),
-  gene_reference = NULL,
-  gene_index = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  geneMapping = c("auto", "hgnc", "ramp"),
+  geneReference = NULL,
+  geneIndex = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
-  pathway_index = NULL
+  pathwayIndex = NULL
 )
 }
 \arguments{
-\item{SpaMTP}{A SpatialExperiment with paired transcriptomics in altExp.
+\item{object}{A SpatialExperiment with paired transcriptomics in altExp.
 Subset to one sample before exporting. Metabolomics must be annotated by
 \code{\link[=annotateSM]{annotateSM()}}, or supplied as explicit compound IDs from
 \code{\link[=createPathwayAssay]{createPathwayAssay()}}.}
@@ -51,50 +51,50 @@ Subset to one sample before exporting. Metabolomics must be annotated by
 
 \item{regpathway}{Data frame returned by \code{\link[=findRegionalPathways]{findRegionalPathways()}}.}
 
-\item{DE.list}{One differential-expression data frame per requested analyte
+\item{deList}{One differential-expression data frame per requested analyte
 type. Data frames must contain \code{cluster}, \code{gene}, \code{avg_log2FC} (or
 \code{logFC}), and \code{p_val_adj} (or \code{FDR}). Descriptive native marker tables
 containing \code{mean_auc} and \code{mean_cohen} are also supported; their P values
 remain unavailable. A named list is recommended.}
 
-\item{selected_pathways}{Optional pathway names or source IDs. Matching is
+\item{selectedPathways}{Optional pathway names or source IDs. Matching is
 case-insensitive. When \code{NULL}, the most important pathways are selected by
 summed absolute NES.}
 
 \item{path}{Output directory for the generated HTML file. Defaults to the
 session's temporary directory; supply a persistent directory to retain it.}
 
-\item{smAssayName}{Expression assay name within the \code{SM_assay} experiment.
+\item{smAssayName}{Expression assay name within the \code{smAssay} experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{stAssayName}{Expression assay name within the \code{ST_assay} experiment.
+\item{stAssayName}{Expression assay name within the \code{stAssay} experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{colour_palette}{Colours used for the spatial abundance raster.}
+\item{colourPalette}{Colours used for the spatial abundance raster.}
 
-\item{SM_assay}{Primary (\code{"main"}) or alternative experiment containing MSI.}
+\item{smAssay}{Primary (\code{"main"}) or alternative experiment containing MSI.}
 
-\item{ST_assay}{Paired transcriptome alternative experiment name.}
+\item{stAssay}{Paired transcriptome alternative experiment name.}
 
-\item{analyte_types}{One or both of \code{"genes"} and \code{"metabolites"}.}
+\item{analyteTypes}{One or both of \code{"genes"} and \code{"metabolites"}.}
 
-\item{annotation_source}{Metabolite annotation provenance. The default,
+\item{annotationSource}{Metabolite annotation provenance. The default,
 \code{"current"}, requires the indexed, scored RaMP annotation output.
 \code{"auto"} permits a warned legacy fallback and \code{"legacy"} requests it
 explicitly.}
 
-\item{annotation_score_threshold}{Minimum indexed annotation score used for
+\item{annotationScoreThreshold}{Minimum indexed annotation score used for
 metabolite matching. When \code{NULL}, the threshold recorded by
 \code{findRegionalPathways()} is reused (default = \code{NULL}).
 An explicit compound-identity assay is already filtered; this argument
 does not filter it again and annotation-score controls are hidden.}
 
-\item{annotation_score_floor}{Lowest annotation score embedded in the HTML
+\item{annotationScoreFloor}{Lowest annotation score embedded in the HTML
 for interactive filtering. It is automatically lowered when the initial
-\code{annotation_score_threshold} is smaller (default = \code{0.01}).
+\code{annotationScoreThreshold} is smaller (default = \code{0.01}).
 Only applies to original mass-feature input with scored candidates.}
 
-\item{metabolite_detection}{Which metabolite nodes receive detected styling.
+\item{metaboliteDetection}{Which metabolite nodes receive detected styling.
 \code{"leading_edge"} uses only GSEA leading-edge metabolites;
 \code{"annotated"} also includes retained compound identities, or score-filtered
 annotations for original mass-feature input, belonging to the selected
@@ -105,23 +105,23 @@ come from spatialCoords; the optical raster is not embedded in this viewer.}
 
 \item{verbose}{Display progress messages.}
 
-\item{top_n_pathways}{Number of pathways selected when \code{selected_pathways} is
+\item{topNPathways}{Number of pathways selected when \code{selectedPathways} is
 \code{NULL}.}
 
-\item{max_nodes}{Target maximum number of reference nodes per
+\item{maxNodes}{Target maximum number of reference nodes per
 cluster-pathway view. Leading-edge analytes and annotated compounds are
 retained, followed by their neighbours and high-degree nodes. Required
 members and isolated measured nodes can exceed this limit; other measured
 genes can be pruned. Use \code{Inf} to disable pruning.}
 
-\item{label_mode}{Initial node-label mode: detected nodes only, all nodes, or
+\item{labelMode}{Initial node-label mode: detected nodes only, all nodes, or
 no labels. It can also be changed interactively.}
 
-\item{max_spatial_points}{Maximum number of spatial points embedded in the
+\item{maxSpatialPoints}{Maximum number of spatial points embedded in the
 HTML. Larger datasets are deterministically downsampled for responsive
 browser rendering. Use \code{Inf} to retain all points.}
 
-\item{layout_mode}{Initial network layout. \code{"repulsion"} maximises spacing,
+\item{layoutMode}{Initial network layout. \code{"repulsion"} maximises spacing,
 \code{"force"} uses a balanced force-directed layout, \code{"radial"} separates
 analyte classes into rings, and \code{"bipartite"} separates genes and
 metabolites vertically. It can also be changed interactively.}
@@ -129,40 +129,40 @@ metabolites vertically. It can also be changed interactively.}
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for pathway lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for pathway lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
-\item{gene_mapping}{\code{"auto"} uses HGNC identity harmonization for official
+\item{geneMapping}{\code{"auto"} uses HGNC identity harmonization for official
 SpaMTPdb resources and for custom bundles with \code{gene_reference} or
-\code{gene_index}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
+\code{geneIndex}. \code{"hgnc"} requires harmonization; \code{"ramp"} explicitly retains
 RaMP-only mapping for historical reproduction or a curated non-human
 database. Custom bundles without a reference use RaMP-only mapping in auto
 mode and never trigger a reference download.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_index}{Optional index built from the same source table by
+\item{geneIndex}{Optional index built from the same source table by
 \code{\link[=buildGeneMappingIndex]{buildGeneMappingIndex()}}. Multiple RaMP records of a resolved HGNC gene
 have their pathway memberships united and count once. Conflicting RaMP
 records and ambiguous symbols are excluded and recorded in the audit.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Species of the input. HGNC mapping requires \code{"Homo sapiens"}.
-RaMP-only mapping (\code{gene_mapping = "ramp"}, or a pathway index without an
+RaMP-only mapping (\code{geneMapping = "ramp"}, or a pathway index without an
 HGNC index) does not perform orthology conversion. Non-human gene analysis
 requires a separately curated species-specific database; using human
 topology for compound-only context does not establish conserved interactions.}
 
-\item{pathway_index}{A reusable index from buildPathwayIndex(). When
+\item{pathwayIndex}{A reusable index from buildPathwayIndex(). When
 supplied,
 its gene identities and memberships must match any explicit database or
 gene_index. Fingerprints prevent incompatible reuse.}
@@ -211,7 +211,7 @@ de <- data.frame(
 folder <- tempfile("network-")
 dir.create(folder)
 output <- pathwayNetworkPlots(spe, "region", regional, list(genes = de),
-    analyte_types = "genes", database = db, path = folder, verbose = FALSE
+    analyteTypes = "genes", database = db, path = folder, verbose = FALSE
 )
 basename(output)
 unlink(folder, recursive = TRUE)

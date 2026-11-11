@@ -10,8 +10,8 @@
 \usage{
 normalizeSMData(
   data,
-  normalisation.type = "TIC",
-  scale.factor = NULL,
+  normalizationType = "TIC",
+  scaleFactor = NULL,
   assay = "main",
   assayName = "counts",
   verbose = TRUE,
@@ -20,8 +20,8 @@ normalizeSMData(
 
 \S4method{normalizeSMData}{SingleCellExperiment}(
   data,
-  normalisation.type = "TIC",
-  scale.factor = NULL,
+  normalizationType = "TIC",
+  scaleFactor = NULL,
   assay = "main",
   assayName = "counts",
   verbose = TRUE,
@@ -30,8 +30,8 @@ normalizeSMData(
 
 \S4method{normalizeSMData}{MSImagingExperiment}(
   data,
-  normalisation.type = "TIC",
-  scale.factor = NULL,
+  normalizationType = "TIC",
+  scaleFactor = NULL,
   assay = "main",
   assayName = "counts",
   verbose = TRUE,
@@ -40,8 +40,8 @@ normalizeSMData(
 
 \S4method{normalizeSMData}{MSImagingArrays}(
   data,
-  normalisation.type = "TIC",
-  scale.factor = NULL,
+  normalizationType = "TIC",
+  scaleFactor = NULL,
   assay = "main",
   assayName = "counts",
   verbose = TRUE,
@@ -50,8 +50,8 @@ normalizeSMData(
 
 \S4method{normalizeSMData}{ANY}(
   data,
-  normalisation.type = "TIC",
-  scale.factor = NULL,
+  normalizationType = "TIC",
+  scaleFactor = NULL,
   assay = "main",
   assayName = "counts",
   verbose = TRUE,
@@ -62,12 +62,12 @@ normalizeSMData(
 \item{data}{A SingleCellExperiment (including SpatialExperiment), Cardinal
 MSImagingArrays/MSImagingExperiment.}
 
-\item{normalisation.type}{\code{"TIC"} (default) or \code{"RC"} divides each pixel's
-intensities by its total and multiplies by \code{scale.factor}, storing
+\item{normalizationType}{\code{"TIC"} (default) or \code{"RC"} divides each pixel's
+intensities by its total and multiplies by \code{scaleFactor}, storing
 \code{normcounts}. \code{"LogNormalize"} additionally applies \code{log2(1 + x)}
 and stores \code{logcounts}. Cardinal input supports only \code{"TIC"}.}
 
-\item{scale.factor}{Positive target total before log transformation. When
+\item{scaleFactor}{Positive target total before log transformation. When
 NULL, native TIC uses the number of features and RC/LogNormalize use
 10000. Set to 1e6 explicitly for counts/intensities per million. Zero-total
 pixels remain zero. Cardinal requires NULL and uses its own TIC scaling.}

@@ -110,7 +110,7 @@
 #' Ranked annotation candidates for measured features
 #'
 #' Returns the candidate identities stored by [annotateSM()] (with
-#' `save.intermediate = TRUE`), ranked within each feature by decreasing score
+#' `saveIntermediate = TRUE`), ranked within each feature by decreasing score
 #' and then increasing absolute ppm error. Candidates remain hypotheses: the
 #' `identities` column counts the distinct RaMP compound identities that remain
 #' for each feature at `minScore`, so values above one mark ambiguous features.

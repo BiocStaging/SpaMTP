@@ -8,8 +8,8 @@ searchAnnotations(
   data,
   metabolite,
   assay = "main",
-  search.exact = FALSE,
-  column.name = "all_IsomerNames"
+  searchExact = FALSE,
+  columnName = "all_IsomerNames"
 )
 }
 \arguments{
@@ -21,10 +21,10 @@ Punctuation is matched as text, not as a regular expression.}
 \item{assay}{Primary or alternative experiment containing the annotated
 m/z metadata. Defaults to \code{"main"}.}
 
-\item{search.exact}{Boolean value defining if to only return m/z values which
+\item{searchExact}{Boolean value defining if to only return m/z values which
 contain the exact match to the metabolite search term (default = FALSE).}
 
-\item{column.name}{Character string defining the feature-metadata column
+\item{columnName}{Character string defining the feature-metadata column
 where annotations are stored (default = "all_IsomerNames").}
 }
 \value{
@@ -38,5 +38,5 @@ metabolite search term provided
 \examples{
 data(spamtp_example)
 spe <- spamtp_example$experiment
-searchAnnotations(spe, "Glucose", search.exact = TRUE)
+searchAnnotations(spe, "Glucose", searchExact = TRUE)
 }

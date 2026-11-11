@@ -4,7 +4,7 @@ test_that("topology catalog resolves names and IDs without rescanning lists", {
         wiki = list("Pathway A" = topology("WP1", "Pathway A")),
         hmdb = list("Pathway B" = topology("SMP2", "Pathway B"))
     )
-    catalog <- SpaMTP:::.pn_topology_catalog(sources, use_cache = FALSE)
+    catalog <- SpaMTP:::.pn_topology_catalog(sources, useCache = FALSE)
     rows <- data.frame(
         pathwayName = c("pathway a", "unknown title"),
         sourceId = c("wp1", "smp2"),
@@ -54,7 +54,7 @@ test_that("node pruning preserves detected analytes and incident neighbours", {
         colour = "black",
         weight = 2L
     )
-    result <- SpaMTP:::.pn_prune_edges(edges, detected = "n20", max_nodes = 6)
+    result <- SpaMTP:::.pn_prune_edges(edges, detected = "n20", maxNodes = 6)
     retained <- unique(c(result$src, result$dest))
 
     expect_true("n20" %in% retained)
@@ -77,11 +77,11 @@ test_that("current leading-edge IDs missing from old topology stay visible", {
     result <- SpaMTP:::.pn_build_one_network(
         edges = edges,
         detected = "RAMP_C_NEW",
-        cluster_key = "region1",
-        gene_lookup = list(),
-        metabolite_lookup = list(region1 = metabolite),
-        name_map = c(RAMP_G_1 = "GENE1", RAMP_C_1 = "Old metabolite"),
-        max_nodes = 10
+        clusterKey = "region1",
+        geneLookup = list(),
+        metaboliteLookup = list(region1 = metabolite),
+        nameMap = c(RAMP_G_1 = "GENE1", RAMP_C_1 = "Old metabolite"),
+        maxNodes = 10
     )
 
     node <- result$nodes[result$nodes$id == "RAMP_C_NEW", , drop = FALSE]
@@ -152,21 +152,21 @@ test_that("identity networks retain compounds and reconcile leading-edge gene re
     rows <- data.frame(pathwayName = "Pathway A", Cluster_id = "region1",
         leadingEdge = I(list("RAMP_G_A")))
     args <- list(
-        pathway_rows = rows, pathway_names = "Pathway A",
-        prepared_edges = list("Pathway A" = edges), clusters = "region1",
-        gene_lookup = list(region1 = data.frame(
+        pathwayRows = rows, pathwayNames = "Pathway A",
+        preparedEdges = list("Pathway A" = edges), clusters = "region1",
+        geneLookup = list(region1 = data.frame(
             rampId = c("RAMP_G_ALIAS", "RAMP_G_OTHER"),
             gene = c("RAMP_G_A", "RAMP_G_OTHER"),
             commonName = c("GENEA", "GENEB"), avg_log2FC = c(1.2, -0.7)
         )),
-        metabolite_lookup = list(region1 = data.frame(
+        metaboliteLookup = list(region1 = data.frame(
             ramp_id = "RAMP_C_M", mz_name = "RAMP_C_M", Adduct = "",
             common_name = "Compound M", avg_log2FC = 0.5
         )),
-        name_map = c(RAMP_G_ALIAS = "A", RAMP_G_OTHER = "B", RAMP_C_M = "M"),
-        max_nodes = 3, metabolite_detection = "annotated",
-        annotated_metabolites = list("Pathway A" = "RAMP_C_M"),
-        fixed_compound_ids = TRUE, gene_index = index
+        nameMap = c(RAMP_G_ALIAS = "A", RAMP_G_OTHER = "B", RAMP_C_M = "M"),
+        maxNodes = 3, metaboliteDetection = "annotated",
+        annotatedMetabolites = list("Pathway A" = "RAMP_C_M"),
+        fixedCompoundIds = TRUE, geneIndex = index
     )
     built <- do.call(SpaMTP:::.pn_build_network_collection, args)
     nodes <- built$networks$region1[["Pathway A"]]$nodes
@@ -180,8 +180,8 @@ test_that("identity networks retain compounds and reconcile leading-edge gene re
     expect_true("RAMP_G_OTHER" %in% built$matrix_ids)
 
     # Scores still govern an original mass-feature overlay.
-    args$fixed_compound_ids <- FALSE
-    args$annotation_scores <- c(RAMP_C_M = 0.01)
+    args$fixedCompoundIds <- FALSE
+    args$annotationScores <- c(RAMP_C_M = 0.01)
     scored <- do.call(SpaMTP:::.pn_build_network_collection, args)
     scored_nodes <- scored$networks$region1[["Pathway A"]]$nodes
     expect_false(scored_nodes$detected[scored_nodes$id == "RAMP_C_M"])
@@ -206,8 +206,8 @@ test_that("spatial previews retain the physical coordinate aspect", {
         spatialCoords = cbind(x = c(0, 100, 200, 0), y = c(0, 0, 0, 50))
     )
     payload <- .pn_spatial_payload(object,
-        ident = "region", image = NULL, matrix_ids = character(),
-        gene_de = NULL, metabolite_de = NULL
+        ident = "region", image = NULL, matrixIds = character(),
+        geneDe = NULL, metaboliteDe = NULL
     )
     expect_equal(payload$aspect_ratio, 4)
     expect_equal(payload$coordinates$x, c(0, 0.5, 1, 0))
@@ -274,10 +274,10 @@ test_that("network JSON template is valid and contains new controls", {
 })
 
 test_that("pathway network API exposes interactive layout selection", {
-    layouts <- eval(formals(pathwayNetworkPlots)$layout_mode)
+    layouts <- eval(formals(pathwayNetworkPlots)$layoutMode)
 
     expect_equal(layouts, c("repulsion", "force", "radial", "bipartite"))
-    expect_equal(eval(formals(pathwayNetworkPlots)$annotation_score_floor), 0.01)
+    expect_equal(eval(formals(pathwayNetworkPlots)$annotationScoreFloor), 0.01)
 })
 
 test_that("standard and curated FMP10 annotation engines are current", {
@@ -303,14 +303,14 @@ test_that("network nodes retain low-score candidates for frontend filtering", {
     result <- SpaMTP:::.pn_build_one_network(
         edges = edges,
         detected = "RAMP_G_1",
-        cluster_key = "region1",
-        gene_lookup = list(),
-        metabolite_lookup = list(),
-        name_map = c(RAMP_G_1 = "GENE1", RAMP_C_LOW = "Low score"),
-        max_nodes = 10,
-        leading_edge = "RAMP_G_1",
+        clusterKey = "region1",
+        geneLookup = list(),
+        metaboliteLookup = list(),
+        nameMap = c(RAMP_G_1 = "GENE1", RAMP_C_LOW = "Low score"),
+        maxNodes = 10,
+        leadingEdge = "RAMP_G_1",
         annotated = "RAMP_C_LOW",
-        annotation_scores = c(RAMP_C_LOW = 0.02)
+        annotationScores = c(RAMP_C_LOW = 0.02)
     )
 
     node <- result$nodes[result$nodes$id == "RAMP_C_LOW", , drop = FALSE]

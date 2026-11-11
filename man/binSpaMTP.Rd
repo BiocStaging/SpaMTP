@@ -15,7 +15,7 @@ binSpaMTP(
   assay = "main",
   assayName = "counts",
   method = c("sum", "mean", "max", "min"),
-  return.only.mtx = FALSE
+  returnOnlyMtx = FALSE
 )
 
 \S4method{binSpaMTP}{SpatialExperiment}(
@@ -25,7 +25,7 @@ binSpaMTP(
   assay = "main",
   assayName = "counts",
   method = c("sum", "mean", "max", "min"),
-  return.only.mtx = FALSE
+  returnOnlyMtx = FALSE
 )
 
 \S4method{binSpaMTP}{MSImagingExperiment}(
@@ -35,7 +35,7 @@ binSpaMTP(
   assay = "main",
   assayName = "counts",
   method = c("sum", "mean", "max", "min"),
-  return.only.mtx = FALSE
+  returnOnlyMtx = FALSE
 )
 
 \S4method{binSpaMTP}{MSImagingArrays}(
@@ -45,7 +45,7 @@ binSpaMTP(
   assay = "main",
   assayName = "counts",
   method = c("sum", "mean", "max", "min"),
-  return.only.mtx = FALSE
+  returnOnlyMtx = FALSE
 )
 
 \S4method{binSpaMTP}{ANY}(
@@ -55,7 +55,7 @@ binSpaMTP(
   assay = "main",
   assayName = "counts",
   method = c("sum", "mean", "max", "min"),
-  return.only.mtx = FALSE
+  returnOnlyMtx = FALSE
 )
 }
 \arguments{
@@ -74,7 +74,7 @@ See \link{experimentAccess} for the experiment/matrix distinction.}
 
 \item{method}{Aggregation method.}
 
-\item{return.only.mtx}{Return only the binned matrix.}
+\item{returnOnlyMtx}{Return only the binned matrix.}
 }
 \value{
 A binned \code{SpatialExperiment} or matrix.

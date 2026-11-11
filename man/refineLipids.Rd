@@ -6,16 +6,16 @@
 \usage{
 refineLipids(
   data,
-  annotation.column = "annotations",
+  annotationColumn = "annotations",
   database = "HMDB",
-  lipid_info = "simple",
+  lipidInfo = "simple",
   verbose = TRUE
 )
 }
 \arguments{
 \item{data}{data.frame containing a column with lipid annotations}
 
-\item{annotation.column}{Character string matching the column name containing
+\item{annotationColumn}{Character string matching the column name containing
 the lipid annotations in the provided df (default = "annotations").}
 
 \item{database}{Character string defining the database matching the lipid
@@ -23,7 +23,7 @@ annotations. Possible entries include
 c('Shorthand2020','Goslin','FattyAcids','LipidMaps','SwissLipids','HMDB')
 (default = "HMDB").}
 
-\item{lipid_info}{Character string defining what level of information to return for each lipid. Options are either "all" or "simple". "Simple" returns a smaller, simplified list of annotations for each lipid. Please visit https://bioconductor.org/packages/release/bioc/vignettes/rgoslin/inst/doc/introduction.html to see all possible outputs (default = "simple")).}
+\item{lipidInfo}{Character string defining what level of information to return for each lipid. Options are either "all" or "simple". "Simple" returns a smaller, simplified list of annotations for each lipid. Please visit https://bioconductor.org/packages/release/bioc/vignettes/rgoslin/inst/doc/introduction.html to see all possible outputs (default = "simple")).}
 
 \item{verbose}{Logical; show a progress bar (default = TRUE).}
 }

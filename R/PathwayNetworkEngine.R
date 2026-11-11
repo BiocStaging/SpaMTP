@@ -35,11 +35,11 @@
     NA_character_
 }
 
-.pn_topology_signature <- function(topology_sources) {
+.pn_topology_signature <- function(topologySources) {
     paste(
-        names(topology_sources),
-        lengths(topology_sources),
-        vapply(topology_sources, function(x) {
+        names(topologySources),
+        lengths(topologySources),
+        vapply(topologySources, function(x) {
             if (!length(x)) {
                 return("")
             }
@@ -49,12 +49,12 @@
     )
 }
 
-.pn_topology_catalog <- function(topology_sources, use_cache = TRUE) {
-    if (is.null(names(topology_sources)) || any(!nzchar(names(topology_sources)))) {
-        stop("topology_sources must be a named list.")
+.pn_topology_catalog <- function(topologySources, useCache = TRUE) {
+    if (is.null(names(topologySources)) || any(!nzchar(names(topologySources)))) {
+        stop("topologySources must be a named list.")
     }
-    signature <- .pn_topology_signature(topology_sources)
-    if (isTRUE(use_cache) &&
+    signature <- .pn_topology_signature(topologySources)
+    if (isTRUE(useCache) &&
         identical(.spamtp_pathway_cache$signature, signature) &&
         is.data.frame(.spamtp_pathway_cache$catalog)) {
         return(.spamtp_pathway_cache$catalog)
@@ -84,10 +84,10 @@
             id_key = tolower(trimws(ids)),
             stringsAsFactors = FALSE
         )
-    }, topology_sources, names(topology_sources))
+    }, topologySources, names(topologySources))
     catalog <- do.call(rbind, parts)
     rownames(catalog) <- NULL
-    if (isTRUE(use_cache)) {
+    if (isTRUE(useCache)) {
         .spamtp_pathway_cache$signature <- signature
         .spamtp_pathway_cache$catalog <- catalog
     }
@@ -95,8 +95,8 @@
 }
 
 .pn_select_pathway_rows <- function(
-    regpathway, selected_pathways = NULL,
-    top_n_pathways = 10L
+    regpathway, selectedPathways = NULL,
+    topNPathways = 10L
 ) {
     .pn_assert_columns(
         regpathway,
@@ -107,29 +107,29 @@
 
     name_key <- tolower(trimws(as.character(regpathway$pathwayName)))
     id_key <- tolower(trimws(as.character(regpathway$sourceId)))
-    if (is.null(selected_pathways)) {
+    if (is.null(selectedPathways)) {
         .pn_assert_columns(regpathway, "NES", "regpathway")
         score <- suppressWarnings(abs(as.numeric(regpathway$NES)))
         score[!is.finite(score)] <- 0
         totals <- rowsum(score, group = name_key, reorder = FALSE, na.rm = TRUE)
         ranked <- rownames(totals)[order(totals[, 1], decreasing = TRUE)]
-        selected_key <- utils::head(ranked, max(1L, as.integer(top_n_pathways)))
+        selected_key <- utils::head(ranked, max(1L, as.integer(topNPathways)))
         keep <- name_key %in% selected_key
     } else {
-        selected_key <- tolower(trimws(as.character(selected_pathways)))
+        selected_key <- tolower(trimws(as.character(selectedPathways)))
         selected_key <- selected_key[nzchar(selected_key)]
-        if (!length(selected_key)) stop("selected_pathways contains no usable values.")
+        if (!length(selected_key)) stop("selectedPathways contains no usable values.")
         keep <- name_key %in% selected_key | id_key %in% selected_key
     }
     result <- regpathway[keep, , drop = FALSE]
     if (!nrow(result)) {
-        stop("None of selected_pathways matched pathwayName or sourceId in regpathway.")
+        stop("None of selectedPathways matched pathwayName or sourceId in regpathway.")
     }
     result
 }
 
-.pn_resolve_topologies <- function(pathway_rows, catalog, topology_sources) {
-    unique_rows <- pathway_rows[!duplicated(tolower(pathway_rows$pathwayName)), , drop = FALSE]
+.pn_resolve_topologies <- function(pathwayRows, catalog, topologySources) {
+    unique_rows <- pathwayRows[!duplicated(tolower(pathwayRows$pathwayName)), , drop = FALSE]
     resolved <- vector("list", nrow(unique_rows))
     found <- logical(nrow(unique_rows))
     for (i in seq_len(nrow(unique_rows))) {
@@ -143,7 +143,7 @@
         hit <- which(candidates$name_key == name_key | candidates$id_key == id_key)
         if (length(hit)) {
             row <- candidates[hit[[1]], , drop = FALSE]
-            resolved[[i]] <- topology_sources[[row$source]][[row$index]]
+            resolved[[i]] <- topologySources[[row$source]][[row$index]]
             found[[i]] <- TRUE
         }
     }
@@ -151,7 +151,7 @@
     list(topologies = resolved, found = found, pathways = unique_rows)
 }
 
-.pn_prepare_edges <- function(topology, reaction_types) {
+.pn_prepare_edges <- function(topology, reactionTypes) {
     edge_sets <- c(
         "mixedEdges", "metabolEdges", "metabolPropEdges",
         "protEdges", "protPropEdges"
@@ -187,10 +187,10 @@
 
     reaction_index <- match(
         as.character(edges$reaction_type),
-        as.character(reaction_types$reaction_type)
+        as.character(reactionTypes$reaction_type)
     )
     lookup <- function(column, default) {
-        value <- as.character(reaction_types[[column]][reaction_index])
+        value <- as.character(reactionTypes[[column]][reaction_index])
         value[is.na(value) | !nzchar(value)] <- default
         value
     }
@@ -227,23 +227,23 @@
     )
 }
 
-.pn_prune_edges <- function(edges, detected, max_nodes) {
+.pn_prune_edges <- function(edges, detected, maxNodes) {
     if (!nrow(edges)) {
         return(edges)
     }
     nodes <- unique(c(edges$src, edges$dest))
-    if (!is.finite(max_nodes)) {
+    if (!is.finite(maxNodes)) {
         return(edges)
     }
-    max_nodes <- as.integer(max_nodes)
-    if (max_nodes <= 0L || length(nodes) <= max_nodes) {
+    maxNodes <- as.integer(maxNodes)
+    if (maxNodes <= 0L || length(nodes) <= maxNodes) {
         return(edges)
     }
     detected <- intersect(unique(as.character(detected)), nodes)
     incident <- edges$src %in% detected | edges$dest %in% detected
     neighbours <- unique(c(edges$src[incident], edges$dest[incident]))
     degree <- sort(table(c(edges$src, edges$dest)), decreasing = TRUE)
-    cap <- max(max_nodes, length(detected))
+    cap <- max(maxNodes, length(detected))
     keep_nodes <- unique(c(detected, neighbours, names(degree)))
     keep_nodes <- utils::head(keep_nodes, cap)
     edges[edges$src %in% keep_nodes & edges$dest %in% keep_nodes, , drop = FALSE]
@@ -278,16 +278,16 @@
     result
 }
 
-.pn_normalise_de_list <- function(DE.list, analyte_types) {
-    if (!is.list(DE.list) || length(DE.list) != length(analyte_types)) {
-        stop("DE.list must contain exactly one data.frame for each analyte type.")
+.pn_normalise_de_list <- function(deList, analyteTypes) {
+    if (!is.list(deList) || length(deList) != length(analyteTypes)) {
+        stop("deList must contain exactly one data.frame for each analyte type.")
     }
-    if (all(analyte_types %in% names(DE.list))) {
-        result <- DE.list[analyte_types]
+    if (all(analyteTypes %in% names(deList))) {
+        result <- deList[analyteTypes]
     } else {
-        result <- stats::setNames(DE.list, analyte_types)
+        result <- stats::setNames(deList, analyteTypes)
     }
-    for (type in analyte_types) {
+    for (type in analyteTypes) {
         de <- as.data.frame(result[[type]], stringsAsFactors = FALSE)
         if ("logFC" %in% names(de) && !"avg_log2FC" %in% names(de)) {
             names(de)[names(de) == "logFC"] <- "avg_log2FC"
@@ -314,9 +314,9 @@
     result
 }
 
-.pn_prepare_gene_de <- function(de, source_table, gene_index = NULL) {
-    if (!is.null(gene_index)) {
-        return(.gene_prepare_de(de, gene_index, expand_records = TRUE))
+.pn_prepare_gene_de <- function(de, sourceTable, geneIndex = NULL) {
+    if (!is.null(geneIndex)) {
+        return(.gene_prepare_de(de, geneIndex, expandRecords = TRUE))
     }
     direct <- startsWith(toupper(de$gene), "RAMP_G_")
     direct_de <- de[direct, , drop = FALSE]
@@ -327,9 +327,9 @@
     mapped$rampId <- character()
     if (nrow(symbol_de)) {
         symbols <- unique(toupper(symbol_de$gene))
-        gene_source <- source_table[
-            startsWith(source_table$rampId, "RAMP_G_") &
-                toupper(source_table$commonName) %in% symbols,
+        gene_source <- sourceTable[
+            startsWith(sourceTable$rampId, "RAMP_G_") &
+                toupper(sourceTable$commonName) %in% symbols,
             c("rampId", "commonName"),
             drop = FALSE
         ]
@@ -347,18 +347,18 @@
     result
 }
 
-.pn_prepare_metabolite_map <- function(db_3, chemical_properties = NULL) {
-    db_3 <- as.data.frame(db_3, stringsAsFactors = FALSE)
-    if (!"mz_name" %in% names(db_3)) {
-        .pn_assert_columns(db_3, "observed_mz", "stored SpaMTP db_3 result")
-        db_3$mz_name <- paste0("mz-", db_3$observed_mz)
+.pn_prepare_metabolite_map <- function(db3, chemicalProperties = NULL) {
+    db3 <- as.data.frame(db3, stringsAsFactors = FALSE)
+    if (!"mz_name" %in% names(db3)) {
+        .pn_assert_columns(db3, "observed_mz", "stored SpaMTP db_3 result")
+        db3$mz_name <- paste0("mz-", db3$observed_mz)
     }
-    adduct <- if ("Adduct" %in% names(db_3)) as.character(db_3$Adduct) else ""
-    db_3$Adduct <- adduct
+    adduct <- if ("Adduct" %in% names(db3)) as.character(db3$Adduct) else ""
+    db3$Adduct <- adduct
 
-    if ("ramp_id" %in% names(db_3) &&
-        any(grepl("^RAMP_C_", as.character(db_3$ramp_id)))) {
-        mapping <- db_3
+    if ("ramp_id" %in% names(db3) &&
+        any(grepl("^RAMP_C_", as.character(db3$ramp_id)))) {
+        mapping <- db3
         mapping$ramp_id <- toupper(as.character(mapping$ramp_id))
         mapping$common_name <- if ("IsomerNames" %in% names(mapping)) {
             as.character(mapping$IsomerNames)
@@ -367,8 +367,8 @@
         } else {
             NA_character_
         }
-    } else if ("Ramp_IDs" %in% names(db_3) && any(nzchar(stats::na.omit(db_3$Ramp_IDs)))) {
-        mapping <- .pn_expand_values(db_3, "Ramp_IDs")
+    } else if ("Ramp_IDs" %in% names(db3) && any(nzchar(stats::na.omit(db3$Ramp_IDs)))) {
+        mapping <- .pn_expand_values(db3, "Ramp_IDs")
         mapping$ramp_id <- mapping$Ramp_IDs
         mapping$common_name <- if ("IsomerNames" %in% names(mapping)) {
             as.character(mapping$IsomerNames)
@@ -376,14 +376,14 @@
             NA_character_
         }
     } else {
-        if (is.null(chemical_properties)) {
-            stop("Legacy metabolite annotations require the chem_props lookup table.")
+        if (is.null(chemicalProperties)) {
+            stop("Legacy metabolite annotations require the chemProps lookup table.")
         }
-        id_column <- if ("Isomers_IDs" %in% names(db_3)) "Isomers_IDs" else "Isomers"
-        .pn_assert_columns(db_3, id_column, "stored SpaMTP db_3 result")
-        mapping <- .pn_expand_values(db_3, id_column)
+        id_column <- if ("Isomers_IDs" %in% names(db3)) "Isomers_IDs" else "Isomers"
+        .pn_assert_columns(db3, id_column, "stored SpaMTP db_3 result")
+        mapping <- .pn_expand_values(db3, id_column)
         mapping$chem_source_id <- .pn_normalise_source_id(mapping[[id_column]])
-        chem_map <- unique(chemical_properties[c("chem_source_id", "ramp_id")])
+        chem_map <- unique(chemicalProperties[c("chem_source_id", "ramp_id")])
         mapping <- merge(mapping, chem_map, by = "chem_source_id", sort = FALSE)
     }
     mapping <- mapping[startsWith(mapping$ramp_id, "RAMP_C_"), , drop = FALSE]
@@ -394,9 +394,9 @@
         ))
     }
     if (!"common_name" %in% names(mapping)) mapping$common_name <- NA_character_
-    if (!is.null(chemical_properties)) {
-        name_map <- chemical_properties[
-            chemical_properties$ramp_id %in% unique(mapping$ramp_id),
+    if (!is.null(chemicalProperties)) {
+        name_map <- chemicalProperties[
+            chemicalProperties$ramp_id %in% unique(mapping$ramp_id),
             c("ramp_id", "common_name"),
             drop = FALSE
         ]
@@ -416,20 +416,20 @@
     unique(mapping[c("ramp_id", "mz_name", "Adduct", "common_name")])
 }
 
-.pn_prepare_metabolite_de <- function(de, db_3, chemical_properties = NULL) {
+.pn_prepare_metabolite_de <- function(de, db3, chemicalProperties = NULL) {
     names(de)[names(de) == "gene"] <- "mz_name"
-    mapping <- .pn_prepare_metabolite_map(db_3, chemical_properties)
+    mapping <- .pn_prepare_metabolite_map(db3, chemicalProperties)
     merge(mapping, de, by = "mz_name", sort = FALSE)
 }
 
-.pn_best_de_by_cluster <- function(de, id_column) {
+.pn_best_de_by_cluster <- function(de, idColumn) {
     if (is.null(de) || !nrow(de)) {
         return(list())
     }
-    id <- as.character(de[[id_column]])
+    id <- as.character(de[[idColumn]])
     order_index <- order(de$.cluster_key, id, de$p_val_adj, na.last = TRUE)
     de <- de[order_index, , drop = FALSE]
-    key <- paste(de$.cluster_key, de[[id_column]], sep = "\r")
+    key <- paste(de$.cluster_key, de[[idColumn]], sep = "\r")
     de <- de[!duplicated(key), , drop = FALSE]
     split(de, de$.cluster_key, drop = TRUE)
 }
@@ -440,10 +440,10 @@
     unique(value[!is.na(value) & nzchar(value)])
 }
 
-.pn_name_map <- function(source_table, node_ids, chemical_properties = NULL) {
-    value <- source_table[
-        source_table$rampId %in% node_ids & !is.na(source_table$commonName) &
-            nzchar(trimws(source_table$commonName)),
+.pn_name_map <- function(sourceTable, nodeIds, chemicalProperties = NULL) {
+    value <- sourceTable[
+        sourceTable$rampId %in% nodeIds & !is.na(sourceTable$commonName) &
+            nzchar(trimws(sourceTable$commonName)),
         c("rampId", "commonName"),
         drop = FALSE
     ]
@@ -451,15 +451,15 @@
     result <- stats::setNames(
         as.character(value$commonName), as.character(value$rampId)
     )
-    if (!is.null(chemical_properties)) {
+    if (!is.null(chemicalProperties)) {
         .pn_assert_columns(
-            chemical_properties, c("ramp_id", "common_name"), "chem_props"
+            chemicalProperties, c("ramp_id", "common_name"), "chem_props"
         )
-        missing_ids <- setdiff(node_ids, names(result))
-        chemical <- chemical_properties[
-            chemical_properties$ramp_id %in% missing_ids &
-                !is.na(chemical_properties$common_name) &
-                nzchar(trimws(chemical_properties$common_name)),
+        missing_ids <- setdiff(nodeIds, names(result))
+        chemical <- chemicalProperties[
+            chemicalProperties$ramp_id %in% missing_ids &
+                !is.na(chemicalProperties$common_name) &
+                nzchar(trimws(chemicalProperties$common_name)),
             c("ramp_id", "common_name"),
             drop = FALSE
         ]
@@ -471,12 +471,12 @@
             )
         )
     }
-    missing_ids <- setdiff(node_ids, names(result))
-    if (length(missing_ids) && "sourceId" %in% names(source_table)) {
-        fallback <- source_table[
-            source_table$rampId %in% missing_ids &
-                !is.na(source_table$sourceId) & nzchar(trimws(source_table$sourceId)),
-            intersect(c("rampId", "sourceId", "IDtype"), names(source_table)),
+    missing_ids <- setdiff(nodeIds, names(result))
+    if (length(missing_ids) && "sourceId" %in% names(sourceTable)) {
+        fallback <- sourceTable[
+            sourceTable$rampId %in% missing_ids &
+                !is.na(sourceTable$sourceId) & nzchar(trimws(sourceTable$sourceId)),
+            intersect(c("rampId", "sourceId", "IDtype"), names(sourceTable)),
             drop = FALSE
         ]
         if (nrow(fallback)) {
@@ -505,19 +505,19 @@
 }
 
 .pn_build_one_network <- function(
-    edges, detected, cluster_key,
-    gene_lookup, metabolite_lookup,
-    name_map, max_nodes,
-    leading_edge = detected,
+    edges, detected, clusterKey,
+    geneLookup, metaboliteLookup,
+    nameMap, maxNodes,
+    leadingEdge = detected,
     annotated = character(),
-    annotation_scores = numeric()
+    annotationScores = numeric()
 ) {
     detected <- unique(as.character(detected))
     detected <- detected[grepl("^RAMP_[CG]_", detected)]
     annotated <- unique(as.character(annotated))
     annotated <- annotated[grepl("^RAMP_C_", annotated)]
     retained <- unique(c(detected, annotated))
-    edges <- .pn_prune_edges(edges, retained, max_nodes)
+    edges <- .pn_prune_edges(edges, retained, maxNodes)
     if (!nrow(edges) && !length(retained)) {
         return(list(nodes = .pn_empty_nodes(), links = .pn_empty_links()))
     }
@@ -527,11 +527,11 @@
     node_ids <- unique(c(edges$src, edges$dest, retained))
     group <- ifelse(startsWith(node_ids, "RAMP_G_"), "rna", "mets")
     expr <- rep(NA_real_, length(node_ids))
-    node_name <- unname(name_map[node_ids])
+    node_name <- unname(nameMap[node_ids])
     node_name[is.na(node_name) | !nzchar(node_name)] <- node_ids[is.na(node_name) | !nzchar(node_name)]
     display <- node_name
 
-    gene_rows <- gene_lookup[[cluster_key]]
+    gene_rows <- geneLookup[[clusterKey]]
     gene_index <- which(group == "rna")
     if (length(gene_index) && !is.null(gene_rows) && nrow(gene_rows)) {
         match_index <- match(node_ids[gene_index], gene_rows$rampId)
@@ -547,7 +547,7 @@
         display[gene_index[present]] <- label
     }
 
-    met_rows <- metabolite_lookup[[cluster_key]]
+    met_rows <- metaboliteLookup[[clusterKey]]
     met_index <- which(group == "mets")
     if (length(met_index) && !is.null(met_rows) && nrow(met_rows)) {
         match_index <- match(node_ids[met_index], met_rows$ramp_id)
@@ -570,9 +570,9 @@
         name = node_name,
         display = display,
         detected = node_ids %in% detected,
-        leading_edge = node_ids %in% leading_edge,
+        leading_edge = node_ids %in% leadingEdge,
         annotated = node_ids %in% annotated,
-        annotation_score = unname(annotation_scores[node_ids]),
+        annotation_score = unname(annotationScores[node_ids]),
         stringsAsFactors = FALSE
     )
     links <- if (nrow(edges)) {
@@ -592,17 +592,17 @@
     list(nodes = nodes, links = links)
 }
 
-.pn_annotation_score_map <- function(annotation_map) {
-    if (is.null(annotation_map) || !nrow(annotation_map)) {
+.pn_annotation_score_map <- function(annotationMap) {
+    if (is.null(annotationMap) || !nrow(annotationMap)) {
         return(numeric())
     }
-    .pn_assert_columns(annotation_map, "ramp_id", "annotation_map")
-    score <- if ("Score" %in% names(annotation_map)) {
-        suppressWarnings(as.numeric(annotation_map$Score))
+    .pn_assert_columns(annotationMap, "ramp_id", "annotation_map")
+    score <- if ("Score" %in% names(annotationMap)) {
+        suppressWarnings(as.numeric(annotationMap$Score))
     } else {
-        rep(NA_real_, nrow(annotation_map))
+        rep(NA_real_, nrow(annotationMap))
     }
-    ids <- as.character(annotation_map$ramp_id)
+    ids <- as.character(annotationMap$ramp_id)
     keep <- startsWith(ids, "RAMP_C_") & is.finite(score)
     if (!any(keep)) {
         return(numeric())
@@ -612,38 +612,38 @@
 }
 
 .pn_annotated_metabolites_by_pathway <- function(
-    annotation_map, pathway_names, pathway_rows,
-    analyte_pathway, pathway_table
+    annotationMap, pathwayNames, pathwayRows,
+    analytePathway, pathwayTable
 ) {
     result <- stats::setNames(
-        vector("list", length(pathway_names)),
-        pathway_names
+        vector("list", length(pathwayNames)),
+        pathwayNames
     )
-    if (is.null(annotation_map) || !nrow(annotation_map)) {
+    if (is.null(annotationMap) || !nrow(annotationMap)) {
         return(result)
     }
-    .pn_assert_columns(annotation_map, "ramp_id", "annotation_map")
+    .pn_assert_columns(annotationMap, "ramp_id", "annotation_map")
     .pn_assert_columns(
-        analyte_pathway, c("rampId", "pathwayRampId"), "analytehaspathway"
+        analytePathway, c("rampId", "pathwayRampId"), "analytehaspathway"
     )
     .pn_assert_columns(
-        pathway_table, c("pathwayRampId", "pathwayName", "sourceId"), "pathway"
+        pathwayTable, c("pathwayRampId", "pathwayName", "sourceId"), "pathway"
     )
-    score <- if ("Score" %in% names(annotation_map)) {
-        suppressWarnings(as.numeric(annotation_map$Score))
+    score <- if ("Score" %in% names(annotationMap)) {
+        suppressWarnings(as.numeric(annotationMap$Score))
     } else {
-        rep(0, nrow(annotation_map))
+        rep(0, nrow(annotationMap))
     }
     score[!is.finite(score)] <- -Inf
-    annotation_map$.pathway_score <- score
-    annotation_map <- annotation_map[
-        order(-annotation_map$.pathway_score, annotation_map$ramp_id), ,
+    annotationMap$.pathway_score <- score
+    annotationMap <- annotationMap[
+        order(-annotationMap$.pathway_score, annotationMap$ramp_id), ,
         drop = FALSE
     ]
 
-    for (pathway_name in pathway_names) {
-        selected_rows <- pathway_rows[
-            tolower(as.character(pathway_rows$pathwayName)) == tolower(pathway_name), ,
+    for (pathway_name in pathwayNames) {
+        selected_rows <- pathwayRows[
+            tolower(as.character(pathwayRows$pathwayName)) == tolower(pathway_name), ,
             drop = FALSE
         ]
         name_keys <- unique(tolower(c(
@@ -651,16 +651,16 @@
             as.character(selected_rows$pathwayName)
         )))
         source_keys <- unique(tolower(as.character(selected_rows$sourceId)))
-        pathway_ids <- unique(pathway_table$pathwayRampId[
-            tolower(as.character(pathway_table$pathwayName)) %in% name_keys |
-                tolower(as.character(pathway_table$sourceId)) %in% source_keys
+        pathway_ids <- unique(pathwayTable$pathwayRampId[
+            tolower(as.character(pathwayTable$pathwayName)) %in% name_keys |
+                tolower(as.character(pathwayTable$sourceId)) %in% source_keys
         ])
-        members <- unique(as.character(analyte_pathway$rampId[
-            analyte_pathway$pathwayRampId %in% pathway_ids &
-                startsWith(as.character(analyte_pathway$rampId), "RAMP_C_")
+        members <- unique(as.character(analytePathway$rampId[
+            analytePathway$pathwayRampId %in% pathway_ids &
+                startsWith(as.character(analytePathway$rampId), "RAMP_C_")
         ]))
-        mapped <- annotation_map[
-            annotation_map$ramp_id %in% members, ,
+        mapped <- annotationMap[
+            annotationMap$ramp_id %in% members, ,
             drop = FALSE
         ]
         result[[pathway_name]] <- unique(as.character(mapped$ramp_id))
@@ -668,10 +668,10 @@
     result
 }
 
-.pn_topology_leading_edge <- function(ids, edges, gene_index = NULL) {
+.pn_topology_leading_edge <- function(ids, edges, geneIndex = NULL) {
     genes <- which(startsWith(ids, "RAMP_G_"))
-    if (is.null(gene_index) || !length(genes)) return(ids)
-    mapping <- .map_gene_index(ids[genes], gene_index, verbose = FALSE)
+    if (is.null(geneIndex) || !length(genes)) return(ids)
+    mapping <- .map_gene_index(ids[genes], geneIndex, verbose = FALSE)
     nodes <- unique(c(edges$src, edges$dest))
     resolved <- lapply(seq_along(genes), function(i) {
         equivalents <- strsplit(mapping$ramp_ids[i], ";", fixed = TRUE)[[1L]]
@@ -682,25 +682,25 @@
 }
 
 .pn_build_network_collection <- function(
-    pathway_rows, pathway_names,
-    prepared_edges, clusters,
-    gene_lookup, metabolite_lookup,
-    name_map, max_nodes,
-    metabolite_detection = "leading_edge",
-    annotated_metabolites = NULL,
-    annotation_scores = numeric(),
-    annotation_score_threshold = 0.05,
-    fixed_compound_ids = FALSE,
-    gene_index = NULL
+    pathwayRows, pathwayNames,
+    preparedEdges, clusters,
+    geneLookup, metaboliteLookup,
+    nameMap, maxNodes,
+    metaboliteDetection = "leading_edge",
+    annotatedMetabolites = NULL,
+    annotationScores = numeric(),
+    annotationScoreThreshold = 0.05,
+    fixedCompoundIds = FALSE,
+    geneIndex = NULL
 ) {
     networks <- lapply(clusters, function(cluster) {
         cluster_key <- tolower(as.character(cluster))
-        cluster_rows <- pathway_rows[
-            tolower(as.character(pathway_rows$Cluster_id)) == cluster_key, ,
+        cluster_rows <- pathwayRows[
+            tolower(as.character(pathwayRows$Cluster_id)) == cluster_key, ,
             drop = FALSE
         ]
-        cluster_networks <- lapply(pathway_names, function(pathway_name) {
-            pathway_key <- tolower(pathway_name)
+        cluster_networks <- lapply(pathwayNames, function(pathwayName) {
+            pathway_key <- tolower(pathwayName)
             is_present <- any(tolower(cluster_rows$pathwayName) == pathway_key)
             if (!is_present) {
                 return(list(nodes = .pn_empty_nodes(), links = .pn_empty_links()))
@@ -714,17 +714,17 @@
                 use.names = FALSE
             ))
             leading_edge <- .pn_topology_leading_edge(
-                leading_edge, prepared_edges[[pathway_name]], gene_index
+                leading_edge, preparedEdges[[pathwayName]], geneIndex
             )
             detected <- leading_edge
-            if (identical(metabolite_detection, "annotated")) {
-                pathway_annotated <- annotated_metabolites[[pathway_name]]
-                pathway_scores <- unname(annotation_scores[pathway_annotated])
-                score_keep <- if (fixed_compound_ids) {
+            if (identical(metaboliteDetection, "annotated")) {
+                pathway_annotated <- annotatedMetabolites[[pathwayName]]
+                pathway_scores <- unname(annotationScores[pathway_annotated])
+                score_keep <- if (fixedCompoundIds) {
                     rep(TRUE, length(pathway_annotated))
                 } else {
                     is.finite(pathway_scores) &
-                        pathway_scores >= annotation_score_threshold
+                        pathway_scores >= annotationScoreThreshold
                 }
                 detected <- unique(c(
                     detected,
@@ -732,19 +732,19 @@
                 ))
             }
             .pn_build_one_network(
-                prepared_edges[[pathway_name]], detected, cluster_key,
-                gene_lookup, metabolite_lookup, name_map, max_nodes,
-                leading_edge = leading_edge,
-                annotated = annotated_metabolites[[pathway_name]],
-                annotation_scores = annotation_scores
+                preparedEdges[[pathwayName]], detected, cluster_key,
+                geneLookup, metaboliteLookup, nameMap, maxNodes,
+                leadingEdge = leading_edge,
+                annotated = annotatedMetabolites[[pathwayName]],
+                annotationScores = annotationScores
             )
         })
-        names(cluster_networks) <- pathway_names
+        names(cluster_networks) <- pathwayNames
         cluster_networks
     })
     names(networks) <- clusters
-    matrix_ids <- unlist(lapply(networks, function(cluster_networks) {
-        lapply(cluster_networks, function(network) {
+    matrix_ids <- unlist(lapply(networks, function(clusterNetworks) {
+        lapply(clusterNetworks, function(network) {
             network$nodes$id[is.finite(network$nodes$expr) |
                 network$nodes$leading_edge | network$nodes$annotated]
         })
@@ -774,32 +774,32 @@
     c(x = x, y = y)
 }
 
-.pn_matrix_expression <- function(matrix, feature_names, cell_names) {
-    if (!length(feature_names)) {
+.pn_matrix_expression <- function(matrix, featureNames, cellNames) {
+    if (!length(featureNames)) {
         return(list())
     }
-    feature_index <- match(tolower(feature_names), tolower(rownames(matrix)))
-    cell_index <- if (!is.null(colnames(matrix)) && length(cell_names)) {
-        match(cell_names, colnames(matrix))
+    feature_index <- match(tolower(featureNames), tolower(rownames(matrix)))
+    cell_index <- if (!is.null(colnames(matrix)) && length(cellNames)) {
+        match(cellNames, colnames(matrix))
     } else {
-        seq_len(min(ncol(matrix), length(cell_names)))
+        seq_len(min(ncol(matrix), length(cellNames)))
     }
     present <- !is.na(cell_index)
     lapply(feature_index, function(feature) {
         if (is.na(feature)) {
             return(NULL)
         }
-        values <- rep(NA_real_, length(cell_names))
+        values <- rep(NA_real_, length(cellNames))
         values[present] <- as.numeric(matrix[feature, cell_index[present], drop = TRUE])
         values
     })
 }
 
 .pn_spatial_payload <- function(
-    object, ident, image, matrix_ids,
-    gene_de, metabolite_de,
-    gene_matrix = NULL, metabolite_matrix = NULL,
-    max_spatial_points = 50000L
+    object, ident, image, matrixIds,
+    geneDe, metaboliteDe,
+    geneMatrix = NULL, metaboliteMatrix = NULL,
+    maxSpatialPoints = 50000L
 ) {
     object <- .nativeSingleSample(object)
     coordinates <- .nativeCoordinates(object)
@@ -821,19 +821,19 @@
     }
     keep <- is.finite(x) & is.finite(y) & !is.na(assignment)
     keep_index <- which(keep)
-    if (is.finite(max_spatial_points)) max_spatial_points <- as.integer(max_spatial_points)
-    if (is.finite(max_spatial_points) && max_spatial_points > 0L &&
-        length(keep_index) > max_spatial_points) {
+    if (is.finite(maxSpatialPoints)) maxSpatialPoints <- as.integer(maxSpatialPoints)
+    if (is.finite(maxSpatialPoints) && maxSpatialPoints > 0L &&
+        length(keep_index) > maxSpatialPoints) {
         keep_index <- keep_index[unique(round(seq(
             1, length(keep_index),
-            length.out = max_spatial_points
+            length.out = maxSpatialPoints
         )))]
     }
     x <- x[keep_index]
     y <- y[keep_index]
     assignment <- assignment[keep_index]
     if (!length(coordinate_cells)) {
-        available_cells <- colnames(gene_matrix %||% metabolite_matrix)
+        available_cells <- colnames(geneMatrix %||% metaboliteMatrix)
         coordinate_cells <- available_cells[seq_len(nrow(coordinates))]
     }
     coordinate_cells <- coordinate_cells[keep_index]
@@ -851,25 +851,25 @@
         1
     }
 
-    gene_ids <- matrix_ids[startsWith(matrix_ids, "RAMP_G_")]
-    met_ids <- matrix_ids[startsWith(matrix_ids, "RAMP_C_")]
+    gene_ids <- matrixIds[startsWith(matrixIds, "RAMP_G_")]
+    met_ids <- matrixIds[startsWith(matrixIds, "RAMP_C_")]
     gene_expression <- list()
     metabolite_expression <- list()
-    if (length(gene_ids) && !is.null(gene_matrix) && !is.null(gene_de) && nrow(gene_de)) {
-        best <- gene_de[order(gene_de$p_val_adj), , drop = FALSE]
+    if (length(gene_ids) && !is.null(geneMatrix) && !is.null(geneDe) && nrow(geneDe)) {
+        best <- geneDe[order(geneDe$p_val_adj), , drop = FALSE]
         best <- best[!duplicated(best$rampId), , drop = FALSE]
         features <- best$gene[match(gene_ids, best$rampId)]
-        values <- .pn_matrix_expression(gene_matrix, features, coordinate_cells)
+        values <- .pn_matrix_expression(geneMatrix, features, coordinate_cells)
         names(values) <- gene_ids
         gene_expression <- Filter(Negate(is.null), values)
     }
-    if (length(met_ids) && !is.null(metabolite_matrix) &&
-        !is.null(metabolite_de) && nrow(metabolite_de)) {
-        best <- metabolite_de[order(metabolite_de$p_val_adj), , drop = FALSE]
+    if (length(met_ids) && !is.null(metaboliteMatrix) &&
+        !is.null(metaboliteDe) && nrow(metaboliteDe)) {
+        best <- metaboliteDe[order(metaboliteDe$p_val_adj), , drop = FALSE]
         best <- best[!duplicated(best$ramp_id), , drop = FALSE]
         features <- best$mz_name[match(met_ids, best$ramp_id)]
         values <- .pn_matrix_expression(
-            metabolite_matrix,
+            metaboliteMatrix,
             features,
             coordinate_cells
         )
@@ -886,9 +886,9 @@
     )
 }
 
-.pn_fc_limit <- function(DE.list) {
+.pn_fc_limit <- function(deList) {
     value <- unlist(
-        lapply(DE.list, function(x) x$avg_log2FC),
+        lapply(deList, function(x) x$avg_log2FC),
         use.names = FALSE
     )
     value <- abs(value[is.finite(value)])
@@ -914,9 +914,9 @@
     stop("Cannot locate the pathway network HTML template.")
 }
 
-.pn_render_html <- function(payload, template_path = .pn_template_path()) {
+.pn_render_html <- function(payload, templatePath = .pn_template_path()) {
     template <- paste(
-        readLines(template_path, warn = FALSE, encoding = "UTF-8"),
+        readLines(templatePath, warn = FALSE, encoding = "UTF-8"),
         collapse = "\n"
     )
     library_path <- system.file("vendor", "d3", "d3.min.js", package = "SpaMTP")

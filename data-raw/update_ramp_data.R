@@ -93,16 +93,16 @@ queries <- list(
   )
 )
 
-save_snapshot_object <- function(object_name, sql) {
-  message("Extracting ", object_name, " ...")
+save_snapshot_object <- function(objectName, sql) {
+  message("Extracting ", objectName, " ...")
   value <- DBI::dbGetQuery(con, sql)
-  if (!nrow(value)) stop("Extracted table is empty: ", object_name)
+  if (!nrow(value)) stop("Extracted table is empty: ", objectName)
   environment <- new.env(parent = emptyenv())
-  environment[[object_name]] <- value
+  environment[[objectName]] <- value
   save(
-    list = object_name,
+    list = objectName,
     envir = environment,
-    file = file.path(data_dir, paste0(object_name, ".rda")),
+    file = file.path(data_dir, paste0(objectName, ".rda")),
     compress = "xz",
     version = 3
   )
@@ -114,7 +114,7 @@ save_snapshot_object <- function(object_name, sql) {
 
 snapshot_counts <- vapply(
   names(queries),
-  function(object_name) save_snapshot_object(object_name, queries[[object_name]]),
+  function(objectName) save_snapshot_object(objectName, queries[[objectName]]),
   numeric(1)
 )
 
@@ -162,7 +162,7 @@ if (!is.null(previous_source_df)) {
   )
 } else {
   warning(
-    "No previous source_df snapshot was available; graph IDs were not migrated. ",
+    "No previous sourceDf snapshot was available; graph IDs were not migrated. ",
     "Run data-raw/audit_ramp_graph_data.R before packaging."
   )
 }

@@ -127,9 +127,9 @@ Regional marker analysis retains all measured features.
 |:--|:--|
 | `group`, `regions` | Metadata columns for lesion side and archived anatomy |
 | `clusters = 3` | Number of clusters in the primary representation |
-| `npcs = 8`, `max_features = 1000` | Up to eight PCs from at most 1,000 variable features per modality |
-| `association_features = 4` | Maximum marker/variable-feature anchors per modality pair, selected across regions |
-| `coordinate_units` | Unit label for spatial coordinates and report provenance |
+| `npcs = 8`, `maxFeatures = 1000` | Up to eight PCs from at most 1,000 variable features per modality |
+| `associationFeatures = 4` | Maximum marker/variable-feature anchors per modality pair, selected across regions |
+| `coordinateUnits` | Unit label for spatial coordinates and report provenance |
 | `structure$primary = "spatial"` | Spatial representation used for downstream structure analysis |
 | `structure$k_grid = c(3, 4)` | Candidate cluster counts used for sensitivity comparisons |
 | `structure$reference = "RegionLoupe"` | Archived anatomy used to calculate adjusted Rand index (ARI) |
@@ -139,15 +139,15 @@ Regional marker analysis retains all measured features.
 ```{r workflow}
 fit <- runSpaMTPWorkflow(x, spec,
     group = "lesion", regions = "RegionLoupe",
-    clusters = 3, npcs = 8, max_features = 1000, association_features = 4,
-    coordinate_units = "original image pixels",
+    clusters = 3, npcs = 8, maxFeatures = 1000, associationFeatures = 4,
+    coordinateUnits = "original image pixels",
     structure = list(
         primary = "spatial", k_grid = c(3, 4),
         reference = "RegionLoupe", umap = FALSE,
         stability_blocks = 3
     )
 )
-metrics <- fit$structure$metrics
+metrics <- workflowMetrics(fit)
 metrics[, c(
     "representation", "k", "approx_silhouette",
     "reference_ARI", "spatial_neighbor_agreement"
@@ -166,7 +166,7 @@ embeddings with equal modality weights.
 
 Graph PCA uses a sparse spatial graph and materialises the selected expression
 matrix and solver output, including when the input assay is delayed.
-Here `max_features = 1000` limits representation construction to 1,000 features
+Here `maxFeatures = 1000` limits representation construction to 1,000 features
 per modality; regional marker scoring uses all retained features.
 See [scaling and memory use](Modern_Data_Access.html#scaling-and-memory-use)
 for sizing larger analyses.
@@ -229,11 +229,8 @@ the two genes in the paired RNA experiment.
 ```{r brain-cp-summary}
 cp <- brain[, brain$RegionLoupe == "CP"]
 table(cp$lesion)
-cp_values <- cbind(
-    `m/z 400.14659` = assay(cp, "workflow")["mz-400.14659", ],
-    t(as.matrix(assay(altExp(cp, "SPT"), "workflow")[c("Penk", "Tac1"), ]))
-)
-aggregate(cp_values, by = list(lesion = cp$lesion), FUN = mean)
+summarizeFeatures(cp, features = c("mz-400.14659", "Penk", "Tac1"),
+    groupBy = "lesion", assayName = "workflow")
 ```
 
 `Penk` and m/z 400.14659 are higher on the lesioned side of CP, whereas `Tac1`
@@ -249,7 +246,7 @@ regions receive equal weight. `logFC` is the difference on the selected scale.
 
 `demsHeatmap(n = 2)` selects up to two positive markers per region by `mean_auc`
 and plots row-standardized means in Figure 7.\@ref(fig:markers).
-`logfc.threshold = 0` retains positive effects
+`logFCThreshold = 0` retains positive effects
 on the selected expression scale.
 
 ```{r markers, fig.width=7, fig.height=5.5, out.width="700px", fig.cap="Regional MSI markers across all 876 archived mouse-brain locations. Rows are selected mass features and columns are eligible archived regions. Up to two positive markers per region are selected by mean AUC; duplicate selections appear once. Colours show row-standardized mean expression (z-scores), and the top strip identifies the region."}
@@ -263,8 +260,8 @@ head(markers$DEMs[marker_order, c(
     "min_auc", "mean_cohen", "direction_stability"
 )])
 demsHeatmap(markers,
-    n = 2, only.pos = TRUE, logfc.threshold = 0,
-    order.by = "mean_auc", fontsize_row = 9, fontsize_col = 10
+    n = 2, onlyPos = TRUE, logFCThreshold = 0,
+    orderBy = "mean_auc", fontsizeRow = 9, fontsizeCol = 10
 )
 ```
 
@@ -368,13 +365,13 @@ family_structures <- unique(structure_family[c("iso_smiles", "max_water_losses")
 table(max_water_losses = family_structures$max_water_losses)
 
 family_index <- buildMZAnnotationIndex(structure_family,
-    polarity = "positive", maldi_matrix = "DHB",
+    polarity = "positive", maldiMatrix = "DHB",
     adducts = c("M+H", "M+H-H2O", "M+H-2H2O")
 )
 mean_spectrum <- data.frame(mz = rowData(x)$mz, intensity = rowMeans(counts(x)))
 observed_mz <- rowData(x)["mz-264.268615", "mz"]
 family_matches <- queryMZAnnotationIndex(observed_mz, family_index,
-    ppm = 5, ms1_spectrum = mean_spectrum, min_score = 0
+    ppm = 5, ms1Spectrum = mean_spectrum, minScore = 0
 )
 family_candidates <- family_matches[
     !duplicated(family_matches[, c("ramp_ids", "adduct")]),
@@ -385,7 +382,7 @@ The formula family contains `r nrow(structure_family)` database records and
 `r nrow(family_structures)` distinct SMILES strings. `max_water_losses` counts
 structurally supported dehydration steps. The table below shows the
 engine's mass-matched hypotheses for the actual
-m/z `r sprintf("%.6f", observed_mz)` feature. `min_score = 0` exposes every
+m/z `r sprintf("%.6f", observed_mz)` feature. `minScore = 0` exposes every
 returned hypothesis before downstream score filtering. Repeated RaMP
 identity/adduct pairs retain their highest-scoring database record in this display.
 
@@ -416,7 +413,7 @@ coverage, and display regional enrichment. Follow it when the question shifts
 from individual spatial features to coordinated patterns across measured
 pathway members.
 
-For metabolites, `metabolite_ambiguity = "exclude"` omits features with multiple
+For metabolites, `metaboliteAmbiguity = "exclude"` omits features with multiple
 candidate identities. Candidates, exclusions, aggregation weights and tested
 membership remain inspectable in the identity assay and enrichment result.
 HGNC applies to human genes; mouse genes need a species-specific or orthology

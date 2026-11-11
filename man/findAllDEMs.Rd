@@ -9,20 +9,20 @@ findAllDEMs(
   data,
   ident,
   n = 3,
-  logFC_threshold = 1.2,
-  DE_output_dir = NULL,
-  run_name = "findAllDEMs",
-  annotation.column = NULL,
+  foldChangeThreshold = 1.2,
+  outputDir = NULL,
+  runName = "findAllDEMs",
+  annotationColumn = NULL,
   assay = "main",
   assayName = "counts",
-  return.individual = FALSE,
+  returnIndividual = FALSE,
   verbose = TRUE,
   seed = 1234,
   method = c("markers", "replicate", "technical"),
   replicate = NULL,
   contrasts = list(),
-  min_region_size = 3,
-  spatial_blocks = 0
+  minRegionSize = 3,
+  spatialBlocks = 0
 )
 }
 \arguments{
@@ -36,18 +36,19 @@ the groups to compare. Technical mode requires this column to be a factor.}
 \item{n}{An integer that defines the number of pseudo-replicates (pools) per
 sample (default = 3).}
 
-\item{logFC_threshold}{Technical-mode fold-change threshold, passed as
-\code{log2(logFC_threshold)} to \code{limma::treat()} (default = 1.2).
+\item{foldChangeThreshold}{Technical-mode fold-change ratio, a finite number
+at least 1, passed as \code{log2(foldChangeThreshold)} to \code{limma::treat()}.
+The default 1.2 tests against a 20 percent change; 2 tests a twofold change.
 Not used to filter marker or biological-replicate results.}
 
-\item{DE_output_dir}{A character string defining the directory path for all
+\item{outputDir}{A character string defining the directory path for all
 output files to be stored. This path must a new directory. Else, set to
 NULL as default.}
 
-\item{run_name}{A character string defining the title of this DE analysis
+\item{runName}{A character string defining the title of this DE analysis
 that will be used when saving DEMs to .csv file (default = 'findAllDEMs').}
 
-\item{annotation.column}{Optional column in the selected experiment's
+\item{annotationColumn}{Optional column in the selected experiment's
 \code{rowData()}, such as \code{"all_IsomerNames"} from \code{annotateSM()} (default NULL).}
 
 \item{assay}{Primary (\code{"main"}) or alternative experiment name. The default
@@ -59,7 +60,7 @@ pooling mode requires finite non-negative unlogged values; marker and
 replicate modes use the supplied values directly, commonly \code{"logcounts"}.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{return.individual}{In technical mode, return one result per group
+\item{returnIndividual}{In technical mode, return one result per group
 instead of a merged result. Unsupported in marker/replicate modes.}
 
 \item{verbose}{Boolean indicating whether to show the message. If TRUE the
@@ -80,9 +81,9 @@ technical subdivisions and cannot establish biological replication.}
 required for replicate inference. At least three replicates per arm or
 three complete pairs are required.}
 
-\item{min_region_size}{Minimum labelled observations in a marker group.}
+\item{minRegionSize}{Minimum labelled observations in a marker group.}
 
-\item{spatial_blocks}{Number of spatial blocks per sample for a
+\item{spatialBlocks}{Number of spatial blocks per sample for a
 leave-one-block
 sensitivity analysis of marker effects, or zero to disable. Blocks use
 coordinates only. They are not biological replicates or confidence intervals.}
@@ -90,7 +91,7 @@ coordinates only. They are not biological replicates or confidence intervals.}
 \value{
 A result list, not a modified experiment. Technical mode returns
 pooled values in \code{counts} and differential results in \code{DEMs} (or a list
-per group when \code{return.individual = TRUE}). Marker mode returns \code{DEMs},
+per group when \code{returnIndividual = TRUE}). Marker mode returns \code{DEMs},
 \code{scores}, \code{expression}, group eligibility and provenance. Replicate mode
 returns \code{group_means} and named \code{tests} with status and, when eligible,
 limma tables and the biological-replicate design. Marker mode may return

@@ -1,8 +1,8 @@
 # Development assistance: see inst/COPYRIGHTS.
 
-pathwayFeatureIdentityFixture <- function(equal_mass = FALSE) {
-    mass <- if (equal_mass) c(100.1, 100.1) else c(100.1, 200.2)
-    labels <- if (equal_mass) c("ion_a", "ion_b") else {
+pathwayFeatureIdentityFixture <- function(equalMass = FALSE) {
+    mass <- if (equalMass) c(100.1, 100.1) else c(100.1, 200.2)
+    labels <- if (equalMass) c("ion_a", "ion_b") else {
         c("mz-100.1000", "mz-200.2000")
     }
     values <- matrix(seq_len(8), nrow = 2,
@@ -80,7 +80,7 @@ test_that("compound assays retain padded, renamed and subset features", {
 })
 
 test_that("compound identity follows equal-mass rows in an alternative assay", {
-    fixture <- pathwayFeatureIdentityFixture(equal_mass = TRUE)
+    fixture <- pathwayFeatureIdentityFixture(equalMass = TRUE)
     object <- fixture$object
     reordered <- object[2:1, ]
     rownames(reordered) <- c("second ion", "first ion")
@@ -148,31 +148,31 @@ test_that("regional and network joins retain renamed metabolite features", {
         )
     ))
     index <- buildPathwayIndex(database,
-        gene_mapping = "ramp", organism = "custom"
+        geneMapping = "ramp", organism = "custom"
     )
     de <- data.frame(
         gene = rownames(object), cluster = "A", avg_log2FC = c(2, -1),
         p_val_adj = c(0.01, 0.02)
     )
     original <- findRegionalPathways(object, ident = "region",
-        DE.list = list(metabolites = de), analyte_types = "metabolites",
-        min_path_size = 1, max_path_size = 1, database = database,
-        pathway_index = index, organism = "custom", verbose = FALSE
+        deList = list(metabolites = de), analyteTypes = "metabolites",
+        minPathSize = 1, maxPathSize = 1, database = database,
+        pathwayIndex = index, organism = "custom", verbose = FALSE
     )
     rownames(object) <- c("renamed_first", "renamed_second")
     de$gene <- rownames(object)
     renamed <- findRegionalPathways(object, ident = "region",
-        DE.list = list(metabolites = de), analyte_types = "metabolites",
-        min_path_size = 1, max_path_size = 1, database = database,
-        pathway_index = index, organism = "custom", verbose = FALSE
+        deList = list(metabolites = de), analyteTypes = "metabolites",
+        minPathSize = 1, maxPathSize = 1, database = database,
+        pathwayIndex = index, organism = "custom", verbose = FALSE
     )
     expect_equal(nrow(renamed), 2L)
     expect_equal(renamed, original)
     regional <- renamed[renamed$pathwayRampId == "P1", , drop = FALSE]
     path <- pathwayNetworkPlots(object, ident = "region",
-        regpathway = regional, DE.list = list(metabolites = de),
-        analyte_types = "metabolites", database = database,
-        pathway_index = index, organism = "custom",
+        regpathway = regional, deList = list(metabolites = de),
+        analyteTypes = "metabolites", database = database,
+        pathwayIndex = index, organism = "custom",
         path = withr::local_tempdir(), verbose = FALSE
     )
     expect_true(file.exists(path))
@@ -187,7 +187,7 @@ test_that("regional and network joins retain renamed metabolite features", {
 })
 
 test_that("annotation search preserves equal-mass keys and modality selection", {
-    fixture <- pathwayFeatureIdentityFixture(equal_mass = TRUE)
+    fixture <- pathwayFeatureIdentityFixture(equalMass = TRUE)
     object <- fixture$object
     SummarizedExperiment::rowData(object)$mz_names <- rownames(object)
     store <- S4Vectors::metadata(object)$mz_annotation

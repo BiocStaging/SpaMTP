@@ -5,13 +5,13 @@
 #' Seurat WNN;
 #' the historical WNN workflow remains in the published-workflow branch.
 #'
-#' @param multiomic.data A SpatialExperiment with a primary modality and paired
+#' @param multiomicData A SpatialExperiment with a primary modality and paired
 #'   alternative experiments in `SingleCellExperiment::altExps()`.
-#' @param reduction.list Reduction names for the primary MSI and alternative
+#' @param reductionList Reduction names for the primary MSI and alternative
 #'   modalities (default = list("spm.pca", "spt.pca")).
-#' @param dims.list List containing the numeric range of principle component
+#' @param dimsList List containing the numeric range of principle component
 #'   dimension to include for each modality (default = list(1:30,1:30)).
-#' @param return.intermediate Retain per-modality PCA results in reducedDims().
+#' @param returnIntermediate Retain per-modality PCA results in reducedDims().
 #' @param verbose Show progress messages (default = FALSE).
 #' @param modalities Primary experiment (`"main"`) followed by alternative
 #'   experiments to integrate. Derived pathway and merged experiments are not
@@ -26,15 +26,15 @@
 #' @examples
 #' data(spamtp_example)
 #' spe <- spamtp_example$experiment
-#' integrated <- multiOmicIntegration(spe, dims.list = list(1:2, 1:2))
+#' integrated <- multiOmicIntegration(spe, dimsList = list(1:2, 1:2))
 #' head(SingleCellExperiment::reducedDim(integrated, "integrated"))
 methods::setGeneric(
     "multiOmicIntegration",
     function(
-        multiomic.data,
-                     reduction.list = list("spm.pca", "spt.pca"),
-                     dims.list = list(1:30, 1:30),
-                     return.intermediate = FALSE,
+        multiomicData,
+                     reductionList = list("spm.pca", "spt.pca"),
+                     dimsList = list(1:30, 1:30),
+                     returnIntermediate = FALSE,
                      verbose = FALSE,
                      modalities = c("main", "transcriptome"),
                      ...
@@ -59,7 +59,7 @@ methods::setGeneric(
     if (!length(dimensions) || anyNA(dimensions) || any(dimensions < 1L) ||
         anyDuplicated(dimensions)) {
         stop(
-            "Each dims.list entry must contain unique positive dimensions.",
+            "Each dimsList entry must contain unique positive dimensions.",
             call. = FALSE
         )
     }
@@ -104,10 +104,10 @@ methods::setMethod(
     "multiOmicIntegration",
     "SpatialExperiment",
     function(
-        multiomic.data,
-                     reduction.list = list("spm.pca", "spt.pca"),
-                     dims.list = list(1:30, 1:30),
-                     return.intermediate = FALSE,
+        multiomicData,
+                     reductionList = list("spm.pca", "spt.pca"),
+                     dimsList = list(1:30, 1:30),
+                     returnIntermediate = FALSE,
                      verbose = FALSE,
                      modalities = c("main", "transcriptome"),
                      ...
@@ -119,7 +119,7 @@ methods::setMethod(
             )
         }
         alternatives <- modalities[-1L]
-        if (!all(alternatives %in% SingleCellExperiment::altExpNames(multiomic.data))) {
+        if (!all(alternatives %in% SingleCellExperiment::altExpNames(multiomicData))) {
             stop(
                 "Requested alternative modality was not found. Use addTranscriptome() ",
                 "or supply modalities matching altExpNames(x).",
@@ -128,29 +128,29 @@ methods::setMethod(
         }
         modalityNames <- c("main", alternatives)
         experiments <- c(
-            list(main = multiomic.data),
+            list(main = multiomicData),
             stats::setNames(
                 lapply(alternatives, function(name) {
-                    SingleCellExperiment::altExp(multiomic.data, name)
+                    SingleCellExperiment::altExp(multiomicData, name)
                 }),
                 alternatives
             )
         )
-        if (length(reduction.list) != length(experiments)) {
+        if (length(reductionList) != length(experiments)) {
             stop(
-                "Provide one reduction.list entry per modality.",
+                "Provide one reductionList entry per modality.",
                 call. = FALSE
             )
         }
-        if (length(dims.list) != length(experiments)) {
-            stop("Provide one dims.list entry per modality.", call. = FALSE)
+        if (length(dimsList) != length(experiments)) {
+            stop("Provide one dimsList entry per modality.", call. = FALSE)
         }
 
         results <- lapply(seq_along(experiments), function(index) {
             .modalityPca(
                 experiments[[index]],
-                reductionName = as.character(reduction.list[[index]])[[1L]],
-                dimensions = as.integer(dims.list[[index]]),
+                reductionName = as.character(reductionList[[index]])[[1L]],
+                dimensions = as.integer(dimsList[[index]]),
                 ...
             )
         })
@@ -167,30 +167,30 @@ methods::setMethod(
         })
         integrated <- do.call(cbind, embeddings)
         SingleCellExperiment::reducedDim(
-            multiomic.data,
+            multiomicData,
             "integrated"
         ) <- integrated
 
-        if (isTRUE(return.intermediate)) {
+        if (isTRUE(returnIntermediate)) {
             mainReductions <- SingleCellExperiment::reducedDims(results[[1L]]$experiment)
-            SingleCellExperiment::reducedDims(multiomic.data) <- mainReductions
+            SingleCellExperiment::reducedDims(multiomicData) <- mainReductions
             SingleCellExperiment::reducedDim(
-                multiomic.data,
+                multiomicData,
                 "integrated"
             ) <- integrated
             for (index in seq_along(alternatives)) {
                 SingleCellExperiment::altExp(
-                    multiomic.data,
+                    multiomicData,
                     alternatives[[index]]
                 ) <-
                     results[[index + 1L]]$experiment
             }
         }
-        S4Vectors::metadata(multiomic.data)$spamtp_integration <- list(
+        S4Vectors::metadata(multiomicData)$spamtp_integration <- list(
             method = "equal-weight concatenated PCA",
             modalities = modalityNames,
-            reductions = unlist(reduction.list),
-            dimensions = dims.list
+            reductions = unlist(reductionList),
+            dimensions = dimsList
         )
         verbose_message(
             paste0(
@@ -199,7 +199,7 @@ methods::setMethod(
             ),
             verbose = verbose
         )
-        multiomic.data
+        multiomicData
     }
 )
 
@@ -209,15 +209,15 @@ methods::setMethod(
     "multiOmicIntegration",
     "ANY",
     function(
-        multiomic.data,
-                     reduction.list = list("spm.pca", "spt.pca"),
-                     dims.list = list(1:30, 1:30),
-                     return.intermediate = FALSE,
+        multiomicData,
+                     reductionList = list("spm.pca", "spt.pca"),
+                     dimsList = list(1:30, 1:30),
+                     returnIntermediate = FALSE,
                      verbose = FALSE,
                      modalities = c("main", "transcriptome"),
                      ...
     ) {
-        .requireExperiment(multiomic.data, "SpatialExperiment")
+        .requireExperiment(multiomicData, "SpatialExperiment")
     }
 )
 
@@ -228,17 +228,17 @@ methods::setMethod(
 #' Accepts paired transcriptomic, proteomic or metabolomic measurements and
 #' reuses existing scaled assays where available.
 #'
-#' @param SpaMTP A SpatialExperiment containing at least two paired modalities.
-#' @param assays.to.merge At least two distinct modality names: `"main"` and/or
+#' @param object A SpatialExperiment containing at least two paired modalities.
+#' @param assaysToMerge At least two distinct modality names: `"main"` and/or
 #'   names in `SingleCellExperiment::altExpNames(SpaMTP)`. Multiple aliases for
 #' the same primary experiment are not distinct modalities. See
 #'   [experimentAccess].
 #' @param outputExperiment Name of the output alternative experiment, not an expression
 #'   matrix (default = `"merged"`).
-#' @param return.original TRUE adds an altExp; FALSE returns only the merged
+#' @param returnOriginal TRUE adds an altExp; FALSE returns only the merged
 #'   feature space.
 #'
-#' @return If `return.original = TRUE`, the input SpatialExperiment with
+#' @return If `returnOriginal = TRUE`, the input SpatialExperiment with
 #'   `altExp(SpaMTP, outputExperiment)` containing a `scaled` assay. Otherwise a new
 #'   SpatialExperiment with merged rows, the same pixels and a `scaled` assay.
 #' @export
@@ -272,24 +272,24 @@ methods::setMethod(
 #' merged <- SingleCellExperiment::altExp(x, "merged")
 #' SummarizedExperiment::assay(merged, "scaled")
 createMergedModalityAssay <- function(
-    SpaMTP,
-    assays.to.merge,
+    object,
+    assaysToMerge,
     outputExperiment = "merged",
-    return.original = TRUE) {
-    .requireExperiment(SpaMTP, "SpatialExperiment")
-    modalityNames <- SingleCellExperiment::altExpNames(SpaMTP)
-    if (!is.character(assays.to.merge) || length(assays.to.merge) < 2L ||
-        anyNA(assays.to.merge) || any(!nzchar(assays.to.merge)) ||
-        anyDuplicated(assays.to.merge)) {
+    returnOriginal = TRUE) {
+    .requireExperiment(object, "SpatialExperiment")
+    modalityNames <- SingleCellExperiment::altExpNames(object)
+    if (!is.character(assaysToMerge) || length(assaysToMerge) < 2L ||
+        anyNA(assaysToMerge) || any(!nzchar(assaysToMerge)) ||
+        anyDuplicated(assaysToMerge)) {
         stop(
             "At least two distinct modalities must be supplied.",
             call. = FALSE
         )
     }
-    modalities <- lapply(assays.to.merge, function(name) {
-        .experimentForAssay(SpaMTP, name)
+    modalities <- lapply(assaysToMerge, function(name) {
+        .experimentForAssay(object, name)
     })
-    if (anyDuplicated(match(assays.to.merge, modalityNames, nomatch = 0L))) {
+    if (anyDuplicated(match(assaysToMerge, modalityNames, nomatch = 0L))) {
         stop("Supply distinct modalities, not aliases of the same experiment.",
             call. = FALSE
         )
@@ -320,11 +320,11 @@ createMergedModalityAssay <- function(
             matrix
         },
         modalities,
-        assays.to.merge
+        assaysToMerge
     )
     merged <- do.call(rbind, matrices)
     featureData <- S4Vectors::DataFrame(
-        modality = rep(assays.to.merge, vapply(matrices, nrow, integer(1))),
+        modality = rep(assaysToMerge, vapply(matrices, nrow, integer(1))),
         original_feature = unlist(lapply(
             matrices,
             function(x) sub("^[^:]+::", "", rownames(x))
@@ -335,16 +335,16 @@ createMergedModalityAssay <- function(
         assays = list(scaled = merged),
         rowData = featureData
     )
-    if (isTRUE(return.original)) {
-        SingleCellExperiment::altExp(SpaMTP, outputExperiment) <- mergedExperiment
-        return(SpaMTP)
+    if (isTRUE(returnOriginal)) {
+        SingleCellExperiment::altExp(object, outputExperiment) <- mergedExperiment
+        return(object)
     }
     return(SpatialExperiment::SpatialExperiment(
         assays = list(scaled = merged),
         rowData = featureData,
-        colData = SummarizedExperiment::colData(SpaMTP),
-        spatialCoords = SpatialExperiment::spatialCoords(SpaMTP),
-        imgData = SpatialExperiment::imgData(SpaMTP),
-        metadata = S4Vectors::metadata(SpaMTP)
+        colData = SummarizedExperiment::colData(object),
+        spatialCoords = SpatialExperiment::spatialCoords(object),
+        imgData = SpatialExperiment::imgData(object),
+        metadata = S4Vectors::metadata(object)
     ))
 }

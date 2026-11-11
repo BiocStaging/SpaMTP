@@ -1,9 +1,9 @@
-.wf_region_summary <- function(E, labels, min_size) {
+.wf_region_summary <- function(expression, labels, minSize) {
     labels <- as.character(labels)
     labelled <- !is.na(labels) & nzchar(trimws(labels))
     levels <- unique(labels[labelled])
-    means <- detected <- matrix(NA_real_, nrow(E), length(levels),
-        dimnames = list(rownames(E), levels)
+    means <- detected <- matrix(NA_real_, nrow(expression), length(levels),
+        dimnames = list(rownames(expression), levels)
     )
     counts <- vapply(
         levels,
@@ -11,18 +11,18 @@
         integer(1)
     )
     tables <- list()
-    total <- as.numeric(Matrix::rowSums(E[, labelled, drop = FALSE]))
-    positives <- as.numeric(Matrix::rowSums(E[, labelled, drop = FALSE] != 0))
+    total <- as.numeric(Matrix::rowSums(expression[, labelled, drop = FALSE]))
+    positives <- as.numeric(Matrix::rowSums(expression[, labelled, drop = FALSE] != 0))
     for (i in seq_along(levels)) {
         inside <- which(labelled & labels == levels[i])
-        means[, i] <- as.numeric(Matrix::rowMeans(E[, inside, drop = FALSE]))
-        detected[, i] <- as.numeric(Matrix::rowMeans(E[, inside, drop = FALSE] != 0))
+        means[, i] <- as.numeric(Matrix::rowMeans(expression[, inside, drop = FALSE]))
+        detected[, i] <- as.numeric(Matrix::rowMeans(expression[, inside, drop = FALSE] != 0))
         outside <- sum(labelled) - counts[i]
-        if (counts[i] < min_size || outside < min_size) next
+        if (counts[i] < minSize || outside < minSize) next
         reference <- (total - means[, i] * counts[i]) / outside
         reference_detected <- (positives - detected[, i] * counts[i]) / outside
         tables[[levels[i]]] <- data.frame(
-            feature = rownames(E),
+            feature = rownames(expression),
             effect = means[, i] - reference, mean_region = means[, i], mean_reference = reference,
             detected_region = detected[, i], detected_reference = reference_detected,
             n_region = counts[i], n_reference = outside, stringsAsFactors = FALSE
@@ -32,7 +32,7 @@
         field_levels = levels, means = means, detected = detected, tables = tables,
         groups = data.frame(
             region = levels, observations = unname(counts),
-            eligible = counts >= min_size & sum(labelled) - counts >= min_size
+            eligible = counts >= minSize & sum(labelled) - counts >= minSize
         ),
         unlabelled = sum(!labelled), method = "Descriptive region minus other labelled observations; no pixel-based P values. Non-zero fraction is measured on the workflow layer."
     )
@@ -155,7 +155,7 @@
             )
             if (config$moran) {
                 fit <- findSpatiallyVariableMetabolites(small,
-                    assayName = "workflow", max_spots = NULL,
+                    assayName = "workflow", maxSpots = NULL,
                     nfeatures = length(features), verbose = FALSE
                 )
                 rd <- as.data.frame(SummarizedExperiment::rowData(fit))
@@ -171,8 +171,8 @@
                 E[!is.finite(E)] <- 0
                 SummarizedExperiment::assay(small, "scaled") <- E
                 fit <- runSpatialGraphPCA(small,
-                    n_components = min(5L, nrow(E) - 1L),
-                    assayName = "scaled", platform = "ST", n_neighbors = min(config$neighbors, ncol(E) - 1L),
+                    nComponents = min(5L, nrow(E) - 1L),
+                    assayName = "scaled", platform = "ST", nNeighbors = min(config$neighbors, ncol(E) - 1L),
                     lambda = config$lambda, verbose = FALSE
                 )
                 info$graph_pca <- list(
@@ -216,14 +216,14 @@
 #' @param result A spamtp_workflow result.
 #' @param regions A colData column for regions; NULL uses the workflow group,
 #'   or workflow_cluster if clustering was requested. No labels are invented.
-#' @param min_region_size Minimum observations in both a region and its
+#' @param minRegionSize Minimum observations in both a region and its
 #'   reference.
 #' @param native Named settings: moran, graph_pca, max_points (600),
 #'   max_features (50), neighbors (4), lambda (0.5). These additional bounded
 #'   screens default FALSE; the workflow structure module runs full-observation
 #'   Graph PCA separately and uses it in the comparative analysis.
 #' @param markers Compute native scran marker scores through findAllDEMs.
-#' @param spatial_blocks Number of coordinate-only blocks per sample for marker
+#' @param spatialBlocks Number of coordinate-only blocks per sample for marker
 #' sensitivity; zero disables block omission. These are not biological
 #'   replicates.
 #' @return The result with region_analysis, native_analysis and updated
@@ -243,17 +243,17 @@
 #'         main = list(type = "metabolomics", layer = "logcounts"),
 #'         transcriptome = list(type = "transcriptomics", layer = "logcounts")
 #'     ),
-#'     npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+#'     npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
 #'     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 #' )
-#' fit <- analyzeSpaMTPRegions(fit, regions = "region", spatial_blocks = 0)
+#' fit <- analyzeSpaMTPRegions(fit, regions = "region", spatialBlocks = 0)
 #' fit$region_analysis$summary
 analyzeSpaMTPRegions <- function(
-    result, regions = NULL, min_region_size = 3, native = list(),
-    markers = TRUE, spatial_blocks = 6
+    result, regions = NULL, minRegionSize = 3, native = list(),
+    markers = TRUE, spatialBlocks = 6
 ) {
     if (!inherits(result, "spamtp_workflow")) stop("result must be a spamtp_workflow.", call. = FALSE)
-    .wf_number(min_region_size, "min_region_size", 1, TRUE)
+    .wf_number(minRegionSize, "min_region_size", 1, TRUE)
     withr::local_seed(result$settings$seed)
     regions <- regions %||% result$settings$group
     if (is.null(regions) && "workflow_cluster" %in% colnames(SummarizedExperiment::colData(result$object))) {
@@ -273,13 +273,13 @@ analyzeSpaMTPRegions <- function(
             summaries[[name]] <- .wf_region_summary(
                 E,
                 result$object[[regions]],
-                min_region_size
+                minRegionSize
             )
             if (isTRUE(markers)) {
                 m <- findAllDEMs(result$object,
                     ident = regions,
                     assay = result$settings$assay_names[[name]], assayName = "workflow", method = "markers",
-                    min_region_size = min_region_size, spatial_blocks = spatial_blocks, seed = result$settings$seed
+                    minRegionSize = minRegionSize, spatialBlocks = spatialBlocks, seed = result$settings$seed
                 )
                 summaries[[name]]$markers <- m
                 if (identical(m$status, "completed")) {
@@ -299,7 +299,7 @@ analyzeSpaMTPRegions <- function(
         }
     }
     result$region_analysis <- list(
-        field = regions, min_region_size = min_region_size,
+        field = regions, min_region_size = minRegionSize,
         modalities = summaries, status = if (is.null(regions)) "skipped" else "completed"
     )
     result$native_analysis <- .wf_native_analysis(result, native)
@@ -309,8 +309,8 @@ analyzeSpaMTPRegions <- function(
         format(Sys.time(), tz = "UTC", usetz = TRUE)
     result$settings$regions <- regions
     result$settings$markers <- list(
-        enabled = markers, spatial_blocks = spatial_blocks,
-        min_region_size = min_region_size
+        enabled = markers, spatial_blocks = spatialBlocks,
+        min_region_size = minRegionSize
     )
     result$settings$native <- result$native_analysis$config
     result$stages <- result$stages[!result$stages$stage %in% c("region_summary", "native_spatial"), ]

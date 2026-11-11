@@ -8,14 +8,14 @@ mapGeneIdentifiers(
   genes,
   database = NULL,
   index = NULL,
-  gene_reference = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  geneReference = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
   ambiguous = c("exclude", "error"),
   verbose = TRUE,
-  database_version = "latest",
-  database_local_dir = NULL,
+  databaseVersion = "latest",
+  databaseLocalDir = NULL,
   offline = FALSE
 )
 }
@@ -28,14 +28,14 @@ mapGeneIdentifiers(
 provided, its recorded source and reference determine the mapping. If
 \code{database} is also supplied, its source-table fingerprint must match.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other
@@ -45,9 +45,9 @@ organisms.}
 
 \item{verbose}{Warn about unresolved input rows.}
 
-\item{database_version}{RaMP version, independent of the HGNC version.}
+\item{databaseVersion}{RaMP version, independent of the HGNC version.}
 
-\item{database_local_dir}{Local staged RaMP directory.}
+\item{databaseLocalDir}{Local staged RaMP directory.}
 
 \item{offline}{Require local or cached HGNC data.}
 }

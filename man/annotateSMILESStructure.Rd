@@ -6,7 +6,7 @@
 \usage{
 annotateSMILESStructure(
   db,
-  smiles_column = NULL,
+  smilesColumn = NULL,
   backend = c("auto", "native"),
   overwrite = FALSE,
   strict = FALSE,
@@ -16,7 +16,7 @@ annotateSMILESStructure(
 \arguments{
 \item{db}{A metabolite data frame.}
 
-\item{smiles_column}{Column containing SMILES. When \code{NULL}, SpaMTP detects
+\item{smilesColumn}{Column containing SMILES. When \code{NULL}, SpaMTP detects
 \code{iso_smiles}, \code{canonical_smiles}, or \code{smiles}.}
 
 \item{backend}{Parser backend passed to \code{\link[=deconvolveSMILES]{deconvolveSMILES()}}.}

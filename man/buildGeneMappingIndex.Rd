@@ -5,26 +5,26 @@
 \title{Build a gene identity index from RaMP and HGNC}
 \usage{
 buildGeneMappingIndex(
-  source_df,
-  gene_reference = NULL,
-  gene_reference_version = "latest",
-  gene_reference_local_dir = NULL,
+  sourceDf,
+  geneReference = NULL,
+  geneReferenceVersion = "latest",
+  geneReferenceLocalDir = NULL,
   organism = "Homo sapiens",
   offline = FALSE
 )
 }
 \arguments{
-\item{source_df}{RaMP identifier table from SpaMTPdb, with \code{sourceId},
+\item{sourceDf}{RaMP identifier table from SpaMTPdb, with \code{sourceId},
 \code{rampId} and optionally \code{commonName}.}
 
-\item{gene_reference}{HGNC reference data frame. \code{NULL} retrieves the pinned
+\item{geneReference}{HGNC reference data frame. \code{NULL} retrieves the pinned
 reference through \code{\link[SpaMTPdb:spaMTPdbGeneReference]{SpaMTPdb::spaMTPdbGeneReference()}}. Custom references
 require unique \code{hgnc_id} and \code{symbol}; optional fields are \code{status},
 \code{entrez_id}, \code{ensembl_gene_id}, \code{uniprot_ids}, \code{prev_symbol}, \code{alias_symbol}.}
 
-\item{gene_reference_version}{Version in SpaMTPdb's separate HGNC registry.}
+\item{geneReferenceVersion}{Version in SpaMTPdb's separate HGNC registry.}
 
-\item{gene_reference_local_dir}{Local HGNC resource directory.}
+\item{geneReferenceLocalDir}{Local HGNC resource directory.}
 
 \item{organism}{Must be \code{"Homo sapiens"}; this index is not a mouse-to-human
 orthology map. Use a separately curated species-specific database for other

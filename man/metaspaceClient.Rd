@@ -6,14 +6,14 @@
 \usage{
 metaspaceClient(
   host = "https://metaspace2020.org",
-  api_key = NULL,
+  apiKey = NULL,
   BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
 \item{host}{Character string specifying the METASPACE host URL (default = "https://metaspace2020.org").}
 
-\item{api_key}{Optional. Your METASPACE API key for accessing private
+\item{apiKey}{Optional. Your METASPACE API key for accessing private
 datasets. If accessing a public dataset this can be left as \code{NULL} (default
 = NULL).}
 

@@ -8,7 +8,7 @@ convertSeuratToCardinal(
   data,
   assay = "Spatial",
   layer = "counts",
-  run_col = NULL,
+  runCol = NULL,
   verbose = TRUE
 )
 }
@@ -20,7 +20,7 @@ convertSeuratToCardinal(
 \item{layer}{Exact Seurat expression layer name, read with
 \code{SeuratObject::LayerData()}. See \code{\link[=seuratToSpatialExperiment]{seuratToSpatialExperiment()}}.}
 
-\item{run_col}{Optional cell-metadata column containing run identifiers.}
+\item{runCol}{Optional cell-metadata column containing run identifiers.}
 
 \item{verbose}{Show conversion messages.}
 }

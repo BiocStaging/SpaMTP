@@ -7,23 +7,23 @@
 annotateAdductGroups(
   candidates,
   groups,
-  min_peaks = 2L,
-  min_score = 0,
-  match_ppm = 0.5
+  minPeaks = 2L,
+  minScore = 0,
+  matchPpm = 0.5
 )
 }
 \arguments{
 \item{candidates}{Per-peak candidates with \code{observed_mz}, \code{ramp_ids},
 \code{adduct} and \code{score} columns, for example from
-\code{\link[=queryMZAnnotationIndex]{queryMZAnnotationIndex()}} with \code{min_score = 0}.}
+\code{\link[=queryMZAnnotationIndex]{queryMZAnnotationIndex()}} with \code{minScore = 0}.}
 
 \item{groups}{The \code{groups} element of \code{\link[=groupAdductPeaks]{groupAdductPeaks()}}.}
 
-\item{min_peaks}{Smallest number of member peaks a compound must explain.}
+\item{minPeaks}{Smallest number of member peaks a compound must explain.}
 
-\item{min_score}{Smallest per-peak score counted as support.}
+\item{minScore}{Smallest per-peak score counted as support.}
 
-\item{match_ppm}{Tolerance for matching candidate m/z to group peaks.}
+\item{matchPpm}{Tolerance for matching candidate m/z to group peaks.}
 }
 \value{
 A list with \code{compounds} (one row per group and supported compound:
@@ -33,7 +33,7 @@ the number of group peaks they explain).
 }
 \description{
 Within each group from \code{\link[=groupAdductPeaks]{groupAdductPeaks()}}, keeps compounds that explain
-at least \code{min_peaks} member peaks through at least two different adducts
+at least \code{minPeaks} member peaks through at least two different adducts
 in a per-peak candidate table, so compounds supported by a single ion are
 dropped. Each peak then takes the supported compounds that explain the
 most peaks of its group; several molecules chained into one group keep

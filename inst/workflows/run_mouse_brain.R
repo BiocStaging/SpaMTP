@@ -54,19 +54,19 @@ runMouseBrain <- function(inputDir, databaseDir = NULL, outputDir,
             "analytehaspathway", "pathway", "ramp_db_metadata",
             "ramp_wikipathway", "ramp_reactome", "ramp_kegg", "ramp_hmdb"
         ),
-        version = "3.0.7", local_dir = databaseDir, offline = offline
+        version = "3.0.7", localDir = databaseDir, offline = offline
     )
     index <- SpaMTP::buildPathwayIndex(db,
-        gene_mapping = "ramp", organism = "Mus musculus"
+        geneMapping = "ramp", organism = "Mus musculus"
     )
     matrixName <- if (case == "fmp10") "FMP-10" else "DHB"
     massIndex <- SpaMTP::buildMZAnnotationIndex(db$chem_props,
-        polarity = "positive", maldi_matrix = matrixName
+        polarity = "positive", maldiMatrix = matrixName
     )
     ms <- list(
         type = "metabolomics", layer = "counts", species = "Mus musculus",
         annotation = list(
-            index = massIndex, ppm = 5, min_score = 0,
+            index = massIndex, ppm = 5, minScore = 0,
             verbose = FALSE
         ),
         pathways = list(
@@ -84,9 +84,9 @@ runMouseBrain <- function(inputDir, databaseDir = NULL, outputDir,
         result <- SpaMTP::runSpaMTPWorkflow(file.path(inputDir, "dhb.rds"),
             list(main = ms, SPT = rna),
             group = "lesion", regions = "RegionLoupe",
-            npcs = 15, max_features = 2000, clusters = 6, association_features = 12,
-            coordinate_units = "original image pixels",
-            observation_unit = "matched spatial observation from one DHB/Visium specimen",
+            npcs = 15, maxFeatures = 2000, clusters = 6, associationFeatures = 12,
+            coordinateUnits = "original image pixels",
+            observationUnit = "matched spatial observation from one DHB/Visium specimen",
             structure = list(
                 primary = "spatial", reference = "RegionLoupe",
                 k_grid = c(4, 6, 8, 10)
@@ -111,9 +111,9 @@ runMouseBrain <- function(inputDir, databaseDir = NULL, outputDir,
             list(RNA = rna, MS = ms),
             reference = "RNA",
             group = "lesion", regions = "RegionLoupe",
-            npcs = 15, max_features = 2000, clusters = 10, association_features = 12,
-            coordinate_units = geometry$coordinate_units,
-            observation_unit = "Visium spot with overlapping registered MSI pixels",
+            npcs = 15, maxFeatures = 2000, clusters = 10, associationFeatures = 12,
+            coordinateUnits = geometry$coordinate_units,
+            observationUnit = "Visium spot with overlapping registered MSI pixels",
             alignment = list(MS = list(method = "identity")),
             mapping = list(MS = list(
                 method = "pixel", width = geometry$pixel_width,

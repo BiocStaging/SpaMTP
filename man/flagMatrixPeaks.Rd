@@ -6,22 +6,22 @@
 \usage{
 flagMatrixPeaks(
   mz,
-  maldi_matrix = "dhb",
+  maldiMatrix = "dhb",
   polarity = c("positive", "negative"),
   ppm = 5,
-  max_molecules = 3L
+  maxMolecules = 3L
 )
 }
 \arguments{
 \item{mz}{Numeric vector of observed m/z values.}
 
-\item{maldi_matrix}{Matrix name, as in \code{\link[=matrixIonTable]{matrixIonTable()}}.}
+\item{maldiMatrix}{Matrix name, as in \code{\link[=matrixIonTable]{matrixIonTable()}}.}
 
 \item{polarity}{\code{"positive"} or \code{"negative"}.}
 
 \item{ppm}{Mass tolerance in parts per million.}
 
-\item{max_molecules}{Largest matrix cluster considered.}
+\item{maxMolecules}{Largest matrix cluster considered.}
 }
 \value{
 A data frame with one row per peak: \code{matrix_ion} (logical), the

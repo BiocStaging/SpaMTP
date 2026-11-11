@@ -5,44 +5,43 @@
 \title{Apply automatic or precomputed spatial alignment}
 \usage{
 applySpatialAlignment(
-  SM.data,
-  ST.data = NULL,
+  smData,
+  stData = NULL,
   alignment = NULL,
   method = c("lddmm", "affine"),
-  SM.fov = NULL,
-  ST.image = NULL,
-  SM.boundary = "centroids",
-  SM.landmarks = NULL,
-  ST.landmarks = NULL,
-  landmark.order = c("xy", "yx"),
-  SM.landmark.space = c("original", "preprocessed"),
-  coordinate.columns = NULL,
-  cell.column = NULL,
-  ST.scale.factor = NULL,
-  source.scale = 1,
-  source.rotate = 0,
-  source.flip = c(FALSE, FALSE),
-  source.translate = c(0, 0),
-  source.origin = NULL,
+  smFov = NULL,
+  stImage = NULL,
+  smLandmarks = NULL,
+  stLandmarks = NULL,
+  landmarkOrder = c("xy", "yx"),
+  smLandmarkSpace = c("original", "preprocessed"),
+  coordinateColumns = NULL,
+  cellColumn = NULL,
+  stScaleFactor = NULL,
+  sourceScale = 1,
+  sourceRotate = 0,
+  sourceFlip = c(FALSE, FALSE),
+  sourceTranslate = c(0, 0),
+  sourceOrigin = NULL,
   dx = 30,
   niter = 1000,
   epV = 200,
   device = c("auto", "cpu", "cuda"),
   seed = 1,
-  lddmm.args = list(),
+  lddmmArgs = list(),
   python = NULL,
-  alignment.name = "SMINT",
+  alignmentName = "SMINT",
   store = TRUE,
   return = c("object", "result"),
-  diagnostics.max.points = 10000,
+  diagnosticsMaxPoints = 10000,
   verbose = TRUE
 )
 }
 \arguments{
-\item{SM.data}{A \code{SpatialExperiment} containing the
+\item{smData}{A \code{SpatialExperiment} containing the
 moving SM coordinates.}
 
-\item{ST.data}{An optional matching spatial container with fixed coordinates.
+\item{stData}{An optional matching spatial container with fixed coordinates.
 It is required when computing an affine or LDDMM alignment, but is optional
 when applying final coordinates supplied through \code{alignment}.}
 
@@ -60,59 +59,56 @@ estimates a six-degree-of-freedom transformation from paired landmarks in
 R. \code{"lddmm"} runs STalign's landmark-guided affine plus diffeomorphic
 registration through Python.}
 
-\item{SM.fov}{Optional imgData image ID for the moving experiment. By
+\item{smFov}{Optional imgData image ID for the moving experiment. By
 default,
-the first image in \code{SM.data} is used.}
+the first image in \code{smData} is used.}
 
-\item{ST.image}{Optional imgData image ID for the fixed experiment. By
-default, the first image in \code{ST.data} is used.}
+\item{stImage}{Optional imgData image ID for the fixed experiment. By
+default, the first image in \code{stData} is used.}
 
-\item{SM.boundary}{Compatibility label; coordinates are always read from
-spatialCoords().}
-
-\item{SM.landmarks, ST.landmarks}{Matched landmark coordinates as two-column
+\item{smLandmarks, stLandmarks}{Matched landmark coordinates as two-column
 matrices or data frames in x-y order. At least three non-collinear pairs are
 required for \code{method = "affine"}. Landmarks are optional but strongly
 recommended for \code{method = "lddmm"} when the sections are not already close.
 ST landmarks must use the target coordinate system after any
-\code{ST.scale.factor} has been applied.}
+\code{stScaleFactor} has been applied.}
 
-\item{landmark.order}{Coordinate-column order in both landmark inputs.
+\item{landmarkOrder}{Coordinate-column order in both landmark inputs.
 \code{"xy"} is the R/SpaMTP convention. Use \code{"yx"} for row-column arrays saved
 by the notebook's point annotator.}
 
-\item{SM.landmark.space}{Whether SM landmarks use the \code{"original"} FOV
+\item{smLandmarkSpace}{Whether SM landmarks use the \code{"original"} FOV
 coordinates or the \code{"preprocessed"} coordinates after source scaling,
 rotation, reflection, translation, and origin adjustment. Point-annotator
 landmarks made from the rasterized notebook output are preprocessed.}
 
-\item{coordinate.columns}{Optional names or integer positions of the x and y
+\item{coordinateColumns}{Optional names or integer positions of the x and y
 columns in a precomputed coordinate table.}
 
-\item{cell.column}{Optional name or integer position of the cell/spot ID
+\item{cellColumn}{Optional name or integer position of the cell/spot ID
 column in a precomputed coordinate table. When no IDs are available, rows
 must already be in the same order as the moving SM centroids.}
 
-\item{ST.scale.factor}{Optional fixed-coordinate scale factor. Supply a
+\item{stScaleFactor}{Optional fixed-coordinate scale factor. Supply a
 numeric value or a scale-factor name such as \code{"hires"} or \code{"lowres"} for
 Visium images. \code{NULL} uses full-resolution coordinates.}
 
-\item{source.scale}{Numeric scalar or x-y vector applied to moving
+\item{sourceScale}{Numeric scalar or x-y vector applied to moving
 coordinates
 before fitting. This reproduces the initial SM scaling step in the SMINT
 notebooks.}
 
-\item{source.rotate}{Counter-clockwise rotation in degrees, around the
+\item{sourceRotate}{Counter-clockwise rotation in degrees, around the
 origin,
 applied after scaling.}
 
-\item{source.flip}{Logical x-y vector indicating reflection around the
+\item{sourceFlip}{Logical x-y vector indicating reflection around the
 origin.}
 
-\item{source.translate}{Numeric x-y translation applied after scaling,
+\item{sourceTranslate}{Numeric x-y translation applied after scaling,
 reflection, and rotation.}
 
-\item{source.origin}{Optional numeric x-y lower bound. Coordinates are
+\item{sourceOrigin}{Optional numeric x-y lower bound. Coordinates are
 shifted
 only where necessary so that their minima are at least this value. Use
 \code{c(0, 0)} to reproduce the non-negative coordinate step in the notebook.}
@@ -128,14 +124,14 @@ when Torch reports that it is available.}
 
 \item{seed}{Random seed set for NumPy and Torch before LDDMM.}
 
-\item{lddmm.args}{Named list of additional arguments passed to
+\item{lddmmArgs}{Named list of additional arguments passed to
 \code{STalign.LDDMM()}. Values here override \code{niter} and \code{epV}.}
 
 \item{python}{Optional path to a Python executable containing \code{STalign} and
 \code{torch}. It must be selected before reticulate initialises Python.}
 
-\item{alignment.name}{Name used to store alignment provenance in
-\code{S4Vectors::metadata(SM.data)$spatial_alignment}.}
+\item{alignmentName}{Name used to store alignment provenance in
+\code{S4Vectors::metadata(smData)$spatial_alignment}.}
 
 \item{store}{Logical; store lightweight provenance and diagnostics in the
 returned object.}
@@ -144,7 +140,7 @@ returned object.}
 list containing the object, coordinate tables, diagnostics, parameters, and
 lightweight backend information.}
 
-\item{diagnostics.max.points}{Maximum number of moving and fixed points used
+\item{diagnosticsMaxPoints}{Maximum number of moving and fixed points used
 for nearest-neighbour diagnostics.}
 
 \item{verbose}{Logical; print progress messages.}

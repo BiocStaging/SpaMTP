@@ -3,17 +3,17 @@
 #' Displays the pathway analysis results form running the
 #' 'fishersPathwayAnalysis()' function
 #'
-#' @param SpaMTP A SpatialExperiment used for fishersPathwayAnalysis.
-#' @param pathway_df Dataframe containing the pathway enrichment results (output
+#' @param object A SpatialExperiment used for fishersPathwayAnalysis.
+#' @param pathwayDf Dataframe containing the pathway enrichment results (output
 #'   from SpaMTP::fishersPathwayAnalysis function).
 #' @param assay Primary (`"main"`) or alternative experiment name. The default
 #'   is `"main"` for the primary experiment.
 #' @param assayName Expression assay name within the selected experiment
 #'   (default = `"counts"`), read with `SummarizedExperiment::assay()`.
 #'   See [experimentAccess] for the experiment/matrix distinction.
-#' @param min_n Integer value specifying the minimum number of analytes required
+#' @param minN Integer value specifying the minimum number of analytes required
 #'   to be present in a pathway (default = 3).
-#' @param p_val_threshold The p-val cutoff to keep the pathways generated from
+#' @param pValThreshold The p-val cutoff to keep the pathways generated from
 #'   fisher exact test (default = "0.1").
 #' @param method Character string defining the statistical method used to
 #'   calculate hclust (default = "ward.D2").
@@ -21,9 +21,9 @@
 #'   FALSE these messages will be suppressed (default = TRUE).
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
-#' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
+#' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
 #' @param ... The arguments pass to stats::hclust
 #'
 #' @return A combined gg, ggplot object with pathway and dendrogram
@@ -34,30 +34,30 @@
 #' spe <- spamtp_example$experiment
 #' enrichment <- fishersPathwayAnalysis(list(metabolites = c("RAMP_C_1", "RAMP_C_2")),
 #'     universe = list(metabolites = paste0("RAMP_C_", 1:3)),
-#'     database = spamtp_example$database, min_path_size = 1,
-#'     pathway_all_info = TRUE, verbose = FALSE
+#'     database = spamtp_example$database, minPathSize = 1,
+#'     pathwayAllInfo = TRUE, verbose = FALSE
 #' )
 #' visualisePathways(spe, enrichment,
-#'     assay = "main", min_n = 1,
-#'     p_val_threshold = 1, database = spamtp_example$database, verbose = FALSE
+#'     assay = "main", minN = 1,
+#'     pValThreshold = 1, database = spamtp_example$database, verbose = FALSE
 #' )
 visualisePathways <- function(
-    SpaMTP,
-    pathway_df,
+    object,
+    pathwayDf,
     assay = "main",
     assayName = "counts",
-    min_n = 3,
-    p_val_threshold = 0.1,
+    minN = 3,
+    pValThreshold = 0.1,
     method = "ward.D2",
     verbose = TRUE,
     database = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL,
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL,
     ...
 ) {
     no_pathways_plot <- function(reason) {
-        verbose_message(message_text = reason, verbose = verbose)
+        verbose_message(messageText = reason, verbose = verbose)
         ggplot2::ggplot() +
             ggplot2::annotate(
                 "text",
@@ -72,42 +72,42 @@ visualisePathways <- function(
             ggplot2::theme_void()
     }
 
-    if (is.null(min_n)) {
-        stop("Incorrect minimum analyte number! `min_n` must be set to a value > 1. Please adjust this value accordingly ...")
+    if (is.null(minN)) {
+        stop("Incorrect minimum analyte number! `minN` must be set to a value > 1. Please adjust this value accordingly ...")
     }
-    pathway_df <- pathway_df[which(pathway_df$analytes_in_pathways >= min_n), ]
-    if (nrow(pathway_df) == 0L) {
+    pathwayDf <- pathwayDf[which(pathwayDf$analytes_in_pathways >= minN), ]
+    if (nrow(pathwayDf) == 0L) {
         return(no_pathways_plot(
             paste0(
                 "No pathways contain at least ",
-                min_n,
+                minN,
                 " detected analytes."
             )
         ))
     }
 
-    pathway_df$duplicate_pathways <- rep(NA_character_, nrow(pathway_df))
+    pathwayDf$duplicate_pathways <- rep(NA_character_, nrow(pathwayDf))
     verbose_message(
-        message_text = "Reducing synonymous pathways",
+        messageText = "Reducing synonymous pathways",
         verbose = verbose
     )
-    index <- seq_len(nrow(pathway_df))
+    index <- seq_len(nrow(pathwayDf))
     merged_pathways <- data.frame()
     pb <- .progressBar(length(index), verbose)
     while (length(index) != 0) {
         pattern <- stringr::str_extract(
-            pathway_df$pathway_name[index[1]],
+            pathwayDf$pathway_name[index[1]],
             pattern = "[A-Z][A-Z]\\([a-z0-9]"
         )
         if (length(pattern) != 0 & !is.na(pattern)) {
             pattern <- sub("\\(", "\\\\(", pattern)
-            name <- strsplit(pathway_df$pathway_name[index[1]], pattern)[[1]][1]
+            name <- strsplit(pathwayDf$pathway_name[index[1]], pattern)[[1]][1]
             full_name <- paste0(name, pattern)
             frst_ind <- which(grepl(
                 pattern = full_name,
-                x = pathway_df$pathway_name
+                x = pathwayDf$pathway_name
             ))
-            all_pathways <- pathway_df[frst_ind, ]
+            all_pathways <- pathwayDf[frst_ind, ]
             second_ind <- which(duplicated(all_pathways$p_val))
             index <- index[-which(index %in% frst_ind)]
             if (length(second_ind) > 0) {
@@ -115,8 +115,8 @@ visualisePathways <- function(
 
                 unique_pathways <- all_pathways[-second_ind, ]
                 # Collect the IDs of all pathways sharing each unique p_val
-                unique_pathways$duplicate_pathways <- vapply(unique_pathways$p_val, function(p_val) {
-                    duplicates <- which(all_pathways$p_val == p_val)
+                unique_pathways$duplicate_pathways <- vapply(unique_pathways$p_val, function(pVal) {
+                    duplicates <- which(all_pathways$p_val == pVal)
                     paste(all_pathways$pathway_id[duplicates], collapse = ", ")
                 }, character(1), USE.NAMES = FALSE)
 
@@ -126,14 +126,14 @@ visualisePathways <- function(
                 merged_pathways <- rbind(merged_pathways, all_pathways)
             }
         } else {
-            merged_pathways <- rbind(merged_pathways, pathway_df[index[1], ])
+            merged_pathways <- rbind(merged_pathways, pathwayDf[index[1], ])
             index <- index[-1]
         }
-        .progressTick(pb, nrow(pathway_df) - length(index))
+        .progressTick(pb, nrow(pathwayDf) - length(index))
     }
     .progressDone(pb)
     merged_pathways <- merged_pathways %>%
-        dplyr::filter(.data$p_val <= p_val_threshold) %>%
+        dplyr::filter(.data$p_val <= pValThreshold) %>%
         dplyr::mutate(signif_at_005level = ifelse(
             .data$p_val <= 0.05,
             "Significant",
@@ -144,7 +144,7 @@ visualisePathways <- function(
         return(no_pathways_plot(
             paste0(
                 "No pathways passed the p-value threshold (",
-                p_val_threshold,
+                pValThreshold,
                 ")."
             )
         ))
@@ -154,9 +154,9 @@ visualisePathways <- function(
         database_resources <- .spamtp_db_bundle(
             c("analytehaspathway", "pathway"),
             database = database,
-            version = database_version,
-            source = match.arg(database_source),
-            local_dir = database_local_dir
+            version = databaseVersion,
+            source = match.arg(databaseSource),
+            localDir = databaseLocalDir
         )
         analytehaspathway <- database_resources$analytehaspathway
         pathway <- database_resources$pathway
@@ -261,11 +261,11 @@ visualisePathways <- function(
     # Get the raster illustration for each pathway
     image_raster <- vector("list", nrow(merged_pathways))
     verbose_message(
-        message_text = "Generating spatial pathway images ... ", verbose = verbose
+        messageText = "Generating spatial pathway images ... ", verbose = verbose
     )
     pb <- .progressBar(nrow(merged_pathways), verbose)
-    mass_matrix <- Matrix::t(.assayData(SpaMTP, assay, assayName))
-    coords <- .nativeCoordinates(SpaMTP, requireNames = FALSE)
+    mass_matrix <- Matrix::t(.assayData(object, assay, assayName))
+    coords <- .nativeCoordinates(object, requireNames = FALSE)
     for (z in seq_len(nrow(merged_pathways))) {
         mzs <- paste0("mz-", stringr::str_extract_all(
             merged_pathways$adduct_info[z], "\\d+\\.\\d+"
@@ -304,7 +304,7 @@ visualisePathways <- function(
 
     if (nrow(merged_pathways) == 1L) {
         verbose_message(
-            message_text = "\nOnly one pathway passed filtering; returning the pathway plot without a dendrogram.",
+            messageText = "\nOnly one pathway passed filtering; returning the pathway plot without a dendrogram.",
             verbose = verbose
         )
         return(gg_bar1)
@@ -366,7 +366,7 @@ visualisePathways <- function(
         align = "h",
         rel_widths = c(6, 1)
     )
-    verbose_message(message_text = "\nDone", verbose = verbose)
+    verbose_message(messageText = "\nDone", verbose = verbose)
     # Show the plot
     return(combined_plot)
 }
@@ -380,26 +380,26 @@ visualisePathways <- function(
 #' @param regpathway A dataframe generated by the
 #'   `SpaMTP::findRegionalPathways()` function, containing identified regional
 #'   pathways.
-#' @param ident.column A character string specifying the column name of the
+#' @param identColumn A character string specifying the column name of the
 #'   `regpathway` dataframe containing the idents or clusters to compare
 #'   (default = "Cluster_id").
-#' @param selected_pathways A character vector specifying the names or IDs of
+#' @param selectedPathways A character vector specifying the names or IDs of
 #'   pathways to be included in the analysis (e.g., `c("Amino acid metabolism",
 #'   "WP1902", "Aspartate and asparagine metabolism")`). This argument is not
 #'   case-sensitive (default = NULL).
-#' @param sig_cutoff Within-family BH-adjusted P-value cutoff for the point
+#' @param sigCutoff Within-family BH-adjusted P-value cutoff for the point
 #'   outline. NULL uses 0.05. Display selection does not recompute adjustment.
-#' @param num_display An integer specifying the number of pathways to display in
+#' @param numDisplay An integer specifying the number of pathways to display in
 #'   the plot. If set to null will plot the smaller of either 10 pathways or the
 #'   number of unique pathways provided in 'regpathway' (default = NULL).
-#' @param text_size Base text size in points. NULL uses 11 points. Pathway
+#' @param textSize Base text size in points. NULL uses 11 points. Pathway
 #'   labels and legend entries use a slightly smaller size.
 #' @param database Optional named list of database resources, normally created
 #'   by [loadSpaMTPDatabase()].
-#' @param database_version SpaMTPdb/RaMP version used for pathway lookup.
-#' @param database_source Database source; see [loadSpaMTPDatabase()].
-#' @param database_local_dir Optional staged SpaMTPdb resource directory.
-#' @param label_width Maximum target line width for pathway names, in
+#' @param databaseVersion SpaMTPdb/RaMP version used for pathway lookup.
+#' @param databaseSource Database source; see [loadSpaMTPDatabase()].
+#' @param databaseLocalDir Optional staged SpaMTPdb resource directory.
+#' @param labelWidth Maximum target line width for pathway names, in
 #'   characters.
 #'   Defaults to 32. NULL keeps names on one line. Stable pathway identifiers
 #'   are displayed on a separate line in either case.
@@ -419,30 +419,30 @@ visualisePathways <- function(
 #' plotRegionalPathways(regional, database = db)
 plotRegionalPathways <- function(
     regpathway,
-    ident.column = "Cluster_id",
-    selected_pathways = NULL,
-    sig_cutoff = NULL,
-    num_display = NULL,
-    text_size = NULL,
+    identColumn = "Cluster_id",
+    selectedPathways = NULL,
+    sigCutoff = NULL,
+    numDisplay = NULL,
+    textSize = NULL,
     database = NULL,
-    database_version = "latest",
-    database_source = c("auto", "spamtpdb"),
-    database_local_dir = NULL,
-    label_width = 32
+    databaseVersion = "latest",
+    databaseSource = c("auto", "spamtpdb"),
+    databaseLocalDir = NULL,
+    labelWidth = 32
 ) {
-    if (!is.null(label_width) && (length(label_width) != 1L ||
-        !is.numeric(label_width) || !is.finite(label_width) || label_width < 1)) {
-        stop("label_width must be NULL or a positive number.", call. = FALSE)
+    if (!is.null(labelWidth) && (length(labelWidth) != 1L ||
+        !is.numeric(labelWidth) || !is.finite(labelWidth) || labelWidth < 1)) {
+        stop("labelWidth must be NULL or a positive number.", call. = FALSE)
     }
 
     resources <- .spamtp_db_bundle(c("analytehaspathway", "pathway"),
-        database = database, version = database_version, source = match.arg(database_source),
-        local_dir = database_local_dir
+        database = database, version = databaseVersion, source = match.arg(databaseSource),
+        localDir = databaseLocalDir
     )
     required <- c(
         "pathwayRampId",
         "pathwayName",
-        ident.column,
+        identColumn,
         "NES",
         "size",
         "padj"
@@ -455,11 +455,11 @@ plotRegionalPathways <- function(
     }
     if (!nrow(regpathway)) stop("No pathways to plot.", call. = FALSE)
     regpathway <- as.data.frame(regpathway)
-    if (!is.null(selected_pathways)) {
-        keep <- regpathway$pathwayRampId %in% selected_pathways |
-            regpathway$pathwayName %in% selected_pathways
+    if (!is.null(selectedPathways)) {
+        keep <- regpathway$pathwayRampId %in% selectedPathways |
+            regpathway$pathwayName %in% selectedPathways
         if ("sourceId" %in% names(regpathway)) {
-            keep <- keep | regpathway$sourceId %in% selected_pathways
+            keep <- keep | regpathway$sourceId %in% selectedPathways
         }
         regpathway <- regpathway[keep, , drop = FALSE]
         if (!nrow(regpathway)) stop("No selected pathways were found.", call. = FALSE)
@@ -471,7 +471,7 @@ plotRegionalPathways <- function(
     )
     ids <- head(
         names(sort(importance, decreasing = TRUE)),
-        num_display %||% 10L
+        numDisplay %||% 10L
     )
     if (!length(ids)) stop(
         "No selected pathways have estimable enrichment scores.",
@@ -493,19 +493,19 @@ plotRegionalPathways <- function(
     }
     ordering <- if (length(ids) > 1L) ids[stats::hclust(stats::as.dist(distance), method = "average")$order] else ids
     d <- regpathway[regpathway$pathwayRampId %in% ids, , drop = FALSE]
-    display_names <- if (is.null(label_width)) {
+    display_names <- if (is.null(labelWidth)) {
         d$pathwayName
     } else {
-        stringr::str_wrap(d$pathwayName, width = label_width)
+        stringr::str_wrap(d$pathwayName, width = labelWidth)
     }
     labels <- stats::setNames(
         paste0(display_names, "\n", d$pathwayRampId),
         d$pathwayRampId
     )
     d$.pathway <- factor(d$pathwayRampId, levels = rev(ordering))
-    d$.region <- as.character(d[[ident.column]])
+    d$.region <- as.character(d[[identColumn]])
     d$.FDR <- factor(ifelse(
-        !is.na(d$padj) & d$padj <= (sig_cutoff %||% .05),
+        !is.na(d$padj) & d$padj <= (sigCutoff %||% .05),
         "Within-family BH FDR",
         "Above cutoff / unavailable"
     ))
@@ -532,14 +532,14 @@ plotRegionalPathways <- function(
             ),
             limits = c("Within-family BH FDR", "Above cutoff / unavailable"),
             labels = c(
-                paste0("BH-adjusted P <= ", sig_cutoff %||% .05),
+                paste0("BH-adjusted P <= ", sigCutoff %||% .05),
                 "Above cutoff /\nunavailable"
             )
         ) +
         ggplot2::scale_size_area(max_size = 5.5) +
         ggplot2::scale_y_discrete(labels = labels[rev(ordering)]) +
         ggplot2::labs(
-            x = ident.column, y = NULL, fill = "NES", size = "Tested members", colour = "Outline",
+            x = identColumn, y = NULL, fill = "NES", size = "Tested members", colour = "Outline",
             subtitle = "Pathways ordered by membership overlap"
         ) +
         ggplot2::guides(
@@ -550,7 +550,7 @@ plotRegionalPathways <- function(
                 override.aes = list(size = 3.5, fill = "white")
             )
         ) +
-        ggplot2::theme_minimal(base_size = text_size %||% 11) +
+        ggplot2::theme_minimal(base_size = textSize %||% 11) +
         ggplot2::theme(
             axis.text.x = ggplot2::element_text(angle = 35, hjust = 1),
             axis.text.y = ggplot2::element_text(

@@ -6,14 +6,14 @@
 \usage{
 adductRules(
   polarity = c("both", "positive", "negative", "neutral"),
-  include_complex = TRUE
+  includeComplex = TRUE
 )
 }
 \arguments{
 \item{polarity}{One of \code{"both"}, \code{"positive"}, \code{"negative"}, or
 \code{"neutral"}.}
 
-\item{include_complex}{Include multimers, solvent clusters, metal-exchange,
+\item{includeComplex}{Include multimers, solvent clusters, metal-exchange,
 multiply charged ions, and neutral losses.}
 }
 \value{

@@ -11,24 +11,24 @@ imageMZAnnotationPlot(
   fov = NULL,
   cols = c("lightgrey", "firebrick1"),
   size = 0.5,
-  min.cutoff = NA,
-  max.cutoff = NA,
-  split.by = NULL,
+  minCutoff = NA,
+  maxCutoff = NA,
+  splitBy = NULL,
   alpha = 1,
-  border.color = "white",
-  border.size = 0,
-  dark.background = TRUE,
+  borderColor = "white",
+  borderSize = 0,
+  darkBackground = TRUE,
   crop = FALSE,
   cells = NULL,
   scale = c("feature", "all", "none"),
   axes = FALSE,
   combine = TRUE,
-  coord.fixed = TRUE,
+  coordFixed = TRUE,
   assay = "main",
   assayName = "counts",
-  column.name = "all_IsomerNames",
-  plot.exact = TRUE,
-  plot.pixel = FALSE,
+  columnName = "all_IsomerNames",
+  plotExact = TRUE,
+  plotPixel = FALSE,
   ...
 )
 }
@@ -45,16 +45,16 @@ imageMZAnnotationPlot(
 
 \item{size}{Point size.}
 
-\item{min.cutoff, max.cutoff}{One cutoff or one per query; numeric or
+\item{minCutoff, maxCutoff}{One cutoff or one per query; numeric or
 quantile strings such as "q10". NA uses the observed range.}
 
-\item{split.by}{Optional colData column for separate panels within samples.}
+\item{splitBy}{Optional colData column for separate panels within samples.}
 
 \item{alpha}{Point opacity, or a two-value range mapped to expression.}
 
-\item{border.color, border.size}{Point border colour and width.}
+\item{borderColor, borderSize}{Point border colour and width.}
 
-\item{dark.background}{Use a black plot background.}
+\item{darkBackground}{Use a black plot background.}
 
 \item{crop}{Crop to the selected pixels.}
 
@@ -67,19 +67,19 @@ queries, or "none" separately for each panel.}
 
 \item{combine}{Combine panels; FALSE returns a list of ggplots.}
 
-\item{coord.fixed}{Use a fixed coordinate aspect ratio.}
+\item{coordFixed}{Use a fixed coordinate aspect ratio.}
 
 \item{assay}{Primary experiment ("main") or altExp name.}
 
 \item{assayName}{Expression assay name, e.g. "counts" or "logcounts".
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{column.name}{Annotation column in rowData.}
+\item{columnName}{Annotation column in rowData.}
 
-\item{plot.exact}{Match complete semicolon-delimited names
+\item{plotExact}{Match complete semicolon-delimited names
 (case-insensitive).}
 
-\item{plot.pixel}{Draw square rather than circular point symbols.}
+\item{plotPixel}{Draw square rather than circular point symbols.}
 
 \item{...}{Former Seurat segmentation, molecule and blending arguments
 are unsupported and cause an error; convert and plot these separately.}

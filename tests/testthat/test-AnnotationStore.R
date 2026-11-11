@@ -88,7 +88,7 @@ test_that("current Ramp IDs map directly to current chemical metadata", {
 
     result <- SpaMTP:::.resolve_pathway_metabolite_annotations(
         object,
-        annotation_source = "current", chemical_properties = chemical
+        annotationSource = "current", chemicalProperties = chemical
     )
 
     expect_equal(result$ramp_id, "RAMP_C_000219574")
@@ -115,7 +115,7 @@ test_that("pathway resolver keeps the best scored adduct hypothesis", {
 
     result <- SpaMTP:::.resolve_pathway_metabolite_annotations(
         object,
-        annotation_source = "current", chemical_properties = chemical
+        annotationSource = "current", chemicalProperties = chemical
     )
 
     expect_equal(nrow(result), 1L)
@@ -141,11 +141,11 @@ test_that("pathway annotation score threshold is user adjustable", {
 
     strict <- SpaMTP:::.resolve_pathway_metabolite_annotations(
         object,
-        score_threshold = 0.05, chemical_properties = chemical
+        scoreThreshold = 0.05, chemicalProperties = chemical
     )
     permissive <- SpaMTP:::.resolve_pathway_metabolite_annotations(
         object,
-        score_threshold = 0.01, chemical_properties = chemical
+        scoreThreshold = 0.01, chemicalProperties = chemical
     )
 
     expect_equal(strict$ramp_id, "RAMP_C_HIGH")
@@ -193,8 +193,8 @@ test_that("curated FMP10 annotations are mapped into the current RaMP schema", {
 
     result <- SpaMTP:::.fmp10_current_annotations(
         fmp,
-        mass_threshold = 0.05,
-        chemical_properties = chemical
+        massThreshold = 0.05,
+        chemicalProperties = chemical
     )
     store <- SpaMTP:::.annotation_store(
         result,
@@ -273,7 +273,7 @@ test_that("FMP10 exact ties keep names, identities and scores together", {
     expect_equal(annotationCandidates(again)$Score, rev(candidates$Score))
     expect_identical(nrow(annotationCandidates(again[1, ])), 1L)
     expect_identical(nrow(addFMP10Annotations(object,
-        database = database, return.only.annotated = TRUE
+        database = database, returnOnlyAnnotated = TRUE
     )), 2L)
 })
 

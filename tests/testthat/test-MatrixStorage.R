@@ -17,7 +17,7 @@ test_that("CSV import chooses storage without changing values or metadata", {
         path <- withr::local_tempfile(fileext = ".csv")
         utils::write.csv(table, path, row.names = FALSE)
         object <- readSMMatrix(path,
-            mz.prefix = "mz", project.name = "sample", verbose = FALSE
+            mzPrefix = "mz", projectName = "sample", verbose = FALSE
         )
         counts <- SummarizedExperiment::assay(object, "counts")
         if (name == "dense") {
@@ -50,7 +50,7 @@ test_that("single-feature CSVs retain a two-dimensional assay", {
     )
     utils::write.csv(table, path, row.names = FALSE)
     object <- readSMMatrix(path,
-        feature.start.column = 2, mz.prefix = "mz", verbose = FALSE
+        featureStartColumn = 2, mzPrefix = "mz", verbose = FALSE
     )
     expect_identical(dim(object), c(1L, 3L))
     counts <- SummarizedExperiment::assay(object, "counts")
@@ -67,7 +67,7 @@ test_that("square sparse CSVs retain all values in a general sparse matrix", {
         mz100 = c(1, 0, 0), mz200 = c(2, 3, 0), mz300 = c(0, 0, 4)
     )
     utils::write.csv(table, path, row.names = FALSE)
-    object <- readSMMatrix(path, mz.prefix = "mz", verbose = FALSE)
+    object <- readSMMatrix(path, mzPrefix = "mz", verbose = FALSE)
     counts <- SummarizedExperiment::assay(object, "counts")
     expect_s4_class(counts, "dgCMatrix")
     expect_equal(unname(as.matrix(counts)), unname(t(as.matrix(table[3:5]))))
@@ -76,7 +76,7 @@ test_that("square sparse CSVs retain all values in a general sparse matrix", {
 test_that("large integer intensities are read as double values", {
     path <- withr::local_tempfile(fileext = ".csv")
     writeLines(c("x,y,mz100", "1,1,3000000000", "2,1,4000000000"), path)
-    object <- readSMMatrix(path, mz.prefix = "mz", verbose = FALSE)
+    object <- readSMMatrix(path, mzPrefix = "mz", verbose = FALSE)
     counts <- SummarizedExperiment::assay(object, "counts")
     expect_type(counts, "double")
     expect_equal(unname(counts), matrix(c(3e9, 4e9), nrow = 1))
@@ -88,7 +88,7 @@ test_that("CSV import diagnoses missing and nonnumeric intensity columns", {
     expect_error(readSMMatrix(path, verbose = FALSE), "at least one m/z")
     writeLines(c("x,y,mz100", "1,1,text", "2,1,3"), path)
     expect_error(
-        readSMMatrix(path, mz.prefix = "mz", verbose = FALSE),
+        readSMMatrix(path, mzPrefix = "mz", verbose = FALSE),
         "Intensity columns must contain numeric"
     )
 })

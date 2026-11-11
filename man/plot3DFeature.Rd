@@ -9,20 +9,20 @@ plot3DFeature(
   features,
   assays = c("transcriptome", "main"),
   assayNames = "counts",
-  between.layer.height = 100,
+  betweenLayerHeight = 100,
   names = NULL,
   size = 3,
-  col.palette = "Reds",
-  x.axis.label = "x",
-  y.axis.label = "y",
-  z.axis.label = "z",
-  show.x.ticks = FALSE,
-  show.y.ticks = FALSE,
-  show.z.ticks = FALSE,
-  show.image = NULL,
-  plot.height = 800,
-  plot.width = 1500,
-  downscale.image = NULL,
+  colPalette = "Reds",
+  xAxisLabel = "x",
+  yAxisLabel = "y",
+  zAxisLabel = "z",
+  showXTicks = FALSE,
+  showYTicks = FALSE,
+  showZTicks = FALSE,
+  showImage = NULL,
+  plotHeight = 800,
+  plotWidth = 1500,
+  downscaleImage = NULL,
   sampleId = NULL
 )
 }
@@ -37,23 +37,23 @@ A single feature is repeated for comparison across two experiments.}
 \item{assayNames}{One or two expression assay names.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{between.layer.height}{Distance between layers.}
+\item{betweenLayerHeight}{Distance between layers.}
 
 \item{names}{Optional layer labels.}
 
 \item{size}{Marker size.}
 
-\item{col.palette}{One or two Plotly colour palettes.}
+\item{colPalette}{One or two Plotly colour palettes.}
 
-\item{x.axis.label, y.axis.label, z.axis.label}{Axis labels.}
+\item{xAxisLabel, yAxisLabel, zAxisLabel}{Axis labels.}
 
-\item{show.x.ticks, show.y.ticks, show.z.ticks}{Show axis tick labels.}
+\item{showXTicks, showYTicks, showZTicks}{Show axis tick labels.}
 
-\item{show.image}{Optional image ID from imgData.}
+\item{showImage}{Optional image ID from imgData.}
 
-\item{plot.height, plot.width}{Widget dimensions.}
+\item{plotHeight, plotWidth}{Widget dimensions.}
 
-\item{downscale.image}{Optional positive integer raster sampling stride.}
+\item{downscaleImage}{Optional positive integer raster sampling stride.}
 
 \item{sampleId}{Sample ID; required when data contains multiple samples.}
 }

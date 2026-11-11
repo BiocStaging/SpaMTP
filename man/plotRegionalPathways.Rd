@@ -6,16 +6,16 @@
 \usage{
 plotRegionalPathways(
   regpathway,
-  ident.column = "Cluster_id",
-  selected_pathways = NULL,
-  sig_cutoff = NULL,
-  num_display = NULL,
-  text_size = NULL,
+  identColumn = "Cluster_id",
+  selectedPathways = NULL,
+  sigCutoff = NULL,
+  numDisplay = NULL,
+  textSize = NULL,
   database = NULL,
-  database_version = "latest",
-  database_source = c("auto", "spamtpdb"),
-  database_local_dir = NULL,
-  label_width = 32
+  databaseVersion = "latest",
+  databaseSource = c("auto", "spamtpdb"),
+  databaseLocalDir = NULL,
+  labelWidth = 32
 )
 }
 \arguments{
@@ -23,34 +23,34 @@ plotRegionalPathways(
 \code{SpaMTP::findRegionalPathways()} function, containing identified regional
 pathways.}
 
-\item{ident.column}{A character string specifying the column name of the
+\item{identColumn}{A character string specifying the column name of the
 \code{regpathway} dataframe containing the idents or clusters to compare
 (default = "Cluster_id").}
 
-\item{selected_pathways}{A character vector specifying the names or IDs of
+\item{selectedPathways}{A character vector specifying the names or IDs of
 pathways to be included in the analysis (e.g., \code{c("Amino acid metabolism", "WP1902", "Aspartate and asparagine metabolism")}). This argument is not
 case-sensitive (default = NULL).}
 
-\item{sig_cutoff}{Within-family BH-adjusted P-value cutoff for the point
+\item{sigCutoff}{Within-family BH-adjusted P-value cutoff for the point
 outline. NULL uses 0.05. Display selection does not recompute adjustment.}
 
-\item{num_display}{An integer specifying the number of pathways to display in
+\item{numDisplay}{An integer specifying the number of pathways to display in
 the plot. If set to null will plot the smaller of either 10 pathways or the
 number of unique pathways provided in 'regpathway' (default = NULL).}
 
-\item{text_size}{Base text size in points. NULL uses 11 points. Pathway
+\item{textSize}{Base text size in points. NULL uses 11 points. Pathway
 labels and legend entries use a slightly smaller size.}
 
 \item{database}{Optional named list of database resources, normally created
 by \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_version}{SpaMTPdb/RaMP version used for pathway lookup.}
+\item{databaseVersion}{SpaMTPdb/RaMP version used for pathway lookup.}
 
-\item{database_source}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
+\item{databaseSource}{Database source; see \code{\link[=loadSpaMTPDatabase]{loadSpaMTPDatabase()}}.}
 
-\item{database_local_dir}{Optional staged SpaMTPdb resource directory.}
+\item{databaseLocalDir}{Optional staged SpaMTPdb resource directory.}
 
-\item{label_width}{Maximum target line width for pathway names, in
+\item{labelWidth}{Maximum target line width for pathway names, in
 characters.
 Defaults to 32. NULL keeps names on one line. Stable pathway identifiers
 are displayed on a separate line in either case.}

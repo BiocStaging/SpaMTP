@@ -6,34 +6,34 @@
 \usage{
 statPlot(
   data,
-  group.by = NULL,
+  groupBy = NULL,
   assay = "main",
   assayName = "counts",
-  bottom.cutoff = NULL,
-  top.cutoff = NULL,
-  log.data = FALSE,
+  bottomCutoff = NULL,
+  topCutoff = NULL,
+  logData = FALSE,
   verbose = FALSE
 )
 }
 \arguments{
 \item{data}{A SingleCellExperiment, including SpatialExperiment.}
 
-\item{group.by}{Name of the \code{colData()} column to group by (default = NULL).}
+\item{groupBy}{Name of the \code{colData()} column to group by (default = NULL).}
 
 \item{assay}{Primary (\code{main}) or alternative experiment name.}
 
 \item{assayName}{Expression assay name within the selected experiment.
 See \link{experimentAccess} for the experiment/matrix distinction.}
 
-\item{bottom.cutoff}{Numeric value defining the percent of data to exclude
-for the lower end of the distribution. A bottom.cutoff = 0.05 will remove
+\item{bottomCutoff}{Numeric value defining the percent of data to exclude
+for the lower end of the distribution. A bottomCutoff = 0.05 will remove
 the bottom 5\% of data point (default = NULL).}
 
-\item{top.cutoff}{Numeric value defining the percent of data to exclude for
-the upper end of the distribution. A top.cutoff = 0.05 will remove the top
+\item{topCutoff}{Numeric value defining the percent of data to exclude for
+the upper end of the distribution. A topCutoff = 0.05 will remove the top
 5\% of data point (default = NULL).}
 
-\item{log.data}{Boolean value indicating whether to log transform the y-axis
+\item{logData}{Boolean value indicating whether to log transform the y-axis
 values (default = FALSE).}
 
 \item{verbose}{Boolean indicating whether to show the message. If TRUE the
@@ -50,5 +50,5 @@ Helper function for QC plots by generating intensity count data
 \examples{
 data(spamtp_example)
 spe <- spamtp_example$experiment
-statPlot(spe, group.by = "region")
+statPlot(spe, groupBy = "region")
 }

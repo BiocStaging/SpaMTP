@@ -9,7 +9,7 @@
 #' data(spamtp_example)
 #' fit <- runSpaMTPWorkflow(spamtp_example$experiment,
 #'     modalities = list(main = list(type = "metabolomics", layer = "counts")),
-#'     group = "region", npcs = 2, clusters = 2, association_features = 0,
+#'     group = "region", npcs = 2, clusters = 2, associationFeatures = 0,
 #'     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0))
 #' head(workflowMarkers(fit)$DEMs)
 workflowMarkers <- function(fit, modality = "main") {
@@ -31,14 +31,59 @@ workflowMarkers <- function(fit, modality = "main") {
 #' @export
 #' @examples
 #' data(spamtp_example)
-#' x <- createPathwayAssay(spamtp_example$experiment, analyte_type = "genes",
+#' x <- createPathwayAssay(spamtp_example$experiment, analyteType = "genes",
 #'     assay = "transcriptome", database = spamtp_example$database,
-#'     gene_mapping = "ramp", organism = "custom", verbose = FALSE)
+#'     geneMapping = "ramp", organism = "custom", verbose = FALSE)
 #' names(pathwayMapping(x, "pathway"))
 pathwayMapping <- function(object, assay = "main") {
     result <- S4Vectors::metadata(.experimentForAssay(object, assay))$pathway_mapping
     if (is.null(result)) stop("No pathway mapping is stored for experiment `", assay, "`.", call. = FALSE)
     result
+}
+
+#' Extract representation metrics from a SpaMTP workflow
+#'
+#' @param fit Result of [runSpaMTPWorkflow()] with structure analysis enabled.
+#' @return A data frame with representation, cluster count, silhouette,
+#'   spatial-neighbour agreement and reference agreement metrics.
+#' @export
+#' @examples
+#' data(spamtp_example)
+#' fit <- runSpaMTPWorkflow(spamtp_example$experiment,
+#'     modalities = list(main = list(type = "metabolomics", layer = "counts")),
+#'     group = "region", npcs = 2, clusters = 2, associationFeatures = 0,
+#'     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0))
+#' workflowMetrics(fit)
+workflowMetrics <- function(fit) {
+    if (!is.list(fit) || !is.list(fit$structure) ||
+        !is.data.frame(fit$structure$metrics)) {
+        stop("Supply a workflow result with computed structure metrics.",
+            call. = FALSE)
+    }
+    fit$structure$metrics
+}
+
+#' Inspect the expected ions in an annotation index
+#'
+#' @param index An index returned by [buildMZAnnotationIndex()].
+#' @return A data frame in increasing expected m/z order, with one row per
+#'   indexed compound/adduct combination. Columns are `adduct`, `expected_mz`,
+#'   `formula`, `metabolite_names`, `ramp_ids` and `charge`.
+#' @export
+#' @examples
+#' data(spamtp_example)
+#' index <- buildMZAnnotationIndex(spamtp_example$metabolites, adducts = "M+H")
+#' annotationIndexIons(index)
+annotationIndexIons <- function(index) {
+    if (!inherits(index, "spamtp_mz_index")) {
+        stop("index must be created by buildMZAnnotationIndex().", call. = FALSE)
+    }
+    compounds <- index$compounds[index$compound_idx, , drop = FALSE]
+    rules <- index$rules[index$rule_idx, , drop = FALSE]
+    data.frame(adduct = rules$name, expected_mz = index$expected_mz,
+        formula = compounds$formula, metabolite_names = compounds$isomers_names,
+        ramp_ids = compounds$ramp_ids, charge = rules$charge,
+        stringsAsFactors = FALSE)
 }
 
 #' Summarize feature intensities by group
@@ -51,7 +96,9 @@ pathwayMapping <- function(object, assay = "main") {
 #' @param data A Bioconductor experiment or named list of experiments.
 #' @param features Character feature IDs to summarize; NULL selects all rows.
 #' @param groupBy A colData column defining groups. Missing labels are excluded.
-#' @param assay Main or alternative experiment name.
+#' @param assay Main or alternative experiment name. With `NULL` (default),
+#'   explicit feature IDs are found in the main experiment first and then in
+#'   paired alternative experiments, as in [plotSpatialFeature()].
 #' @param assayName Expression assay name. See [experimentAccess] for the
 #'   distinction between an experiment and its expression matrices.
 #' @return A data frame with dataset, feature, group, n, mean, median and detection
@@ -61,7 +108,7 @@ pathwayMapping <- function(object, assay = "main") {
 #' data(spamtp_example)
 #' summarizeFeatures(spamtp_example$experiment, groupBy = "region")
 summarizeFeatures <- function(data, features = NULL, groupBy,
-                              assay = "main", assayName = "counts") {
+                              assay = NULL, assayName = "counts") {
     datasets <- if (.isSummarizedExperiment(data)) list(data = data) else data
     if (!is.list(datasets) || !length(datasets) || is.null(names(datasets)) ||
         anyNA(names(datasets)) || any(!nzchar(names(datasets))) || anyDuplicated(names(datasets))) {
@@ -73,16 +120,27 @@ summarizeFeatures <- function(data, features = NULL, groupBy,
         if (length(groupBy) != 1L || is.na(groupBy) || !groupBy %in% names(metadata)) {
             stop("groupBy must name a colData column.", call. = FALSE)
         }
-        values <- .assayData(object, assay, assayName)
-        selected <- features %||% rownames(values)
+        selected <- features %||% rownames(.experimentForAssay(object, assay))
         if (!is.character(selected) || !length(selected) || anyNA(selected) || anyDuplicated(selected) ||
-            any(!selected %in% rownames(values))) {
-            stop("features must name existing, unique rows in every dataset.", call. = FALSE)
+            any(!nzchar(selected))) {
+            stop("features must contain unique, non-empty feature IDs.", call. = FALSE)
+        }
+        if (is.null(assay)) {
+            values <- .spatialFeatureValues(object, selected, assayName)
+        } else {
+            expression <- .assayData(object, assay, assayName)
+            if (any(!selected %in% rownames(expression))) {
+                stop("features must name existing rows in the selected experiment.",
+                    call. = FALSE)
+            }
+            values <- stats::setNames(lapply(selected, function(feature) {
+                as.numeric(expression[feature, ])
+            }), selected)
         }
         groups <- split(seq_len(ncol(object)), as.character(metadata[[groupBy]]))
         if (!length(groups)) stop("No non-missing groups to summarize.", call. = FALSE)
         do.call(rbind, lapply(selected, function(feature) {
-            v <- as.numeric(values[feature, ])
+            v <- values[[feature]]
             if (!.allFiniteAssay(v)) stop("Selected intensities must be finite.", call. = FALSE)
             do.call(rbind, lapply(names(groups), function(group) {
                 x <- v[groups[[group]]]

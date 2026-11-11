@@ -21,8 +21,8 @@ Inspect pathway identity mapping and coverage
 }
 \examples{
 data(spamtp_example)
-x <- createPathwayAssay(spamtp_example$experiment, analyte_type = "genes",
+x <- createPathwayAssay(spamtp_example$experiment, analyteType = "genes",
     assay = "transcriptome", database = spamtp_example$database,
-    gene_mapping = "ramp", organism = "custom", verbose = FALSE)
+    geneMapping = "ramp", organism = "custom", verbose = FALSE)
 names(pathwayMapping(x, "pathway"))
 }

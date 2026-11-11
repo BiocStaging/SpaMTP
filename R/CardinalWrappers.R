@@ -9,7 +9,7 @@
 #' directly or require Seurat.
 #'
 #' @param data A Cardinal Object containing the raw/binned m/z count data.
-#' @param data_ssc A Cardinal Object containing the ssc segmentation results.
+#' @param dataSsc A Cardinal Object containing the ssc segmentation results.
 #'   Note: Cardinal's spatialShrunkenCentroids() must be run to generate this
 #'   object.
 #' @param resolution An integer (< v3.6.0) or string (>= v3.6.0) defining the
@@ -29,22 +29,22 @@
 #' ))
 #' labelled <- addSSCAnnotation(msi, segmentation, resolution = 1)
 #' table(Cardinal::pixelData(labelled)$ssc)
-addSSCAnnotation <- function(data, data_ssc, resolution) {
+addSSCAnnotation <- function(data, dataSsc, resolution) {
     data_bin <- data
 
     if (check_cardinal_version()) {
-        if (!methods::is(data_ssc, "ResultsList")) {
-            Cardinal::pixelData(data_bin)[["ssc"]] <- data_ssc$class
+        if (!methods::is(dataSsc, "ResultsList")) {
+            Cardinal::pixelData(data_bin)[["ssc"]] <- dataSsc$class
         } else {
             message("Getting cluster segments for resolution ", resolution)
 
-            Cardinal::pixelData(data_bin)[["ssc"]] <- data_ssc[[resolution]]$class
+            Cardinal::pixelData(data_bin)[["ssc"]] <- dataSsc[[resolution]]$class
         }
     } else {
         message("Getting cluster segments for resolution (s) = ", resolution)
-        cluster_idx <- which(Cardinal::modelData(data_ssc)[["s"]] == resolution)
+        cluster_idx <- which(Cardinal::modelData(dataSsc)[["s"]] == resolution)
 
-        classes <- Cardinal::resultData(data_ssc)[[cluster_idx]][[1]]
+        classes <- Cardinal::resultData(dataSsc)[[cluster_idx]][[1]]
         pixel_data <- Cardinal::pixelData(data_bin)
 
 

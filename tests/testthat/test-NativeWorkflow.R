@@ -33,7 +33,7 @@ test_that("explicit native PCA feature selection cannot include high-variance ou
 
 test_that("sparse Graph PCA agrees with the independent dense solution", {
     x <- scaleSMData(nativeWorkflowFixture(), assayName = "logcounts")
-    fit <- runSpatialGraphPCA(x, n_components = 3, lambda = .6, platform = "ST", n_neighbors = 4, fast = FALSE, verbose = FALSE)
+    fit <- runSpatialGraphPCA(x, nComponents = 3, lambda = .6, platform = "ST", nNeighbors = 4, fast = FALSE, verbose = FALSE)
     A <- as.matrix(S4Vectors::metadata(fit)$spatialGraphs$SpatialKNN)
     E <- t(as.matrix(SummarizedExperiment::assay(x, "scaled")))
     X <- solve(diag(nrow(A)) + .6 * (diag(rowSums(A)) - A), E)
@@ -46,7 +46,7 @@ test_that("sparse Graph PCA agrees with the independent dense solution", {
 
 test_that("region markers agree with empirical pairwise concordance without invented P values", {
     x <- nativeWorkflowFixture()
-    m <- findAllDEMs(x, ident = "region", assay = "main", assayName = "logcounts", method = "markers", spatial_blocks = 4)
+    m <- findAllDEMs(x, ident = "region", assay = "main", assayName = "logcounts", method = "markers", spatialBlocks = 4)
     a <- m$DEMs[m$DEMs$gene == "feature1" & m$DEMs$cluster == "A", ]
     E <- SummarizedExperiment::assay(x)
     empirical <- vapply(c("B", "C"), function(g) {
@@ -58,7 +58,7 @@ test_that("region markers agree with empirical pairwise concordance without inve
     expect_false(any(c("P.Value", "FDR", "p_val_adj") %in% names(m$DEMs)))
     expect_true(a$stability_fits > 0)
     skip_if_not_installed("pheatmap")
-    heat <- demsHeatmap(m, n = 2, only.pos = TRUE, logfc.threshold = 0, order.by = "mean_auc")
+    heat <- demsHeatmap(m, n = 2, onlyPos = TRUE, logFCThreshold = 0, orderBy = "mean_auc")
     expect_equal(heat$expression, m$expression[heat$selected_features, , drop = FALSE])
 })
 
@@ -78,7 +78,7 @@ test_that("conditional native correlation removes a pure regional composition ef
         assays = list(logcounts = rbind(gene = stats::setNames(yvalue, colnames(E))))
     )
     r <- findCorrelatedFeatures(x,
-        mz = "protein", ST.assay = "RNA", smAssayName = "logcounts", stAssayName = "logcounts",
+        mz = "protein", stAssay = "RNA", smAssayName = "logcounts", stAssayName = "logcounts",
         covariates = "region", nfeatures = NULL
     )
     gene <- r[r$modality == "gene", ]
@@ -95,8 +95,8 @@ test_that("the workflow feeds full-observation spatial representations into inte
         main = list(type = "proteomics", layer = "logcounts"),
         RNA = list(type = "transcriptomics", layer = "logcounts")
     ),
-    npcs = 3, max_features = 10,
-    clusters = 3, association_features = 0, regions = "region",
+    npcs = 3, maxFeatures = 10,
+    clusters = 3, associationFeatures = 0, regions = "region",
     structure = list(primary = "spatial", reference = "region", umap = FALSE, k_grid = c(2, 3), stability_blocks = 3)
     )
     expect_equal(nrow(r$analysis$main$spatial_pca$scores), 610)
@@ -149,14 +149,14 @@ test_that("complete regional rankings agree with direct competitive enrichment",
         ),
         pathway = data.frame(pathwayRampId = names(sets), pathwayName = names(sets))
     )
-    index <- buildPathwayIndex(db, gene_mapping = "ramp", organism = "custom")
+    index <- buildPathwayIndex(db, geneMapping = "ramp", organism = "custom")
     withr::local_seed(323)
     ranks <- matrix(stats::rnorm(40), dimnames = list(ids, "A"))
     before <- withr::with_seed(99, stats::runif(1))
     result <- withr::with_seed(99, {
         fit <- findRegionalPathways(nativeWorkflowFixture(),
-            ident = "region", ranks = list(genes = ranks), pathway_index = index,
-            rank_scale = "none", min_path_size = 3, max_path_size = 15,
+            ident = "region", ranks = list(genes = ranks), pathwayIndex = index,
+            rankScale = "none", minPathSize = 3, maxPathSize = 15,
             nPermSimple = 1000, verbose = FALSE, seed = 12
         )
         # The internal seed must not alter the caller's random number stream.
@@ -187,7 +187,7 @@ test_that("the ranks interface accepts marker results and restricts regions", {
         ),
         pathway = data.frame(pathwayRampId = names(sets), pathwayName = names(sets))
     )
-    index <- buildPathwayIndex(db, gene_mapping = "ramp", organism = "custom")
+    index <- buildPathwayIndex(db, geneMapping = "ramp", organism = "custom")
     values <- withr::with_seed(5, matrix(stats::rnorm(80), 40,
         dimnames = list(ids, c("A", "B"))
     ))
@@ -197,8 +197,8 @@ test_that("the ranks interface accepts marker results and restricts regions", {
     ))
     run <- function(ranks, regions = "B") {
         findRegionalPathways(nativeWorkflowFixture(),
-            ident = "region", ranks = list(genes = ranks), pathway_index = index,
-            rank_scale = "none", min_path_size = 3, max_path_size = 15, regions = regions,
+            ident = "region", ranks = list(genes = ranks), pathwayIndex = index,
+            rankScale = "none", minPathSize = 3, maxPathSize = 15, regions = regions,
             verbose = FALSE
         )
     }
@@ -236,7 +236,7 @@ test_that("sparse compound assays retain exact weights and exclude ambiguous mas
     )
     result <- createPathwayAssay(object,
         assay = "main", assayName = "workflow", database = db,
-        metabolite_ambiguity = "exclude", verbose = FALSE
+        metaboliteAmbiguity = "exclude", verbose = FALSE
     )
     mapped <- SingleCellExperiment::altExp(result, "pathway")
     expect_identical(SummarizedExperiment::assayNames(mapped), "workflow")
@@ -259,7 +259,7 @@ test_that("sparse compound assays retain exact weights and exclude ambiguous mas
     )
     result <- createPathwayAssay(object,
         assay = "MS2", assayName = "workflow", database = db,
-        metabolite_ambiguity = "exclude", verbose = FALSE
+        metaboliteAmbiguity = "exclude", verbose = FALSE
     )
     expect_identical(rownames(SingleCellExperiment::altExp(result, "pathway")), "RAMP_C_3")
     expect_equal(as.numeric(.assayData(result, "pathway", "workflow")), as.numeric(Matrix::colMeans(E)))
@@ -278,7 +278,7 @@ test_that("the public network accepts audited compound identities and exports of
             mixedEdges = data.frame(src = ids[1:2], dest = ids[2:3], directed = 1L, reaction_type = 1L)
         ))
     )
-    index <- buildPathwayIndex(db, gene_mapping = "ramp", organism = "custom")
+    index <- buildPathwayIndex(db, geneMapping = "ramp", organism = "custom")
     E <- matrix(1:18, 3, dimnames = list(ids, paste0("spot", 1:6)))
     object <- SpatialExperiment::SpatialExperiment(
         assays = list(workflow = E),
@@ -296,8 +296,8 @@ test_that("the public network accepts audited compound identities and exports of
     folder <- withr::local_tempdir()
     path <- pathwayNetworkPlots(object,
         ident = "region", regpathway = regional,
-        DE.list = list(metabolites = m$DEMs), smAssayName = "workflow", path = folder,
-        analyte_types = "metabolites", database = db, pathway_index = index,
+        deList = list(metabolites = m$DEMs), smAssayName = "workflow", path = folder,
+        analyteTypes = "metabolites", database = db, pathwayIndex = index,
         organism = "custom", verbose = FALSE
     )
     html <- paste(readLines(path, warn = FALSE), collapse = "\n")

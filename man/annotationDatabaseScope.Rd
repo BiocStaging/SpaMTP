@@ -5,13 +5,13 @@
 \title{Restrict a chemical table to pathway-connected compounds}
 \usage{
 annotationDatabaseScope(
-  chem_props,
+  chemProps,
   analytehaspathway,
   sources = c("reactome", "kegg", "wiki")
 )
 }
 \arguments{
-\item{chem_props}{RaMP chemical table with a \code{ramp_id} column.}
+\item{chemProps}{RaMP chemical table with a \code{ramp_id} column.}
 
 \item{analytehaspathway}{RaMP analyte-pathway table with \code{rampId} and
 \code{pathwaySource} columns.}
@@ -20,7 +20,7 @@ annotationDatabaseScope(
 curated databases.}
 }
 \value{
-The subset of \code{chem_props}.
+The subset of \code{chemProps}.
 }
 \description{
 Subsets a RaMP chemical table to compounds linked to pathways from the

@@ -6,9 +6,9 @@
 \usage{
 kNeighborsGraph(
   location,
-  n_neighbors,
+  nNeighbors,
   platform,
-  include_self = FALSE,
+  includeSelf = FALSE,
   alg = "kd_tree"
 )
 }
@@ -16,7 +16,7 @@ kNeighborsGraph(
 \item{location}{A data frame or matrix with columns \code{x} and \code{y} representing
 spatial coordinates, and rownames match barcode/cell names.}
 
-\item{n_neighbors}{Integer value defining the number of neighbours to
+\item{nNeighbors}{Integer value defining the number of neighbours to
 consider.}
 
 \item{platform}{Character string being either \code{"Visium"} or \code{"ST"},
@@ -25,7 +25,7 @@ distance thresholds and adjacency are calculated whereby "Visium" data is
 handled slightly differently to compensate for the hexagon shape of the
 spots.}
 
-\item{include_self}{Boolean logical value stating whether to include
+\item{includeSelf}{Boolean logical value stating whether to include
 self-connections (default = FALSE).}
 
 \item{alg}{Character string specifying the algorithm to use for nearest
@@ -41,5 +41,5 @@ spatial coordinates.
 }
 \examples{
 coordinates <- cbind(x = rep(1:3, 2), y = rep(1:2, each = 3))
-kNeighborsGraph(coordinates, n_neighbors = 2, platform = "ST")
+kNeighborsGraph(coordinates, nNeighbors = 2, platform = "ST")
 }

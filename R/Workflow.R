@@ -133,29 +133,29 @@
     E
 }
 
-.wf_qc <- function(E, name, spec) {
-    detected <- as.numeric(Matrix::colSums(E != 0))
-    total <- as.numeric(Matrix::colSums(E))
+.wf_qc <- function(expression, name, spec) {
+    detected <- as.numeric(Matrix::colSums(expression != 0))
+    total <- as.numeric(Matrix::colSums(expression))
     data.frame(
-        modality = name, observation = colnames(E), total = total,
+        modality = name, observation = colnames(expression), total = total,
         detected = detected, pass = detected >= spec$min_detected,
         layer = spec$layer, stringsAsFactors = FALSE
     )
 }
 
-.wf_normalize <- function(E, spec) {
+.wf_normalize <- function(expression, spec) {
     if (spec$normalization == "none") {
-        return(E)
+        return(expression)
     }
     if (spec$normalization == "library_log") {
-        e <- SingleCellExperiment::SingleCellExperiment(assays = list(counts = E))
+        e <- SingleCellExperiment::SingleCellExperiment(assays = list(counts = expression))
         e <- normalizeSMData(e,
-            normalisation.type = "LogNormalize",
-            scale.factor = spec$scale_factor, verbose = FALSE
+            normalizationType = "LogNormalize",
+            scaleFactor = spec$scale_factor, verbose = FALSE
         )
         return(SummarizedExperiment::assay(e, "logcounts"))
     }
-    log1p(E) / log(2)
+    log1p(expression) / log(2)
 }
 
 .wf_map <- function(source, target, spec) {
@@ -241,39 +241,39 @@
     )
 }
 
-.wf_pca <- function(E, npcs, max_features) {
-    variance <- as.numeric(Matrix::rowMeans(E * E) - Matrix::rowMeans(E)^2)
+.wf_pca <- function(expression, npcs, maxFeatures) {
+    variance <- as.numeric(Matrix::rowMeans(expression * expression) - Matrix::rowMeans(expression)^2)
     selected <- which(is.finite(variance) & variance > 1e-12)
     selected <- head(
         selected[order(variance[selected], decreasing = TRUE)],
-        max_features
+        maxFeatures
     )
-    if (length(selected) < 2L || ncol(E) < 3L) {
+    if (length(selected) < 2L || ncol(expression) < 3L) {
         return(list(
             status = "skipped",
             reason = "Fewer than two variable features or three observations."
         ))
     }
-    x <- SingleCellExperiment::SingleCellExperiment(assays = list(workflow = E))
+    x <- SingleCellExperiment::SingleCellExperiment(assays = list(workflow = expression))
     x <- runMetabolicPCA(x,
         npcs = npcs, assayName = "workflow",
-        features = rownames(E)[selected], scale = TRUE, verbose = FALSE
+        features = rownames(expression)[selected], scale = TRUE, verbose = FALSE
     )
     scores <- SingleCellExperiment::reducedDim(x, "pca")
     list(
-        status = "completed", scores = scores, features = rownames(E)[selected],
+        status = "completed", scores = scores, features = rownames(expression)[selected],
         percent_variance = attr(scores, "percentVar"), feature_scale = TRUE,
         provenance = S4Vectors::metadata(x)$reduction_inputs$pca
     )
 }
 
 # Compatibility adapter: the analysis itself is owned by the native DE API.
-.wf_contrasts <- function(E, metadata, group, replicate, contrasts) {
+.wf_contrasts <- function(expression, metadata, group, replicate, contrasts) {
     if (is.null(group)) {
         return(list())
     }
     x <- SingleCellExperiment::SingleCellExperiment(
-        assays = list(workflow = E), colData = S4Vectors::DataFrame(metadata)
+        assays = list(workflow = expression), colData = S4Vectors::DataFrame(metadata)
     )
     findAllDEMs(x,
         ident = group, assay = "main", assayName = "workflow",
@@ -293,7 +293,7 @@
 #' @param modalities Named list of specifications with type and layer, plus
 #'   optional normalization, scale_factor, min_detected, species, annotation,
 #' and pathways. Paired input names are main followed by selected altExp names.
-#' @param output_dir Optional new directory for report, tables and result RDS.
+#' @param outputDir Optional new directory for report, tables and result RDS.
 #' @param reference Name of the reference modality for independent inputs.
 #' @param alignment Named settings for each moving modality: method='identity'
 #'   explicitly declares registered coordinates; otherwise arguments for
@@ -306,14 +306,14 @@
 #' @param replicate Optional colData field identifying biological replicates.
 #' @param contrasts Named list of numerator, denominator and paired settings.
 #'   Tests require at least three independent biological replicates per group.
-#' @param observation_unit Description of what a column represents.
-#' @param coordinate_units Description of reference coordinate units; required
+#' @param observationUnit Description of what a column represents.
+#' @param coordinateUnits Description of reference coordinate units; required
 #'   when independent inputs are mapped.
-#' @param npcs,max_features Maximum PCs and variable features per modality.
+#' @param npcs,maxFeatures Maximum PCs and variable features per modality.
 #' @param clusters Optional explicit k for exploratory k-means in joint space,
 #'   or in PCA space when exactly one modality is selected.
 #'   NULL does not choose a biological partition automatically.
-#' @param association_features Maximum regional-marker/variable-feature anchors
+#' @param associationFeatures Maximum regional-marker/variable-feature anchors
 #'   for each modality pair. Targets are the other modality's PCA-selected
 #'   features. Raw and covariate-residual correlations have no pixel P values.
 #' @param seed Random seed, restored on exit.
@@ -350,23 +350,23 @@
 #'         main = list(type = "metabolomics", layer = "logcounts"),
 #'         transcriptome = list(type = "transcriptomics", layer = "logcounts")
 #'     ),
-#'     npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+#'     npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
 #'     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 #' )
 #' fit$stages
 runSpaMTPWorkflow <- function(
-    input, modalities, output_dir = NULL,
+    input, modalities, outputDir = NULL,
     reference = NULL, alignment = list(), mapping = list(), group = NULL,
-    replicate = NULL, contrasts = list(), observation_unit = "spatial observation",
-    coordinate_units = NULL, npcs = 15, max_features = 2000, clusters = NULL,
-    association_features = 20, seed = 1, title = "SpaMTP multi-omics report",
+    replicate = NULL, contrasts = list(), observationUnit = "spatial observation",
+    coordinateUnits = NULL, npcs = 15, maxFeatures = 2000, clusters = NULL,
+    associationFeatures = 20, seed = 1, title = "SpaMTP multi-omics report",
     regions = group, native = list(), structure = list()
 ) {
     .wf_named(modalities, "modalities")
     modalities <- lapply(modalities, .wf_spec)
     .wf_number(npcs, "npcs", 1, TRUE)
-    .wf_number(max_features, "max_features", 2, TRUE)
-    .wf_number(association_features, "association_features", 0, TRUE)
+    .wf_number(maxFeatures, "max_features", 2, TRUE)
+    .wf_number(associationFeatures, "association_features", 0, TRUE)
     .wf_number(seed, "seed", 0, TRUE)
     withr::local_seed(seed)
     if (length(contrasts) && is.null(group)) {
@@ -379,9 +379,9 @@ runSpaMTPWorkflow <- function(
             conditions$warnings <- unique(c(conditions$warnings, conditionMessage(w)))
         })
     }
-    if (!is.null(output_dir) && dir.exists(output_dir) && length(list.files(output_dir, all.files = TRUE, no.. = TRUE))) {
+    if (!is.null(outputDir) && dir.exists(outputDir) && length(list.files(outputDir, all.files = TRUE, no.. = TRUE))) {
         stop(
-            "output_dir must be new or empty; existing reports are preserved.",
+            "outputDir must be new or empty; existing reports are preserved.",
             call. = FALSE
         )
     }
@@ -400,9 +400,9 @@ runSpaMTPWorkflow <- function(
                 call. = FALSE
             )
         }
-        if (is.null(coordinate_units) || !nzchar(coordinate_units)) {
+        if (is.null(coordinateUnits) || !nzchar(coordinateUnits)) {
             stop(
-                "Declare coordinate_units for independent input mapping.",
+                "Declare coordinateUnits for independent input mapping.",
                 call. = FALSE
             )
         }
@@ -479,7 +479,7 @@ runSpaMTPWorkflow <- function(
                     declaration = "User declared coordinates already registered."
                 )
             } else {
-                if (any(names(cfg) %in% c("SM.data", "ST.data", "return", "store"))) {
+                if (any(names(cfg) %in% c("smData", "stData", "return", "store"))) {
                     stop(
                         "Alignment container/return arguments are managed by the workflow.",
                         call. = FALSE
@@ -491,8 +491,8 @@ runSpaMTPWorkflow <- function(
                     applySpatialAlignment,
                     c(
                         list(
-                            SM.data = sources[[name]],
-                            ST.data = parent,
+                            smData = sources[[name]],
+                            stData = parent,
                             return = "result"
                         ),
                         cfg
@@ -569,7 +569,7 @@ runSpaMTPWorkflow <- function(
         }
         SummarizedExperiment::assay(experiment, "workflow") <- normalized
         if (!is.null(spec$species)) S4Vectors::metadata(experiment)$organism <- spec$species
-        pcas[[name]] <- .wf_pca(normalized, npcs, max_features)
+        pcas[[name]] <- .wf_pca(normalized, npcs, maxFeatures)
         if (pcas[[name]]$status == "completed") {
             SingleCellExperiment::reducedDim(
                 experiment,
@@ -620,9 +620,9 @@ runSpaMTPWorkflow <- function(
         order <- c(reference, setdiff(names(modalities), reference))
         object <- multiOmicIntegration(object,
             modalities = unname(assay_names[order]),
-            reduction.list = as.list(paste0("workflow_", order)),
-            dims.list = lapply(pcas[order], function(x) seq_len(ncol(x$scores))),
-            return.intermediate = TRUE
+            reductionList = as.list(paste0("workflow_", order)),
+            dimsList = lapply(pcas[order], function(x) seq_len(ncol(x$scores))),
+            returnIntermediate = TRUE
         )
         embedding <- SingleCellExperiment::reducedDim(object, "integrated")
         joint <- list(
@@ -683,8 +683,8 @@ runSpaMTPWorkflow <- function(
             if (any(names(args) %in% c(
                 "data",
                 "assay",
-                "return.only.annotated",
-                "save.intermediate",
+                "returnOnlyAnnotated",
+                "saveIntermediate",
                 "filepath"
             ))) {
                 stop(
@@ -694,7 +694,7 @@ runSpaMTPWorkflow <- function(
             }
             object <- capture(do.call(annotateSM, c(list(
                 data = object, assay = assay,
-                return.only.annotated = FALSE, save.intermediate = TRUE
+                returnOnlyAnnotated = FALSE, saveIntermediate = TRUE
             ), args)))
             analysis[[name]]$annotation <- .featureMetadata(object, assay)
             record(
@@ -728,17 +728,17 @@ runSpaMTPWorkflow <- function(
                 )
             ))) {
                 stop(
-                    "pathways needs index and optional min_size/max_size/foreground/duplicate_genes.",
+                    "pathways needs index and optional minSize/maxSize/foreground/duplicate_genes.",
                     call. = FALSE
                 )
             }
             if (spec$type == "metabolomics") {
                 identity_assay <- paste0("workflow_ids_", name)
                 object <- capture(createPathwayAssay(object,
-                    analyte_type = "metabolites", assay = assay,
-                    assayName = "workflow", outputExperiment = identity_assay, pathway_index = cfg$index, database = cfg$database,
-                    annotation_source = cfg$annotation_source %||% "current",
-                    metabolite_ambiguity = cfg$metabolite_ambiguity %||% "exclude", verbose = FALSE
+                    analyteType = "metabolites", assay = assay,
+                    assayName = "workflow", outputExperiment = identity_assay, pathwayIndex = cfg$index, database = cfg$database,
+                    annotationSource = cfg$annotation_source %||% "current",
+                    metaboliteAmbiguity = cfg$metabolite_ambiguity %||% "exclude", verbose = FALSE
                 ))
                 target <- paste0("workflow_pathways_", name)
                 context <- .pathway_score_context(
@@ -762,8 +762,8 @@ runSpaMTPWorkflow <- function(
                 }
                 object <- capture(createPathwayObject(object,
                     assay = identity_assay, assayName = "workflow",
-                    outputExperiment = target, pathway_index = cfg$index, organism = spec$species %||% "custom",
-                    min_path_size = cfg$min_size %||% 5, max_path_size = cfg$max_size %||% 500
+                    outputExperiment = target, pathwayIndex = cfg$index, organism = spec$species %||% "custom",
+                    minPathSize = cfg$min_size %||% 5, maxPathSize = cfg$max_size %||% 500
                 ))
                 audit <- S4Vectors::metadata(SingleCellExperiment::altExp(object, target))$pathway_mapping
                 analysis[[name]]$pathways <- list(
@@ -789,9 +789,9 @@ runSpaMTPWorkflow <- function(
             target <- paste0("workflow_pathways_", name)
             scored <- capture(tryCatch(createPathwayObject(object,
                 assay = assay, assayName = "workflow", outputExperiment = target,
-                pathway_index = cfg$index, organism = spec$species,
-                min_path_size = cfg$min_size %||% 5, max_path_size = cfg$max_size %||% 500,
-                duplicate_genes = cfg$duplicate_genes %||% "error"
+                pathwayIndex = cfg$index, organism = spec$species,
+                minPathSize = cfg$min_size %||% 5, maxPathSize = cfg$max_size %||% 500,
+                duplicateGenes = cfg$duplicate_genes %||% "error"
             ), error = function(e) {
                 if (startsWith(conditionMessage(e), "No pathways contain")) {
                     return(NULL)
@@ -827,8 +827,8 @@ runSpaMTPWorkflow <- function(
                 analysis[[name]]$pathways$enrichment <- capture(fishersPathwayAnalysis(
                     list(genes = cfg$foreground),
                     universe = list(genes = rownames(values[[name]])),
-                    pathway_index = cfg$index, organism = spec$species,
-                    min_path_size = cfg$min_size %||% 5, max_path_size = cfg$max_size %||% 500,
+                    pathwayIndex = cfg$index, organism = spec$species,
+                    minPathSize = cfg$min_size %||% 5, maxPathSize = cfg$max_size %||% 500,
                     verbose = FALSE
                 ))
             }
@@ -875,9 +875,9 @@ runSpaMTPWorkflow <- function(
             }
             x
         }), reference = reference, independent = independent, group = group, replicate = replicate,
-        contrasts = contrasts, observation_unit = observation_unit, coordinate_units = coordinate_units,
-        npcs = npcs, max_features = max_features, clusters = clusters,
-        association_features = association_features, seed = seed, assay_names = assay_names
+        contrasts = contrasts, observation_unit = observationUnit, coordinate_units = coordinateUnits,
+        npcs = npcs, max_features = maxFeatures, clusters = clusters,
+        association_features = associationFeatures, seed = seed, assay_names = assay_names
     )
     result <- structure(
         list(
@@ -906,6 +906,6 @@ runSpaMTPWorkflow <- function(
     result <- capture(.wf_associations(result))
     result <- capture(.wf_regional_pathways(result))
     result$warnings <- conditions$warnings
-    if (!is.null(output_dir)) result$report <- renderSpaMTPReport(result, output_dir)
+    if (!is.null(outputDir)) result$report <- renderSpaMTPReport(result, outputDir)
     result
 }

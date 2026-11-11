@@ -8,9 +8,9 @@ groupAdductPeaks(
   mz,
   intensity,
   ppm = 3,
-  min_cor = 0.5,
+  minCor = 0.5,
   polarity = c("positive", "negative"),
-  split_ppm = 0,
+  splitPpm = 0,
   exclude = NULL
 )
 }
@@ -22,11 +22,11 @@ groupAdductPeaks(
 
 \item{ppm}{Spacing tolerance in parts per million of the heavier peak.}
 
-\item{min_cor}{Smallest profile correlation for a link.}
+\item{minCor}{Smallest profile correlation for a link.}
 
 \item{polarity}{Ion polarity; selects the spacing set.}
 
-\item{split_ppm}{Largest separation treated as a split peak (0 disables).}
+\item{splitPpm}{Largest separation treated as a split peak (0 disables).}
 
 \item{exclude}{Optional logical vector (one value per peak) or peak
 indices to leave unlinked.}
@@ -40,7 +40,7 @@ singletons, including excluded peaks, get their own group).
 Links two peaks when their m/z difference matches an adduct exchange
 (for example \verb{[M+Na]+} minus \verb{[M+H]+}) or a water loss within \code{ppm}, and
 their spatial profiles correlate. Split peaks of one ion (features closer
-than \code{split_ppm} with correlated profiles) are linked as well. Connected
+than \code{splitPpm} with correlated profiles) are linked as well. Connected
 components are candidate molecules observed through several ions. Matrix
 cluster and salt families also form such chains, so peaks flagged by
 \code{\link[=flagMatrixPeaks]{flagMatrixPeaks()}} or \code{\link[=flagIsotopePeaks]{flagIsotopePeaks()}} should be passed as \code{exclude}.

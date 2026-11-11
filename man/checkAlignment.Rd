@@ -5,23 +5,23 @@
 \title{Inspect the alignment of two spatial experiments}
 \usage{
 checkAlignment(
-  SM.data,
-  ST.data,
+  smData,
+  stData,
   names = c("SM", "ST"),
   cols = NULL,
-  image.slice = NULL,
+  imageSlice = NULL,
   size = 0.5
 )
 }
 \arguments{
-\item{SM.data, ST.data}{SpatialExperiment objects in the same coordinate
+\item{smData, stData}{SpatialExperiment objects in the same coordinate
 units.}
 
 \item{names}{Two labels for the source and target measurements.}
 
 \item{cols}{Two point colours.}
 
-\item{image.slice}{Optional image ID in ST.data. With multiple samples,
+\item{imageSlice}{Optional image ID in ST.data. With multiple samples,
 subset to one sample before drawing an image overlay.}
 
 \item{size}{Point size.}

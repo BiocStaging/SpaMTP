@@ -50,7 +50,7 @@ test_that("polarity and complexity filtering keep SpaMTP rule names", {
         expect_identical(selected$name, rules$name[rules$polarity == mode])
         expect_identical(names(selected), names(rules))
     }
-    simple <- adductRules("negative", include_complex = FALSE)
+    simple <- adductRules("negative", includeComplex = FALSE)
     expect_identical(simple$name, c("M-H", "M+Cl", "M+Br"))
     expect_equal(simple$metabocoreutils_name, c("[M-H]-", "[M+Cl]-", "[M+Br]-"))
 })

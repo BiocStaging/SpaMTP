@@ -92,7 +92,7 @@
         indices <- lapply(metabolites, function(metabolite) {
             matched <- searchAnnotations(object, metabolite,
                 assay = assay,
-                column.name = column, search.exact = exact
+                columnName = column, searchExact = exact
             )
             ids <- matched$mz_names %||% rownames(matched)
             index <- match(ids, features)
@@ -148,10 +148,10 @@
     if (!is.null(splitBy)) {
         metadata <- .cellMetadata(object)
         if (length(splitBy) != 1L || !splitBy %in% names(metadata)) {
-            stop("split.by must name a colData column.", call. = FALSE)
+            stop("splitBy must name a colData column.", call. = FALSE)
         }
         coordinates$group <- as.character(metadata[coordinates$cell, splitBy])
-        if (anyNA(coordinates$group)) stop("split.by contains missing values.", call. = FALSE)
+        if (anyNA(coordinates$group)) stop("splitBy contains missing values.", call. = FALSE)
         entries <- do.call(rbind, lapply(seq_len(nrow(entries)), function(i) {
             groups <- unique(coordinates$group[
                 coordinates$sample_id == entries$sample_id[i]

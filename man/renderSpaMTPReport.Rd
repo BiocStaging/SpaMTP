@@ -6,30 +6,30 @@
 \usage{
 renderSpaMTPReport(
   result,
-  output_dir,
-  max_points = 5000,
+  outputDir,
+  maxPoints = 5000,
   interactive = TRUE,
-  preview_features = 180,
-  preview_points = min(max_points, 2000),
-  table_rows = 1000
+  previewFeatures = 180,
+  previewPoints = min(maxPoints, 2000),
+  tableRows = 1000
 )
 }
 \arguments{
 \item{result}{A spamtp_workflow result from runSpaMTPWorkflow.}
 
-\item{output_dir}{New or empty output directory.}
+\item{outputDir}{New or empty output directory.}
 
-\item{max_points}{Maximum observations displayed per scatter plot. Analyses
+\item{maxPoints}{Maximum observations displayed per scatter plot. Analyses
 and exported tables are not subsampled.}
 
 \item{interactive}{Embed an offline region/DE explorer using local
 JavaScript.}
 
-\item{preview_features}{Maximum feature profiles embedded in the explorer.}
+\item{previewFeatures}{Maximum feature profiles embedded in the explorer.}
 
-\item{preview_points}{Maximum spatial/distribution observations embedded.}
+\item{previewPoints}{Maximum spatial/distribution observations embedded.}
 
-\item{table_rows}{Maximum preloaded ranked rows per region or contrast.
+\item{tableRows}{Maximum preloaded ranked rows per region or contrast.
 Full tables are exported independently of this preview limit.}
 }
 \value{
@@ -50,11 +50,11 @@ fit <- runSpaMTPWorkflow(spe,
         main = list(type = "metabolomics", layer = "logcounts"),
         transcriptome = list(type = "transcriptomics", layer = "logcounts")
     ),
-    npcs = 2, max_features = 8, association_features = 2, clusters = 2,
+    npcs = 2, maxFeatures = 8, associationFeatures = 2, clusters = 2,
     structure = list(spatial = FALSE, umap = FALSE, stability_blocks = 0)
 )
 folder <- tempfile("report-")
-report <- renderSpaMTPReport(fit, folder, interactive = FALSE, max_points = 24)
+report <- renderSpaMTPReport(fit, folder, interactive = FALSE, maxPoints = 24)
 basename(report)
 unlink(folder, recursive = TRUE)
 }

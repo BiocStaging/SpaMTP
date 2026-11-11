@@ -5,23 +5,23 @@
 \title{Combines rigid tranformation matrices}
 \usage{
 combineTransformations(
-  center.cur,
-  center.new,
+  centerCur,
+  centerNew,
   alpha,
-  mirror.x = FALSE,
-  mirror.y = FALSE
+  mirrorX = FALSE,
+  mirrorY = FALSE
 )
 }
 \arguments{
-\item{center.cur}{(x, y) image pixel coordinates specifying the current
+\item{centerCur}{(x, y) image pixel coordinates specifying the current
 center of the tissue (stored as the \code{centers} auxiliary entry)}
 
-\item{center.new}{(x, y) image pixel coordinates specifying the new center
+\item{centerNew}{(x, y) image pixel coordinates specifying the new center
 (image center)}
 
 \item{alpha}{Rotation angle}
 
-\item{mirror.x, mirror.y}{Logical values indicating reflection across the x
+\item{mirrorX, mirrorY}{Logical values indicating reflection across the x
 or y axis before rotation.}
 }
 \value{
@@ -33,10 +33,10 @@ translation of points to origin (0, 0) -> reflection of points
 -> rotation by alpha degrees and translation of points to new center
 }
 \examples{
-combineTransformations(center.cur = c(0, 0), center.new = c(10, 20), alpha = 30)
+combineTransformations(centerCur = c(0, 0), centerNew = c(10, 20), alpha = 30)
 transformation <- combineTransformations(
-    center.cur = c(0, 0),
-    center.new = c(10, 20),
+    centerCur = c(0, 0),
+    centerNew = c(10, 20),
     alpha = 90
 )
 transformation

@@ -9,14 +9,14 @@
 #' structures.
 #'
 #' @param data data.frame containing a column with lipid annotations
-#' @param annotation.column Character string matching the column name containing
+#' @param annotationColumn Character string matching the column name containing
 #'   the lipid annotations in the provided df (default = "annotations").
 #' @param database Character string defining the database matching the lipid
 #'   annotations. Possible entries include
 #'   c('Shorthand2020','Goslin','FattyAcids','LipidMaps','SwissLipids','HMDB')
 #'   (default = "HMDB").
 #' @param verbose Logical; show a progress bar (default = TRUE).
-#' @param lipid_info Character string defining what level of information to return for each lipid. Options are either "all" or "simple". "Simple" returns a smaller, simplified list of annotations for each lipid. Please visit https://bioconductor.org/packages/release/bioc/vignettes/rgoslin/inst/doc/introduction.html to see all possible outputs (default = "simple")).
+#' @param lipidInfo Character string defining what level of information to return for each lipid. Options are either "all" or "simple". "Simple" returns a smaller, simplified list of annotations for each lipid. Please visit https://bioconductor.org/packages/release/bioc/vignettes/rgoslin/inst/doc/introduction.html to see all possible outputs (default = "simple")).
 #'
 #' @return Data.frame containing additional columns with simplified lipid names
 #' @export
@@ -25,12 +25,12 @@
 #' lipids <- data.frame(annotations = c("PC 16:0/18:1", "PE 18:0/20:4"))
 #' refineLipids(lipids, database = "Shorthand2020", verbose = FALSE)
 refineLipids <- function(
-    data, annotation.column = "annotations", database = "HMDB",
-    lipid_info = "simple", verbose = TRUE
+    data, annotationColumn = "annotations", database = "HMDB",
+    lipidInfo = "simple", verbose = TRUE
 ) {
-    if (!(lipid_info %in% c("simple", "all"))) {
-        warning("Invalid input for 'lipid_info'!... Must be either 'all' or 'simple'. Will use default == 'simple'")
-        lipid_info <- "simple"
+    if (!(lipidInfo %in% c("simple", "all"))) {
+        warning("Invalid input for 'lipidInfo'!... Must be either 'all' or 'simple'. Will use default == 'simple'")
+        lipidInfo <- "simple"
     }
     simple_columns <- c(
         "Lipid.Maps.Category", "Lipid.Maps.Main.Class",
@@ -38,9 +38,9 @@ refineLipids <- function(
     )
     pb <- .progressBar(nrow(data), verbose)
     rows_list <- lapply(seq_len(nrow(data)), function(idx) {
-        annotations <- strsplit(data[[annotation.column]][idx], "; ")[[1]]
+        annotations <- strsplit(data[[annotationColumn]][idx], "; ")[[1]]
         lipid.df <- suppressMessages(rgoslin::parseLipidNames(annotations, grammar = database))
-        add_information <- if (lipid_info == "all") {
+        add_information <- if (lipidInfo == "all") {
             c(colnames(lipid.df), "Species.Name.Simple")
         } else {
             simple_columns
