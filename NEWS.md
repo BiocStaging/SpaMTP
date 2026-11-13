@@ -1,3 +1,8 @@
+# SpaMTP 0.99.19
+
+* Bump package version to rebuild against published SpaMTPdb 0.99.6 on
+  BiocStaging.
+
 # SpaMTP 0.99.18
 
 * Public arguments now use lower camel case, with the conventional
